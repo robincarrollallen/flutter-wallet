@@ -1,0 +1,98 @@
+{
+  "appTitle": "My Wallet",
+  "tabs": {
+    "home": "Home",
+    "market": "Market",
+    "exchange": "Exchange",
+    "contract": "Contract",
+    "discover": "Discover"
+  },
+  "home": {
+    "noWalletTitle": "No wallet yet",
+    "noWalletSubtitle": "Create or import a wallet to get started",
+    "createWallet": "Create Wallet",
+    "totalAssets": "Total Assets",
+    "assetsScanning": "Scanning on-chain assets…",
+    "searchHint": "Search tokens, addresses or transactions",
+    "settings": "Settings",
+    "scan": "Scan"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "security": "Security",
+    "about": "About"
+  },
+  "search": {
+    "title": "Search",
+    "hint": "Search tokens, addresses or transactions",
+    "empty": "Type a keyword to start searching",
+    "noResult": "No matching results",
+    "tabs": {
+      "token": "Token",
+      "contract": "Contract",
+      "dapp": "Dapp"
+    },
+    "history": "Search history",
+    "clearHistory": "Clear",
+    "hot": "Trending"
+  },
+  "scan": {
+    "title": "Scan",
+    "hint": "Place the QR code inside the frame to scan automatically"
+  },
+  "balance": {
+    "unavailable": "--"
+  },
+  "create": {
+    "generatingTitle": "Creating your wallet",
+    "generatingHint": "Generating the mnemonic and deriving the address — please stay on this page",
+    "successTitle": "Wallet created",
+    "successSubtitle": "Your brand-new wallet is ready to go",
+    "start": "Start using my new wallet",
+    "walletName": "My wallet",
+    "failed": "Creation failed, please try again",
+    "retry": "Retry"
+  },
+  "createWallet": {
+    "title": "Create Wallet",
+    "create": {
+      "title": "New mnemonic wallet",
+      "subtitle": "Generate a brand-new mnemonic phrase and create a wallet"
+    },
+    "import": {
+      "title": "Import existing wallet",
+      "subtitle": "Recover an existing wallet via mnemonic or private key"
+    },
+    "hardware": {
+      "title": "Connect hardware wallet",
+      "subtitle": "Connect Ledger, Trezor and other hardware devices"
+    }
+  },
+  "import": {
+    "selectTitle": "Import Wallet",
+    "software": "Mnemonic or private key",
+    "hardware": "Hardware wallet",
+    "mnemonic": {
+      "title": "Import mnemonic or private key",
+      "hint": "Enter your mnemonic (space-separated) or paste a private key",
+      "helper": "Mnemonic or private key is auto-detected; BIP39 suggestions appear above the keyboard while typing a mnemonic",
+      "warning": "Never enter your mnemonic in an untrusted environment — anyone who obtains it can control your assets.",
+      "submit": "Import",
+      "wordCount": "{n} words",
+      "walletName": "Imported wallet",
+      "deriveFailed": "Failed to derive address",
+      "errors": {
+        "empty": "Please enter your mnemonic",
+        "nonEnglish": "Mnemonic may only contain English words",
+        "wordCount": "Mnemonic must be 12 / 15 / 18 / 21 / 24 words, currently {count}",
+        "invalidWords": "Invalid words: {words}",
+        "checksum": "Mnemonic checksum failed, please check the order or spelling",
+        "invalidPrivateKey": "Invalid private key format. Please check it is a complete EVM / Solana / Sui private key"
+      }
+    }
+  },
+  "placeholder": {
+    "wip": "Feature under development"
+  }
+}

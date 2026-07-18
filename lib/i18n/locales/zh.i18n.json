@@ -1,0 +1,98 @@
+{
+  "appTitle": "我的钱包",
+  "tabs": {
+    "home": "首页",
+    "market": "市场",
+    "exchange": "兑换",
+    "contract": "合约",
+    "discover": "发现"
+  },
+  "home": {
+    "noWalletTitle": "还没有钱包",
+    "noWalletSubtitle": "创建或导入一个钱包开始使用",
+    "createWallet": "创建钱包",
+    "totalAssets": "总资产",
+    "assetsScanning": "正在扫描链上资产…",
+    "searchHint": "搜索代币、地址或交易",
+    "settings": "设置",
+    "scan": "扫一扫"
+  },
+  "settings": {
+    "title": "设置",
+    "general": "通用",
+    "security": "安全",
+    "about": "关于"
+  },
+  "search": {
+    "title": "搜索",
+    "hint": "搜索代币、地址或交易",
+    "empty": "输入关键词开始搜索",
+    "noResult": "没有找到相关结果",
+    "tabs": {
+      "token": "代币",
+      "contract": "合约",
+      "dapp": "Dapp"
+    },
+    "history": "搜索历史",
+    "clearHistory": "清空",
+    "hot": "热门搜索"
+  },
+  "scan": {
+    "title": "扫一扫",
+    "hint": "将二维码放入框内即可自动扫描"
+  },
+  "balance": {
+    "unavailable": "--"
+  },
+  "create": {
+    "generatingTitle": "正在创建你的专属钱包",
+    "generatingHint": "正在生成助记词并派生地址，请勿离开页面",
+    "successTitle": "钱包创建成功",
+    "successSubtitle": "你的全新钱包已就绪，快开始使用吧",
+    "start": "开始使用新钱包",
+    "walletName": "我的钱包",
+    "failed": "创建失败，请重试",
+    "retry": "重试"
+  },
+  "createWallet": {
+    "title": "创建钱包",
+    "create": {
+      "title": "新建助记词钱包",
+      "subtitle": "生成一组全新的助记词并创建钱包"
+    },
+    "import": {
+      "title": "导入已有钱包",
+      "subtitle": "通过助记词或私钥恢复已有钱包"
+    },
+    "hardware": {
+      "title": "连接硬件钱包",
+      "subtitle": "连接 Ledger、Trezor 等硬件设备"
+    }
+  },
+  "import": {
+    "selectTitle": "选择导入钱包",
+    "software": "助记词或私钥",
+    "hardware": "硬件钱包",
+    "mnemonic": {
+      "title": "导入助记词或私钥",
+      "hint": "请输入助记词（单词以空格分隔），或直接粘贴私钥",
+      "helper": "自动识别助记词或私钥；输入助记词时键盘上方会提示 BIP39 候选单词",
+      "warning": "请勿在不信任的环境下输入助记词或私钥，任何人获取后都能掌控你的资产。",
+      "submit": "导入",
+      "wordCount": "{n} 个单词",
+      "walletName": "导入钱包",
+      "deriveFailed": "地址派生失败",
+      "errors": {
+        "empty": "请输入助记词",
+        "nonEnglish": "助记词只能包含英文单词",
+        "wordCount": "助记词应为 12 / 15 / 18 / 21 / 24 个单词，当前 {count} 个",
+        "invalidWords": "存在无效单词：{words}",
+        "checksum": "助记词校验失败，请检查顺序或拼写",
+        "invalidPrivateKey": "私钥格式无效，请检查是否为完整的 EVM / Solana / Sui 私钥"
+      }
+    }
+  },
+  "placeholder": {
+    "wip": "功能开发中"
+  }
+}
