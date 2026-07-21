@@ -6,7 +6,7 @@ import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../providers/modules/wallet_provider.dart';
 import '../../../../domain/wallet.dart';
 import '../../widgets/panel/view.dart';
-import '../../widgets/panel/logic.dart';
+import '../../../../../../core/navigation/panel_routes.dart';
 import '../cloud_backup/view.dart';
 import '../manual_backup/view.dart';
 import 'logic.dart';

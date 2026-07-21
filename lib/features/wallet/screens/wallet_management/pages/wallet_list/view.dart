@@ -5,7 +5,7 @@ import '../../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../../providers/modules/wallet_provider.dart';
 import '../../../../widgets/create_wallet_sheet.dart';
 import '../../widgets/panel/view.dart';
-import '../../widgets/panel/logic.dart';
+import '../../../../../../core/navigation/panel_routes.dart';
 import '../wallet_detail/view.dart';
 import 'widgets/wallet_tile/view.dart';
 

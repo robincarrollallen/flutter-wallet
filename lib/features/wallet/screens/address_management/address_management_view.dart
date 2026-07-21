@@ -7,7 +7,7 @@ import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/chain_icon_provider.dart';
 import '../../domain/chain.dart';
-import '../../domain/token_icon.dart';
+import '../../../../core/widgets/token_icon.dart';
 import '../../domain/wallet.dart';
 
 /// 地址管理页：列出当前钱包在各条链上的地址，支持复制与查看二维码。

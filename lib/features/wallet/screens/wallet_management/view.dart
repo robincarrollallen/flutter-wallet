@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../providers/modules/wallet_panel_progress_provider.dart';
 import 'pages/wallet_list/view.dart';
-import 'widgets/panel/logic.dart';
+import '../../../../core/navigation/panel_routes.dart';
 import 'logic.dart';
 import 'state.dart';
 

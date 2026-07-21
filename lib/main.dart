@@ -7,7 +7,6 @@ import 'features/shell/view.dart';
 import 'providers/modules/locale_provider.dart';
 import 'providers/modules/theme_provider.dart';
 import 'core/responsive/screen_adapter.dart';
-import 'core/theme/app_colors.dart';
 import 'providers/prefs_provider.dart';
 import 'i18n/translations.g.dart';
 
@@ -30,7 +29,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     ref.watch(localeProvider); // 确保启动时恢复已保存的语言（其 build 会同步给 slang）。
-    final themeMode = ref.watch(themeModeProvider);
+    final appearance = ref.watch(appearanceProvider);
 
     return MaterialApp(
       title: t.appTitle,
@@ -41,18 +40,10 @@ class MyApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      themeMode: themeMode,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        extensions: const [AppColors.light],
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-        extensions: const [AppColors.dark],
-      ),
+      themeMode: appearance.themeMode,
+      // 按选中的主题名生成整套配色：切主题即换 seedColor，theme/darkTheme 随之重建。
+      theme: appearance.themeName.lightTheme,
+      darkTheme: appearance.themeName.darkTheme,
       builder: (context, child) {
         // 用最新 MediaQuery 刷新缩放比；不锁死 textScaler，保留系统字体大小。
         ScreenAdapter.init(context);

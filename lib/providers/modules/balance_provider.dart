@@ -36,6 +36,7 @@ const _marketsTtl = Duration(minutes: 5);
 final marketsProvider = FutureProvider<Markets>((ref) async {
   ref.keepAlive();
   final prefs = ref.watch(sharedPrefsProvider);
+  
 
   final (cached, cachedAt) = _readCache(prefs);
   if (cached != null &&
@@ -44,7 +45,12 @@ final marketsProvider = FutureProvider<Markets>((ref) async {
   }
 
   final service = ref.watch(walletServiceProvider);
-  final ids = SupportedChains.all.map((c) => c.coinGeckoId);
+  // 原生币 + 代币的 coinGeckoId 一起拉，代币图标（如 USDC）才有 logo，去重避免重复请求。
+  
+  final ids = {
+    ...SupportedChains.all.map((c) => c.coinGeckoId),
+    ...SupportedChains.allTokens.map((e) => e.$2.coinGeckoId),
+  };
   final fresh = await service.fetchMarkets(ids);
 
   // fetchMarkets 吞掉异常后返回空 map，空即代表失败：退回旧缓存，别用 $0.00 覆盖 UI。
@@ -93,7 +99,10 @@ Future<void> _writeCache(SharedPreferences prefs, Markets markets) {
 /// 兜底用的旧缓存已经被删掉，页面会直接掉到 $0.00。
 /// 这里改为先把新数据拿到手，成功才覆盖缓存——失败时旧缓存原封不动，维持旧价格。
 Future<void> refreshHomeData(WidgetRef ref, {String? walletId}) async {
-  final ids = SupportedChains.all.map((c) => c.coinGeckoId);
+  final ids = {
+    ...SupportedChains.all.map((c) => c.coinGeckoId),
+    ...SupportedChains.allTokens.map((e) => e.$2.coinGeckoId),
+  };
   final fresh = await ref.read(walletServiceProvider).fetchMarkets(ids);
 
   // 空即代表失败（fetchMarkets 吞异常后返回空 map）：跳过写盘与 invalidate，

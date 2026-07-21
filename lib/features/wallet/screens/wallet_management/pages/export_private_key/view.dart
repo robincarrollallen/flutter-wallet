@@ -5,7 +5,7 @@ import '../../../../../../core/responsive/screen_adapter.dart';
 import '../../../../domain/chain.dart';
 import '../../../../domain/wallet.dart';
 import '../../widgets/panel/view.dart';
-import '../../widgets/panel/logic.dart';
+import '../../../../../../core/navigation/panel_routes.dart';
 import '../private_key_view/view.dart';
 
 /// 导出私钥：列出钱包支持的所有链，每条链一张卡片，点击进入对应链的导出流程。

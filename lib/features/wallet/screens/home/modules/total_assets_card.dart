@@ -10,6 +10,7 @@ import '../../../../../providers/modules/wallet_provider.dart';
 import '../../../domain/wallet.dart';
 import '../../../domain/wallet_avatar.dart';
 import '../../address_management/address_management_view.dart';
+import '../../receive/view.dart';
 import '../../wallet_management/view.dart';
 
 /// 顶部「总资产」卡片：展示当前选中钱包按币种折算后的跨链法币总价值。
@@ -127,14 +128,24 @@ class TotalAssetsCard extends ConsumerWidget {
               SizedBox(height: 16.s),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: const [
-                  _ActionButton(icon: Icons.arrow_upward_rounded, label: '发送'),
+                children: [
+                  const _ActionButton(
+                    icon: Icons.arrow_upward_rounded,
+                    label: '发送',
+                  ),
                   _ActionButton(
                     icon: Icons.arrow_downward_rounded,
                     label: '接收',
+                    onTap: () => ReceiveSheet.show(context),
                   ),
-                  _ActionButton(icon: Icons.history_rounded, label: '历史'),
-                  _ActionButton(icon: Icons.grid_view_rounded, label: '更多'),
+                  const _ActionButton(
+                    icon: Icons.history_rounded,
+                    label: '历史',
+                  ),
+                  const _ActionButton(
+                    icon: Icons.grid_view_rounded,
+                    label: '更多',
+                  ),
                 ],
               ),
             ],
@@ -148,10 +159,13 @@ class TotalAssetsCard extends ConsumerWidget {
 /// 总资产卡片下方的单个功能按钮：圆形图标 + 文案，纵向排列。
 /// 目前仅提供 UI，点击逻辑后续补充。
 class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.icon, required this.label});
+  const _ActionButton({required this.icon, required this.label, this.onTap});
 
   final IconData icon;
   final String label;
+
+  /// 点击回调；为空时按钮无动作（逻辑待补的按钮）。
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +173,7 @@ class _ActionButton extends StatelessWidget {
     final onColor = theme.colorScheme.onPrimaryContainer;
     return InkWell(
       borderRadius: BorderRadius.circular(24.s),
-      onTap: () {}, // TODO: 接入发送/接收/历史/更多逻辑
+      onTap: onTap, // 发送/历史/更多逻辑待补；接收已接入
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 8.s, vertical: 4.s),
         child: Column(

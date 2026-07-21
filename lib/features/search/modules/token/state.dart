@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../providers/modules/wallet_provider.dart';
 import '../../../wallet/domain/chain.dart';
+import '../../../wallet/domain/token.dart';
 import '../../../wallet/domain/wallet.dart';
 import '../pill/logic.dart';
 import '../pill/state.dart';
@@ -12,15 +13,20 @@ class TokenResults {
   const TokenResults({
     required this.query,
     required this.chains,
+    required this.tokens,
     required this.wallets,
   });
 
   final String query;
   final List<Chain> chains;
+
+  /// 匹配到的代币及其所在链（同名代币逐链展开，如多链 USDC）。
+  final List<(Chain, Token)> tokens;
   final List<Wallet> wallets;
 
   bool get isEmptyQuery => query.isEmpty;
-  bool get hasResult => chains.isNotEmpty || wallets.isNotEmpty;
+  bool get hasResult =>
+      chains.isNotEmpty || tokens.isNotEmpty || wallets.isNotEmpty;
 }
 
 /// 由当前关键词 + 钱包列表派生代币检索结果。
@@ -30,6 +36,7 @@ final tokenResultsProvider = Provider.autoDispose<TokenResults>((ref) {
   return TokenResults(
     query: q,
     chains: TokenSearchLogic.matchChains(q),
+    tokens: TokenSearchLogic.matchTokens(q),
     wallets: TokenSearchLogic.matchWallets(q, wallets),
   );
 });

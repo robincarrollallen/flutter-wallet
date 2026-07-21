@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../i18n/translations.g.dart';
 import '../../../../providers/modules/balance_provider.dart';
-import '../../../wallet/domain/token_icon.dart';
+import '../../../../providers/modules/chain_icon_provider.dart';
+import '../../../../core/widgets/asset_icon.dart';
+import '../../../../core/widgets/token_icon.dart';
 import '../pill/state.dart';
 import '../search_hint.dart';
 import 'logic.dart';
@@ -22,6 +24,8 @@ class TokenTabView extends ConsumerWidget {
     // 复用余额页已缓存的行情结果，不产生额外请求；
     // 首帧未就绪时取空表，图标自然回退首字母，就绪后自动重建。
     final markets = ref.watch(marketsProvider).value ?? const {};
+    // 代币行右下角的链徽标图标。
+    final chainIcons = ref.watch(chainIconsProvider).value ?? const {};
 
     // 空词：展示热门链，点击即以其名称发起搜索。
     if (results.isEmptyQuery) {
@@ -66,6 +70,19 @@ class TokenTabView extends ConsumerWidget {
             ),
             title: Text(c.name),
             subtitle: Text(c.symbol),
+          ),
+        // —— 代币结果（如 USDC）：图标右下角叠所在链徽标，副标题附链名 —— //
+        for (final (c, tk) in results.tokens)
+          ListTile(
+            leading: AssetIcon(
+              symbol: tk.symbol,
+              tokenLogoUrl: markets[tk.coinGeckoId]?.logoUrl,
+              chainSymbol: c.symbol,
+              chainLogoUrl: chainIcons[c.coinGeckoPlatformId] ??
+                  markets[c.coinGeckoId]?.logoUrl,
+            ),
+            title: Text(tk.symbol),
+            subtitle: Text('${tk.name} · ${c.name}'),
           ),
       ],
     );

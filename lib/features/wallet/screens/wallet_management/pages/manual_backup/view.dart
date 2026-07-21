@@ -5,7 +5,7 @@ import '../../../../../../core/responsive/screen_adapter.dart';
 import '../../../../domain/wallet.dart';
 import '../../../../services/secure_wallet_storage.dart';
 import '../../widgets/panel/view.dart';
-import '../../widgets/panel/logic.dart';
+import '../../../../../../core/navigation/panel_routes.dart';
 import '../verify_mnemonic/view.dart';
 
 /// 备份步骤二（手动备份）：默认隐藏助记词，点击展示后抄写，再「下一步」校验。

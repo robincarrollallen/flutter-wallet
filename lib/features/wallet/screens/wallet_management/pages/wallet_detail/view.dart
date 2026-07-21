@@ -11,7 +11,7 @@ import '../backup_method/view.dart';
 import '../export_private_key/view.dart';
 import '../../../../domain/wallet_avatar.dart';
 import '../../widgets/panel/view.dart';
-import '../../widgets/panel/logic.dart';
+import '../../../../../../core/navigation/panel_routes.dart';
 
 /// 钱包详情：展示名称 / 创建方式 / 创建时间 / 主地址，并可编辑头像。
 class WalletDetailPage extends ConsumerWidget {

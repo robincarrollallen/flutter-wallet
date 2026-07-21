@@ -9,6 +9,7 @@ class TokenIcon extends StatelessWidget {
     required this.symbol,
     this.logoUrl,
     this.size = 28,
+    this.background,
   });
 
   /// 币种符号，回退时取其首字母。
@@ -19,19 +20,30 @@ class TokenIcon extends StatelessWidget {
 
   final double size;
 
+  /// 图标底色：多数 CoinGecko logo 为透明 PNG，需要一个圆形底色兜住。
+  /// 为空时取随主题变化的中性色 [ColorScheme.surfaceContainerHighest]
+  /// （亮色为柔和浅灰、暗色为略高一档的深灰），保证明暗两套主题都清晰。
+  final Color? background;
+
   @override
   Widget build(BuildContext context) {
     final url = logoUrl;
     if (url == null || url.isEmpty) return _fallback(context);
 
-    return ClipOval(
-      child: CachedNetworkImage(
-        imageUrl: url,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        placeholder: (context, _) => _fallback(context),
-        errorWidget: (context, _, _) => _fallback(context),
+    final bg = background ?? Theme.of(context).colorScheme.surfaceContainerHighest;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+      child: ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: url,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          placeholder: (context, _) => _fallback(context),
+          errorWidget: (context, _, _) => _fallback(context),
+        ),
       ),
     );
   }

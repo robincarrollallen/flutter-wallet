@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/responsive/screen_adapter.dart';
 import '../../i18n/translations.g.dart';
+import 'appearance_view.dart';
 import 'debug_storage_view.dart';
 import 'theme_colors_view.dart';
 
@@ -70,6 +71,18 @@ class SettingsPanel extends StatelessWidget {
                     _SettingsTile(
                       icon: Icons.tune,
                       title: t.settings.general,
+                    ),
+                    // 主题 / 模式：打开选择页（模式：跟随系统/白天/黑夜；主题：亮色/暗色）。
+                    _SettingsTile(
+                      icon: Icons.brightness_6_outlined,
+                      title: '主题 / 模式',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AppearanceScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _SettingsTile(
                       icon: Icons.shield_outlined,
