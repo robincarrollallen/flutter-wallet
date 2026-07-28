@@ -29,13 +29,16 @@ class SecureWalletStorage {
   /// 保存某个钱包的私钥；助记词可选（私钥导入的钱包没有助记词，传 null 即不写入）。
   Future<void> saveSecrets({
     required String walletId,
-    required String privateKey,
+    String? privateKey,
     String? mnemonic,
   }) async {
     if (mnemonic != null) {
       await _storage.write(key: _mnemonicKey(walletId), value: mnemonic);
     }
-    await _storage.write(key: _privateKeyKey(walletId), value: privateKey);
+    // 助记词钱包不存私钥（签名/导出按需现场派生），仅私钥导入钱包写入。
+    if (privateKey != null) {
+      await _storage.write(key: _privateKeyKey(walletId), value: privateKey);
+    }
   }
 
   /// 读取助记词（用于备份 / 展示），不存在返回 null。
@@ -45,14 +48,6 @@ class SecureWalletStorage {
   /// 读取私钥（用于交易签名 / 导出），不存在返回 null。
   Future<String?> readPrivateKey(String walletId) =>
       _storage.read(key: _privateKeyKey(walletId));
-
-  /// 一次性读取助记词 + 私钥（仅在确实需要展示时调用）。
-  /// 返回值是临时 DTO，**不要**放进 Riverpod 缓存或长期持有。
-  Future<WalletSecrets> readSecrets(String walletId) async {
-    final mnemonic = await readMnemonic(walletId);
-    final privateKey = await readPrivateKey(walletId);
-    return WalletSecrets(mnemonic: mnemonic, privateKey: privateKey);
-  }
 
   /// 删除某个钱包的全部敏感数据（删除钱包时调用）。
   Future<void> deleteSecrets(String walletId) async {
@@ -65,15 +60,3 @@ class SecureWalletStorage {
 final secureWalletStorageProvider = Provider<SecureWalletStorage>(
   (ref) => SecureWalletStorage(),
 );
-
-/// 钱包敏感数据（助记词 + 私钥）的临时只读视图。
-///
-/// ⚠️ 这是一次性 DTO：仅在需要展示的瞬间通过 [SecureWalletStorage.readSecrets]
-/// 获取，用完即弃。**绝不**放进 Riverpod 缓存或 State 长期持有，
-/// 以缩短私钥 / 助记词明文在内存中的存活时间。
-class WalletSecrets {
-  const WalletSecrets({this.mnemonic, this.privateKey});
-
-  final String? mnemonic;
-  final String? privateKey;
-}

@@ -47,7 +47,7 @@ dependencies:
   flutter_secure_storage: ^10.3.1
 
   # 助记词 / BIP32+44 派生 / 多链地址（活跃维护，纯 Dart）
-  blockchain_utils: ^6.0.0
+  blockchain_utils: ^7.1.0
 
   # 钱包唯一标识符（UUID v4，避免时间戳碰撞）
   uuid: ^4.5.3
@@ -61,6 +61,7 @@ dependencies:
 
   # CoinGecko 代币图标加载（带磁盘缓存，避免重复下载）
   cached_network_image: ^3.4.1
+  on_chain: ^8.1.0
 
 dev_dependencies:
   flutter_test:

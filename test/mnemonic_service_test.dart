@@ -67,19 +67,19 @@ void main() {
     });
   });
 
-  group('MnemonicService.deriveExportKey 导出私钥', () {
+  group('MnemonicService.derivePrivateKey 导出私钥', () {
     test('同一助记词按链导出稳定', () {
       final chain = SupportedChains.solanaDevnet;
       expect(
-        MnemonicService.deriveExportKey(validMnemonic, chain),
-        MnemonicService.deriveExportKey(validMnemonic, chain),
+        MnemonicService.derivePrivateKey(validMnemonic, chain),
+        MnemonicService.derivePrivateKey(validMnemonic, chain),
       );
     });
 
     test('EVM 各链导出同一把 0x hex 私钥', () {
-      final eth = MnemonicService.deriveExportKey(
+      final eth = MnemonicService.derivePrivateKey(
           validMnemonic, SupportedChains.ethereumSepolia);
-      final poly = MnemonicService.deriveExportKey(
+      final poly = MnemonicService.derivePrivateKey(
           validMnemonic, SupportedChains.polygonAmoy);
       expect(eth, startsWith('0x'));
       expect(eth.length, 66); // 0x + 64 hex
@@ -88,12 +88,12 @@ void main() {
 
     test('Sui 导出为 suiprivkey bech32，Bitcoin 为 WIF', () {
       expect(
-        MnemonicService.deriveExportKey(
+        MnemonicService.derivePrivateKey(
             validMnemonic, SupportedChains.suiTestnet),
         startsWith('suiprivkey1'),
       );
       // testnet WIF 以 'c' 或 '9' 开头（0xEF 版本字节）。
-      final wif = MnemonicService.deriveExportKey(
+      final wif = MnemonicService.derivePrivateKey(
           validMnemonic, SupportedChains.bitcoinTestnet);
       expect(wif, isNotEmpty);
       expect(wif.startsWith('c') || wif.startsWith('9'), isTrue);
@@ -107,7 +107,7 @@ void main() {
         SupportedChains.solanaDevnet,
         SupportedChains.suiTestnet,
       ]) {
-        final exported = MnemonicService.deriveExportKey(validMnemonic, chain);
+        final exported = MnemonicService.derivePrivateKey(validMnemonic, chain);
         final kind = PrivateKeyService.detect(exported);
         expect(kind, isNot(PrivateKeyKind.unknown),
             reason: '${chain.id} 导出串应可被识别');

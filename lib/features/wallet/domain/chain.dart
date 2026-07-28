@@ -22,6 +22,7 @@ class Chain {
     required this.endpoint,
     required this.coinGeckoId,
     required this.decimals,
+    this.evmChainId,
     this.coinGeckoPlatformId,
     this.tokens = const [],
   });
@@ -34,6 +35,9 @@ class Chain {
   final String endpoint;
   final String coinGeckoId;
   final int decimals;
+
+  /// EVM 链的数字 chainId（EIP-155 签名必需）；非 EVM 链为空。
+  final int? evmChainId;
 
   /// CoinGecko asset_platforms 的平台 id，用于取该链自己的图标——
   /// 这是 Base / Arbitrum 这类共用 ETH 计价的链能显示各自 logo 的关键。
@@ -57,6 +61,7 @@ class SupportedChains {
     endpoint: 'https://ethereum-sepolia-rpc.publicnode.com',
     coinGeckoId: 'ethereum',
     decimals: 18,
+    evmChainId: 11155111,
     coinGeckoPlatformId: 'ethereum',
     tokens: [
       Token(
@@ -79,6 +84,7 @@ class SupportedChains {
     endpoint: 'https://polygon-amoy-bor-rpc.publicnode.com',
     coinGeckoId: 'matic-network',
     decimals: 18,
+    evmChainId: 80002,
     coinGeckoPlatformId: 'polygon-pos',
     tokens: [
       Token(
@@ -101,6 +107,7 @@ class SupportedChains {
     endpoint: 'https://bsc-testnet-rpc.publicnode.com',
     coinGeckoId: 'binancecoin',
     decimals: 18,
+    evmChainId: 97,
     coinGeckoPlatformId: 'binance-smart-chain',
   );
 
@@ -113,6 +120,7 @@ class SupportedChains {
     endpoint: 'https://base-sepolia-rpc.publicnode.com',
     coinGeckoId: 'ethereum',
     decimals: 18,
+    evmChainId: 84532,
     coinGeckoPlatformId: 'base',
     tokens: [
       Token(
@@ -135,6 +143,7 @@ class SupportedChains {
     endpoint: 'https://arbitrum-sepolia-rpc.publicnode.com',
     coinGeckoId: 'ethereum',
     decimals: 18,
+    evmChainId: 421614,
     coinGeckoPlatformId: 'arbitrum-one',
     tokens: [
       Token(
@@ -157,6 +166,7 @@ class SupportedChains {
     endpoint: 'https://testnet-rpc.plasma.to',
     coinGeckoId: 'plasma',
     decimals: 18,
+    evmChainId: 9746,
     coinGeckoPlatformId: 'plasma',
   );
 

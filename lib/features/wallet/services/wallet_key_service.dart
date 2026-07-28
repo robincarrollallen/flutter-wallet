@@ -32,7 +32,31 @@ class WalletKeyService {
         throw StateError('缺少助记词');
       }
       // 后台 isolate 现场派生，避免 PBKDF2 种子推导阻塞 UI。
-      return compute(deriveExportKeyInBackground, (mnemonic, chain.id));
+      return compute(derivePrivateKeyInBackground, (mnemonic, chain.id));
+    }
+
+    final privateKey = await _storage.readPrivateKey(wallet.id);
+    if (privateKey == null || privateKey.isEmpty) {
+      throw StateError('缺少私钥');
+    }
+    return privateKey;
+  }
+
+  /// 解析某钱包的 EVM 签名私钥（0x + secp256k1 十六进制）。
+  ///
+  /// 助记词钱包按默认路径现场派生（后台 isolate）；私钥导入钱包直接读取已存
+  /// 的主私钥（本身即 EVM hex）。结果仅供签名一次性使用，用完即弃。
+  Future<String> resolveEvmSigningKey(Wallet wallet) async {
+    if (wallet.hasMnemonic) {
+      final mnemonic = await _storage.readMnemonic(wallet.id);
+      if (mnemonic == null || mnemonic.isEmpty) {
+        throw StateError('缺少助记词');
+      }
+      // 与导出共用同一派生定义：EVM 主链的规范格式即 0x hex，可直接签名。
+      return compute(
+        derivePrivateKeyInBackground,
+        (mnemonic, SupportedChains.ethereumSepolia.id),
+      );
     }
 
     final privateKey = await _storage.readPrivateKey(wallet.id);

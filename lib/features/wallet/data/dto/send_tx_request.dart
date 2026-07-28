@@ -11,7 +11,7 @@ class SendTxRequest {
   final String from;
   final String to;
   final String amount;
-  final int? chainId;
+  final String? chainId;
 
   Map<String, dynamic> toJson() {
     return {

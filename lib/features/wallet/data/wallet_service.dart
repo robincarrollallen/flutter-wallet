@@ -4,13 +4,19 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import 'dto/send_tx_request.dart';
+import 'evm_tx_service.dart';
 import '../domain/account_balance.dart';
 import '../domain/chain.dart';
+import '../domain/wallet.dart';
+import '../services/wallet_key_service.dart';
 
 /// 业务/接口层：按链类型查询真实余额，并提供实时行情。
 /// 余额均走各链**测试网**公共节点 / 浏览器 API；单价走 CoinGecko 主网行情。
 class WalletService {
-  const WalletService();
+  const WalletService({this.keyService});
+
+  /// 签名私钥解析器；发送转账必需，仅查余额/行情的场景可不注入。
+  final WalletKeyService? keyService;
 
   /// 查询某条链上某地址的原生币余额（不含单价，单价由上层 priceProvider 注入）。
   Future<AccountBalance> fetchBalance(Chain chain, String address) async {
@@ -85,19 +91,48 @@ class WalletService {
     }
   }
 
-  /// 发起转账：占位实现（签名/广播尚未接入）。
-  Future<String> sendTransaction(SendTxRequest request) async {
-    final body = request.toJson();
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    return '0xMockTxHashFor_${body['to']}';
+  /// 发起转账：按链类型分发。EVM 已接入真实签名广播；其余链暂未支持。
+  /// [wallet] 用于解析签名私钥（私钥明文仅在本次调用内使用）。
+  /// 返回 (交易哈希, 实际发送金额)——gas 不足自动扣费时实际金额会小于入参。
+  Future<({String hash, String sentAmount})> sendTransaction(
+    SendTxRequest request,
+    Wallet wallet,
+  ) async {
+    final chainId = request.chainId;
+    if (chainId == null) {
+      throw ArgumentError('sendTransaction 缺少 chainId');
+    }
+    final chain = SupportedChains.byId(chainId);
+    switch (chain.kind) {
+      case ChainKind.evm:
+        final keys = keyService;
+        if (keys == null) {
+          throw StateError('WalletService 未注入 WalletKeyService，无法签名');
+        }
+        final privateKey = await keys.resolveEvmSigningKey(wallet);
+        return const EvmTxService().sendNative(
+          chain: chain,
+          privateKeyHex: privateKey,
+          to: request.to,
+          amount: request.amount,
+        );
+      case ChainKind.bitcoin:
+      case ChainKind.solana:
+      case ChainKind.tron:
+      case ChainKind.sui:
+      case ChainKind.aptos:
+        throw UnsupportedError('${chain.name} 转账暂未支持');
+    }
   }
 
   // —— 各链余额查询 —— //
 
   /// EVM：eth_getBalance 返回十六进制 wei。
   Future<BigInt> _evmBalance(Chain chain, String address) async {
-    final result =
-        await _rpcCall(chain.endpoint, 'eth_getBalance', [address, 'latest']);
+    final result = await _rpcCall(chain.endpoint, 'eth_getBalance', [
+      address,
+      'latest',
+    ]);
     return _hexToBigInt(result as String);
   }
 
@@ -136,11 +171,10 @@ class WalletService {
   /// 未激活账户返回 "0"；查询失败按 0 处理。
   Future<BigInt> _suiBalance(Chain chain, String address) async {
     try {
-      final result = await _rpcCall(
-        chain.endpoint,
-        'suix_getBalance',
-        [address, '0x2::sui::SUI'],
-      );
+      final result = await _rpcCall(chain.endpoint, 'suix_getBalance', [
+        address,
+        '0x2::sui::SUI',
+      ]);
       final total = (result as Map)['totalBalance'] as String?;
       return total == null ? BigInt.zero : BigInt.parse(total);
     } catch (_) {
@@ -165,17 +199,24 @@ class WalletService {
   // —— 网络工具 —— //
 
   Future<Object?> _rpcCall(
-      String url, String method, List<Object?> params) async {
+    String url,
+    String method,
+    List<Object?> params,
+  ) async {
     final client = HttpClient();
     try {
       final request = await client.postUrl(Uri.parse(url));
       request.headers.contentType = ContentType.json;
-      request.add(utf8.encode(jsonEncode({
-        'jsonrpc': '2.0',
-        'id': 1,
-        'method': method,
-        'params': params,
-      })));
+      request.add(
+        utf8.encode(
+          jsonEncode({
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': method,
+            'params': params,
+          }),
+        ),
+      );
       final response = await request.close();
       final body = await response.transform(utf8.decoder).join();
       final json = jsonDecode(body) as Map<String, dynamic>;
@@ -189,7 +230,10 @@ class WalletService {
   }
 
   /// 纯 REST POST（非 JSON-RPC 信封），返回解码后的 JSON 对象。供 Tron 使用。
-  Future<Map<String, dynamic>> _postJson(String url, Map<String, Object?> body) async {
+  Future<Map<String, dynamic>> _postJson(
+    String url,
+    Map<String, Object?> body,
+  ) async {
     final client = HttpClient();
     try {
       final request = await client.postUrl(Uri.parse(url));

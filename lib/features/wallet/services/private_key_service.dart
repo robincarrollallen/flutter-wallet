@@ -94,7 +94,6 @@ class PrivateKeyService {
     }
     return DerivedWallet(
       addresses: addresses,
-      primaryAddress: evmAddr,
       primaryPrivateKey: '0x${hex.toLowerCase()}',
     );
   }
@@ -111,7 +110,6 @@ class PrivateKeyService {
     );
     return DerivedWallet(
       addresses: {chain.id: addr},
-      primaryAddress: addr,
       // 保存用户原始 base58 私钥，便于导出/签名时原样取回。
       primaryPrivateKey: s,
     );
@@ -137,7 +135,6 @@ class PrivateKeyService {
     );
     return DerivedWallet(
       addresses: {chain.id: addr},
-      primaryAddress: addr,
       primaryPrivateKey: s,
     );
   }

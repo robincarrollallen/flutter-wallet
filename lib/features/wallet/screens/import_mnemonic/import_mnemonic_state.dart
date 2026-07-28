@@ -104,12 +104,12 @@ class ImportMnemonicNotifier extends Notifier<ImportMnemonicState> {
       backupMethods: const {BackupMethod.manual}, // 导入钱包视为用户已掌握密钥。
     );
 
-    // 私钥 /（助记词）写入安全存储（Keychain / Keystore），不进入状态。
-    // 私钥导入的钱包没有助记词，mnemonic 传 null 不写入。
+    // 敏感数据写入安全存储（Keychain / Keystore），不进入状态。
+    // 私钥导入：只存私钥；助记词导入：只存助记词（私钥按需现场派生，不预存）。
     await ref.read(secureWalletStorageProvider).saveSecrets(
           walletId: wallet.id,
           mnemonic: isPrivateKey ? null : normalized,
-          privateKey: derived.primaryPrivateKey,
+          privateKey: isPrivateKey ? derived.primaryPrivateKey : null,
         );
 
     ref.read(walletListProvider.notifier).add(wallet);

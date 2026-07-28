@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../../core/responsive/screen_adapter.dart';
 import '../../i18n/translations.g.dart';
 import 'appearance_view.dart';
-import 'debug_storage_view.dart';
 import 'theme_colors_view.dart';
 
 /// 设置面板：从屏幕顶部下滑进入的全屏毛玻璃覆盖层。
@@ -91,19 +90,6 @@ class SettingsPanel extends StatelessWidget {
                     _SettingsTile(
                       icon: Icons.info_outline,
                       title: t.settings.about,
-                    ),
-                    // 调试入口：查看已持久化的全部钱包原始数据。
-                    _SettingsTile(
-                      icon: Icons.storage,
-                      title: '存储数据（调试）',
-                      onTap: () {
-                        // 设置是普通页面而非抽屉，跳转子页面时不关闭它，返回后仍停留在设置。
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const DebugStorageScreen(),
-                          ),
-                        );
-                      },
                     ),
                     // 调试入口：查看当前主题所有颜色及对应变量。
                     _SettingsTile(

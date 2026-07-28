@@ -11,6 +11,7 @@ import '../../../domain/wallet.dart';
 import '../../../domain/wallet_avatar.dart';
 import '../../address_management/address_management_view.dart';
 import '../../receive/view.dart';
+import '../../send/coins/view.dart';
 import '../../wallet_management/view.dart';
 
 /// 顶部「总资产」卡片：展示当前选中钱包按币种折算后的跨链法币总价值。
@@ -129,9 +130,25 @@ class TotalAssetsCard extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  const _ActionButton(
+                  _ActionButton(
                     icon: Icons.arrow_upward_rounded,
                     label: '发送',
+                    onTap: () => Navigator.of(context).push(
+                      PageRouteBuilder(
+                        fullscreenDialog: true,
+                        pageBuilder: (_, _, _) => const SendScreen(),
+                        transitionsBuilder: (_, animation, _, child) =>
+                            SlideTransition(
+                          position: animation.drive(
+                            Tween(
+                              begin: const Offset(0, 1),
+                              end: Offset.zero,
+                            ).chain(CurveTween(curve: Curves.easeOutCubic)),
+                          ),
+                          child: child,
+                        ),
+                      ),
+                    ),
                   ),
                   _ActionButton(
                     icon: Icons.arrow_downward_rounded,
@@ -173,7 +190,7 @@ class _ActionButton extends StatelessWidget {
     final onColor = theme.colorScheme.onPrimaryContainer;
     return InkWell(
       borderRadius: BorderRadius.circular(24.s),
-      onTap: onTap, // 发送/历史/更多逻辑待补；接收已接入
+      onTap: onTap, // 历史/更多逻辑待补；发送/接收已接入
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 8.s, vertical: 4.s),
         child: Column(

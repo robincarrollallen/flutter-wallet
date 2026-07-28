@@ -68,11 +68,11 @@ class CreateWalletNotifier extends Notifier<CreateWalletState> {
         createdAt: DateTime.now(),
       );
 
-      // 助记词 / 私钥写入安全存储（Keychain / Keystore），不进入状态。
+      // 助记词写入安全存储（Keychain / Keystore），不进入状态；
+      // 私钥不预存，签名/导出时由助记词按需现场派生。
       await ref.read(secureWalletStorageProvider).saveSecrets(
             walletId: wallet.id,
             mnemonic: mnemonic,
-            privateKey: derived.primaryPrivateKey,
           );
 
       ref.read(walletListProvider.notifier).add(wallet);

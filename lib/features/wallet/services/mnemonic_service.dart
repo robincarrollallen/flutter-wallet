@@ -24,67 +24,40 @@ class MnemonicService {
   static String deriveEthAddress(String mnemonic) =>
       _deriveDefault(mnemonic).publicKey.toAddress;
 
-  /// 由助记词派生以太坊首账户的私钥（BIP44 默认路径），返回 0x 前缀的十六进制字符串。
-  /// 注意：私钥为高度敏感数据，仅可写入安全存储，切勿放入状态或日志。
-  static String derivePrivateKey(String mnemonic) =>
-      _formatPrivateKey(_deriveDefault(mnemonic).privateKey.raw);
-
-  /// 一次性派生地址 + 私钥（只跑一次重运算，避免重复推导种子）。
-  static DerivedAccount deriveAccount(String mnemonic) {
-    final account = _deriveDefault(mnemonic);
-    return DerivedAccount(
-      address: account.publicKey.toAddress,
-      privateKey: _formatPrivateKey(account.privateKey.raw),
-    );
-  }
-
-  /// 一次性派生「全部受支持链」的地址 + 以太坊主私钥。
-  /// 种子只从助记词推导一次，再按各币种派生，避免重复重运算。
+  /// 一次性派生「全部受支持链」的地址，种子只从助记词推导一次。
   static DerivedWallet deriveWallet(String mnemonic) {
-    final seed = Bip39SeedGenerator(Mnemonic.fromString(mnemonic)).generate();
+    final seed = _seedFromMnemonic(mnemonic); // 根据助记词推导出二进制种子
 
-    // 先按去重后的币种各派生一次（EVM 多链共用同一地址）。
-    final addressByCoin = <Bip44Coins, String>{};
-    final pkByCoin = <Bip44Coins, String>{};
+    final addressByCoin = <Bip44Coins, String>{}; // 缓存地址容器
+    // 遍历所有支持的币种(distinctCoins已去重)，派生地址
     for (final coin in SupportedChains.distinctCoins) {
-      final acct = Bip44.fromSeed(seed, coin).deriveDefaultPath;
-      addressByCoin[coin] = acct.publicKey.toAddress;
-      pkByCoin[coin] = _formatPrivateKey(acct.privateKey.raw);
+      final acct = _derive(seed, coin); // 根据种子和币种派生出账户
+      addressByCoin[coin] = acct.publicKey.toAddress; // 缓存地址
     }
 
-    // 映射成 chainId -> address。
+    // 映射成 chainId -> address（coin币种有相同值，所以使用chainId映射）
     final addresses = <String, String>{
       for (final chain in SupportedChains.all)
         chain.id: addressByCoin[chain.coin]!,
     };
 
-    final eth = SupportedChains.ethereumSepolia.coin;
-    return DerivedWallet(
-      addresses: addresses,
-      primaryAddress: addressByCoin[eth]!,
-      primaryPrivateKey: pkByCoin[eth]!,
-    );
+    return DerivedWallet(addresses: addresses);
   }
 
-  /// 由助记词按某条链的币种现场派生「可导出/可回导」的私钥字符串。
-  ///
-  /// 不同链私钥的规范可移植格式不同，按 [Chain.kind] 分别编码：
+  /// 助记词 → 某链私钥<按 [Chain.kind] 分别编码>(EVM 的 0x hex 可直接用于交易签名): 签名与导出场景共用
   /// - EVM / Tron：`0x` + secp256k1 十六进制；
   /// - Solana：base58（64 字节 = 32 字节私钥 + 32 字节公钥，兼容 Phantom 等）；
   /// - Sui：`suiprivkey1…` bech32（首字节 0x00 = ed25519 方案，与导入解码对称）；
   /// - Bitcoin：WIF（testnet 版本字节由币种配置自动带上）；
   /// - Aptos：`0x` + ed25519 十六进制。
-  ///
-  /// 仅在导出场景按需调用，结果为敏感明文，切勿写入状态 / 日志 / 持久化。
-  static String deriveExportKey(String mnemonic, Chain chain) {
-    final seed = Bip39SeedGenerator(Mnemonic.fromString(mnemonic)).generate();
-    final acct = Bip44.fromSeed(seed, chain.coin).deriveDefaultPath;
-    final raw = acct.privateKey.raw;
+  static String derivePrivateKey(String mnemonic, Chain chain) {
+    final seed = _seedFromMnemonic(mnemonic); // 根据助记词推导出二进制种子词
+    final acct = _derive(seed, chain.coin); // 根据种子词 + 链原生币标识派生出BIP44 账户
+    final raw = acct.privateKey.raw; // 原始私钥的字节数组
 
     return switch (chain.kind) {
       ChainKind.evm || ChainKind.tron => _formatPrivateKey(raw),
       ChainKind.aptos => _formatPrivateKey(raw),
-      // 公钥 compressed 首字节为 0x00 前缀，去掉得纯 32 字节公钥。
       ChainKind.solana => Base58Encoder.encode(
           [...raw, ...acct.publicKey.compressed.sublist(1)],
         ),
@@ -93,49 +66,46 @@ class MnemonicService {
     };
   }
 
+  /// 格式化私钥为 0x 前缀的十六进制字符串(EVM/TRON/APTOS)。
   static String _formatPrivateKey(List<int> raw) =>
       '0x${BytesUtils.toHexString(raw)}';
 
+  /// 统一助记词 -> seed 二进制种子词推导入口，避免多处重复，后续支持 passphrase 时只改一处。
+  static List<int> _seedFromMnemonic(String mnemonic) =>
+      Bip39SeedGenerator(Mnemonic.fromString(mnemonic)).generate();
+
+  /// 种子 + 链原生币标识 -> 该币种默认路径的 BIP44 账户，全部地址派生统一入口。
+  static Bip44 _derive(List<int> seed, Bip44Coins coin) =>
+      Bip44.fromSeed(seed, coin).deriveDefaultPath;
+
+  /// 助记词 -> 以太坊默认账户（EVM 快捷入口）。
   static Bip44 _deriveDefault(String mnemonic) {
-    final seed = Bip39SeedGenerator(Mnemonic.fromString(mnemonic)).generate();
-    return Bip44.fromSeed(seed, Bip44Coins.ethereum).deriveDefaultPath;
+    final seed = _seedFromMnemonic(mnemonic); // 根据助记词推导出二进制种子
+    return _derive(seed, Bip44Coins.ethereum);
   }
 }
 
-/// 多链派生结果：各链地址 + 以太坊主账户私钥（用于安全存储）。
+/// 多链派生结果：各链地址（+ 私钥导入场景的主私钥）。
 class DerivedWallet {
   const DerivedWallet({
     required this.addresses,
-    required this.primaryAddress,
-    required this.primaryPrivateKey,
+    this.primaryPrivateKey,
   });
 
-  /// chainId -> 该链地址。
-  final Map<String, String> addresses;
-  final String primaryAddress;
-  final String primaryPrivateKey;
+  final Map<String, String> addresses; // chainId -> 该链地址。
+  final String? primaryPrivateKey; // 主私钥，仅私钥导入钱包需要（无助记词，签名/导出只能靠已存私钥; 助记词派生（deriveWallet）为 null——私钥一律按需现场重派生，不预存。
+
+  /// 主地址（私钥导入钱包）：优先取 EVM 主链地址；
+  /// 非 EVM 私钥导入时 map 只有该链一项，取其唯一地址。
+  String get primaryAddress =>
+      addresses[SupportedChains.ethereumSepolia.id] ?? addresses.values.first;
 }
 
-/// compute() 顶层入口：在后台 isolate 派生全部链地址。
+/// 在后台 isolate 派生全部链地址（compute 顶层入口）
 DerivedWallet deriveWalletInBackground(String mnemonic) =>
     MnemonicService.deriveWallet(mnemonic);
 
-/// compute() 顶层入口：在后台 isolate 由助记词派生某条链的可导出私钥。
-///
-/// 入参为 (助记词, chainId)：避免把含 Token 列表的 [Chain] 跨 isolate 传输，
-/// 在 isolate 内经 [SupportedChains.byId] 还原为 Chain。
-String deriveExportKeyInBackground((String, String) args) =>
-    MnemonicService.deriveExportKey(args.$1, SupportedChains.byId(args.$2));
-
-/// 派生结果：以太坊首账户的地址与私钥。
-class DerivedAccount {
-  const DerivedAccount({required this.address, required this.privateKey});
-
-  final String address;
-  final String privateKey;
-}
-
-/// compute() 的顶层入口：在后台 isolate 执行重运算（PBKDF2 种子推导 + BIP44 派生），
-/// 避免阻塞 UI 线程。必须是顶层/静态函数才能被 compute 调用。
-DerivedAccount deriveAccountInBackground(String mnemonic) =>
-    MnemonicService.deriveAccount(mnemonic);
+/// 由助记词派生某条链的私钥<签名/导出共用>（compute 顶层入口）
+/// 入参为 (助记词, chainId)：避免把含 Token 列表的 [Chain] 跨 isolate 传输（经[SupportedChains.byId] 还原为 Chain）
+String derivePrivateKeyInBackground((String, String) args) =>
+    MnemonicService.derivePrivateKey(args.$1, SupportedChains.byId(args.$2));

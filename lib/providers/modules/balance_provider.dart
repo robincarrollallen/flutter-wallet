@@ -6,13 +6,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/wallet/domain/account_balance.dart';
 import '../../features/wallet/domain/chain.dart';
 import '../../features/wallet/domain/wallet.dart';
+import '../../features/wallet/data/evm_tx_service.dart';
 import '../../features/wallet/data/wallet_service.dart';
+import '../../features/wallet/services/wallet_key_service.dart';
 import '../prefs_provider.dart';
 import 'wallet_provider.dart';
 
 /// 单例 service，供各 provider 注入使用。
+/// 注入 WalletKeyService 供转账签名解析私钥（UI 层不接触私钥）。
 final walletServiceProvider = Provider<WalletService>(
-  (ref) => const WalletService(),
+  (ref) => WalletService(keyService: ref.read(walletKeyServiceProvider)),
+);
+
+/// chainId -> EVM 原生转账的预估费用上限（wei）。
+/// autoDispose：仅发送流程使用，进确认页才查、离开即弃，不常驻缓存。
+final evmFeeProvider = FutureProvider.autoDispose.family<BigInt, String>(
+  (ref, chainId) =>
+      const EvmTxService().estimateNativeFee(SupportedChains.byId(chainId)),
 );
 
 /// 行情类型别名：coinGeckoId -> (美元单价, 图标 URL)。
@@ -36,17 +46,15 @@ const _marketsTtl = Duration(minutes: 5);
 final marketsProvider = FutureProvider<Markets>((ref) async {
   ref.keepAlive();
   final prefs = ref.watch(sharedPrefsProvider);
-  
 
   final (cached, cachedAt) = _readCache(prefs);
-  if (cached != null &&
-      DateTime.now().difference(cachedAt!) < _marketsTtl) {
+  if (cached != null && DateTime.now().difference(cachedAt!) < _marketsTtl) {
     return cached;
   }
 
   final service = ref.watch(walletServiceProvider);
   // 原生币 + 代币的 coinGeckoId 一起拉，代币图标（如 USDC）才有 logo，去重避免重复请求。
-  
+
   final ids = {
     ...SupportedChains.all.map((c) => c.coinGeckoId),
     ...SupportedChains.allTokens.map((e) => e.$2.coinGeckoId),
