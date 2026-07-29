@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../core/constants/currency_symbols.dart';
 import 'dto/send_tx_request.dart';
 import 'evm_tx_service.dart';
 import '../domain/account_balance.dart';
@@ -14,6 +15,7 @@ import '../services/wallet_key_service.dart';
 /// 余额均走各链**测试网**公共节点 / 浏览器 API；单价走 CoinGecko 主网行情。
 class WalletService {
   const WalletService({this.keyService});
+  static int _nextRpcRequestId = 0;
 
   /// 签名私钥解析器；发送转账必需，仅查余额/行情的场景可不注入。
   final WalletKeyService? keyService;
@@ -21,12 +23,13 @@ class WalletService {
   /// 查询某条链上某地址的原生币余额（不含单价，单价由上层 priceProvider 注入）。
   Future<AccountBalance> fetchBalance(Chain chain, String address) async {
     final raw = switch (chain.kind) {
-      ChainKind.evm => await _evmBalance(chain, address),
-      ChainKind.solana => await _solanaBalance(chain, address),
+      ChainKind.evm || ChainKind.solana || ChainKind.sui => await _rpcNativeBalance(
+        chain,
+        address,
+      ),
       ChainKind.bitcoin => await _bitcoinBalance(chain, address),
-      // Tron / Sui / Aptos 原生币余额查询（代币查询另见 tokens，暂未接入）。
+      // Tron / Aptos 原生币余额查询（代币查询另见 tokens，暂未接入）。
       ChainKind.tron => await _tronBalance(chain, address),
-      ChainKind.sui => await _suiBalance(chain, address),
       ChainKind.aptos => await _aptosBalance(chain, address),
     };
     return AccountBalance(
@@ -36,21 +39,27 @@ class WalletService {
     );
   }
 
-  /// 批量查询多个 CoinGecko 币种的行情：coinGeckoId -> (美元单价, 图标 URL)。
+  /// 批量查询多个 CoinGecko 币种的行情：coinGeckoId -> (单价, 图标 URL)。
   /// 一次 coins/markets 请求同时取回价格与图标，替代旧的 simple/price。
-  Future<Map<String, ({double usd, String? logoUrl})>> fetchMarkets(
-    Iterable<String> coinGeckoIds,
-  ) async {
+  ///
+  /// [vsCurrency] 为计价法币代码（大小写不限，如 'USD' / 'CNY'），
+  /// 由接口原生按该币种返回价格，不做本地汇率换算；
+  /// 传入接口不支持的币种会拿到空数组，等同一次失败。
+  Future<Map<String, ({double price, String? logoUrl})>> fetchMarkets(
+    Iterable<String> coinGeckoIds, {
+    String vsCurrency = defaultCurrencyCode,
+  }) async {
     final ids = coinGeckoIds.toSet().join(',');
     final uri = Uri.parse(
-      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=$ids',
+      'https://api.coingecko.com/api/v3/coins/markets'
+      '?vs_currency=${vsCurrency.toLowerCase()}&ids=$ids',
     );
     try {
       final list = await _getJsonArray(uri);
       return {
         for (final item in list.whereType<Map>())
           item['id'] as String: (
-            usd: (item['current_price'] as num?)?.toDouble() ?? 0,
+            price: (item['current_price'] as num?)?.toDouble() ?? 0,
             logoUrl: item['image'] as String?,
           ),
       };
@@ -127,20 +136,37 @@ class WalletService {
 
   // —— 各链余额查询 —— //
 
-  /// EVM：eth_getBalance 返回十六进制 wei。
-  Future<BigInt> _evmBalance(Chain chain, String address) async {
-    final result = await _rpcCall(chain.endpoint, 'eth_getBalance', [
-      address,
-      'latest',
-    ]);
-    return _hexToBigInt(result as String);
-  }
-
-  /// Solana：getBalance 返回 lamports（result.value）。
-  Future<BigInt> _solanaBalance(Chain chain, String address) async {
-    final result = await _rpcCall(chain.endpoint, 'getBalance', [address]);
-    final lamports = (result as Map)['value'] as num? ?? 0;
-    return BigInt.from(lamports);
+  /// JSON-RPC 链（EVM/Solana/Sui）的原生币余额查询。
+  Future<BigInt> _rpcNativeBalance(Chain chain, String address) async {
+    final method = chain.nativeBalanceRpcMethod;
+    if (method == null) {
+      throw StateError('${chain.name} 未配置 nativeBalanceRpcMethod');
+    }
+    return switch (method) {
+      RpcMethod.ethGetBalance => () async {
+        final result = await _rpcCall(chain.endpoint, method.wireName, [
+          address,
+          'latest',
+        ]);
+        return _hexToBigInt(result as String);
+      }(),
+      RpcMethod.solGetBalance => () async {
+        final result = await _rpcCall(chain.endpoint, method.wireName, [address]);
+        return BigInt.from(((result as Map)['value'] as num?) ?? 0);
+      }(),
+      RpcMethod.suiGetBalance => () async {
+        try {
+          final result = await _rpcCall(chain.endpoint, method.wireName, [
+            address,
+            '0x2::sui::SUI',
+          ]);
+          final total = (result as Map)['totalBalance'] as String?;
+          return total == null ? BigInt.zero : BigInt.parse(total);
+        } catch (_) {
+          return BigInt.zero;
+        }
+      }(),
+    };
   }
 
   /// Bitcoin：浏览器 API 返回已收到/已花费的聪，差值即余额。
@@ -167,21 +193,6 @@ class WalletService {
     }
   }
 
-  /// Sui：JSON-RPC suix_getBalance，result.totalBalance 为字符串（单位 MIST，1e9）。
-  /// 未激活账户返回 "0"；查询失败按 0 处理。
-  Future<BigInt> _suiBalance(Chain chain, String address) async {
-    try {
-      final result = await _rpcCall(chain.endpoint, 'suix_getBalance', [
-        address,
-        '0x2::sui::SUI',
-      ]);
-      final total = (result as Map)['totalBalance'] as String?;
-      return total == null ? BigInt.zero : BigInt.parse(total);
-    } catch (_) {
-      return BigInt.zero;
-    }
-  }
-
   /// Aptos：REST GET .../balance/0x1::aptos_coin::AptosCoin，响应体为标量数字
   /// （单位 octa，1e8）。账户不存在时返回 404，按 0 处理。
   Future<BigInt> _aptosBalance(Chain chain, String address) async {
@@ -203,6 +214,7 @@ class WalletService {
     String method,
     List<Object?> params,
   ) async {
+    final requestId = ++_nextRpcRequestId;
     final client = HttpClient();
     try {
       final request = await client.postUrl(Uri.parse(url));
@@ -211,7 +223,7 @@ class WalletService {
         utf8.encode(
           jsonEncode({
             'jsonrpc': '2.0',
-            'id': 1,
+            'id': requestId,
             'method': method,
             'params': params,
           }),
@@ -220,6 +232,9 @@ class WalletService {
       final response = await request.close();
       final body = await response.transform(utf8.decoder).join();
       final json = jsonDecode(body) as Map<String, dynamic>;
+      if (json['id'] != requestId) {
+        throw Exception('RPC id mismatch: expected $requestId, got ${json['id']}');
+      }
       if (json['error'] != null) {
         throw Exception('RPC error: ${json['error']}');
       }

@@ -1,9 +1,12 @@
 /// 把数值格式化为带千分位的金额文案。纯函数,与 UI/状态无关。
 ///
 /// - [showSymbol]：是否前置货币符号 [symbol]。
+/// - [symbol]：货币符号。调用方自行传入当前法币的符号
+///   （UI 层用 AmountText / currencySymbolProvider 即可自动带上）。
 /// - [decimals]：保留小数位数（0 表示不带小数）。
 ///
 /// 例：formatAmount(4321.5) -> "$4,321.50"；
+///     formatAmount(4321.5, symbol: '¥') -> "¥4,321.50"；
 ///     formatAmount(4321.5, showSymbol: false, decimals: 0) -> "4,322"。
 String formatAmount(
   double value, {

@@ -43,6 +43,55 @@ class TranslationsZh extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$tabs$zh tabs = _Translations$tabs$zh._(_root);
 	@override late final _Translations$home$zh home = _Translations$home$zh._(_root);
 	@override late final _Translations$settings$zh settings = _Translations$settings$zh._(_root);
+	@override late final _Translations$currency$zh currency = _Translations$currency$zh._(_root);
+	@override Map<String, String> get currencyNames => {
+		'USD': '美元',
+		'EUR': '欧元',
+		'GBP': '英镑',
+		'JPY': '日元',
+		'CNY': '人民币',
+		'HKD': '港币',
+		'TWD': '新台币',
+		'KRW': '韩元',
+		'AUD': '澳元',
+		'NZD': '新西兰元',
+		'CAD': '加元',
+		'SGD': '新加坡元',
+		'PHP': '菲律宾比索',
+		'THB': '泰铢',
+		'VND': '越南盾',
+		'INR': '印度卢比',
+		'IDR': '印尼盾',
+		'MYR': '马来西亚林吉特',
+		'BDT': '孟加拉塔卡',
+		'PKR': '巴基斯坦卢比',
+		'LKR': '斯里兰卡卢比',
+		'MMK': '缅甸元',
+		'BRL': '巴西雷亚尔',
+		'MXN': '墨西哥比索',
+		'ARS': '阿根廷比索',
+		'CLP': '智利比索',
+		'BMD': '百慕大元',
+		'VEF': '委内瑞拉玻利瓦尔',
+		'CHF': '瑞士法郎',
+		'SEK': '瑞典克朗',
+		'NOK': '挪威克朗',
+		'DKK': '丹麦克朗',
+		'PLN': '波兰兹罗提',
+		'CZK': '捷克克朗',
+		'HUF': '匈牙利福林',
+		'RUB': '俄罗斯卢布',
+		'UAH': '乌克兰格里夫纳',
+		'GEL': '格鲁吉亚拉里',
+		'TRY': '土耳其里拉',
+		'ILS': '以色列新谢克尔',
+		'AED': '阿联酋迪拉姆',
+		'SAR': '沙特里亚尔',
+		'KWD': '科威特第纳尔',
+		'BHD': '巴林第纳尔',
+		'NGN': '尼日利亚奈拉',
+		'ZAR': '南非兰特',
+	};
 	@override late final _Translations$search$zh search = _Translations$search$zh._(_root);
 	@override late final _Translations$scan$zh scan = _Translations$scan$zh._(_root);
 	@override late final _Translations$balance$zh balance = _Translations$balance$zh._(_root);
@@ -94,6 +143,17 @@ class _Translations$settings$zh extends Translations$settings$en {
 	@override String get general => '通用';
 	@override String get security => '安全';
 	@override String get about => '关于';
+}
+
+// Path: currency
+class _Translations$currency$zh extends Translations$currency$en {
+	_Translations$currency$zh._(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => '计价货币';
+	@override String get searchHint => '搜索币种';
 }
 
 // Path: search
@@ -291,6 +351,54 @@ extension on TranslationsZh {
 			'settings.general' => '通用',
 			'settings.security' => '安全',
 			'settings.about' => '关于',
+			'currency.title' => '计价货币',
+			'currency.searchHint' => '搜索币种',
+			'currencyNames.USD' => '美元',
+			'currencyNames.EUR' => '欧元',
+			'currencyNames.GBP' => '英镑',
+			'currencyNames.JPY' => '日元',
+			'currencyNames.CNY' => '人民币',
+			'currencyNames.HKD' => '港币',
+			'currencyNames.TWD' => '新台币',
+			'currencyNames.KRW' => '韩元',
+			'currencyNames.AUD' => '澳元',
+			'currencyNames.NZD' => '新西兰元',
+			'currencyNames.CAD' => '加元',
+			'currencyNames.SGD' => '新加坡元',
+			'currencyNames.PHP' => '菲律宾比索',
+			'currencyNames.THB' => '泰铢',
+			'currencyNames.VND' => '越南盾',
+			'currencyNames.INR' => '印度卢比',
+			'currencyNames.IDR' => '印尼盾',
+			'currencyNames.MYR' => '马来西亚林吉特',
+			'currencyNames.BDT' => '孟加拉塔卡',
+			'currencyNames.PKR' => '巴基斯坦卢比',
+			'currencyNames.LKR' => '斯里兰卡卢比',
+			'currencyNames.MMK' => '缅甸元',
+			'currencyNames.BRL' => '巴西雷亚尔',
+			'currencyNames.MXN' => '墨西哥比索',
+			'currencyNames.ARS' => '阿根廷比索',
+			'currencyNames.CLP' => '智利比索',
+			'currencyNames.BMD' => '百慕大元',
+			'currencyNames.VEF' => '委内瑞拉玻利瓦尔',
+			'currencyNames.CHF' => '瑞士法郎',
+			'currencyNames.SEK' => '瑞典克朗',
+			'currencyNames.NOK' => '挪威克朗',
+			'currencyNames.DKK' => '丹麦克朗',
+			'currencyNames.PLN' => '波兰兹罗提',
+			'currencyNames.CZK' => '捷克克朗',
+			'currencyNames.HUF' => '匈牙利福林',
+			'currencyNames.RUB' => '俄罗斯卢布',
+			'currencyNames.UAH' => '乌克兰格里夫纳',
+			'currencyNames.GEL' => '格鲁吉亚拉里',
+			'currencyNames.TRY' => '土耳其里拉',
+			'currencyNames.ILS' => '以色列新谢克尔',
+			'currencyNames.AED' => '阿联酋迪拉姆',
+			'currencyNames.SAR' => '沙特里亚尔',
+			'currencyNames.KWD' => '科威特第纳尔',
+			'currencyNames.BHD' => '巴林第纳尔',
+			'currencyNames.NGN' => '尼日利亚奈拉',
+			'currencyNames.ZAR' => '南非兰特',
 			'search.title' => '搜索',
 			'search.hint' => '搜索代币、地址或交易',
 			'search.empty' => '输入关键词开始搜索',

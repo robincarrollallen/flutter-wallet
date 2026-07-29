@@ -70,7 +70,7 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
         : ref.watch(balanceProvider((asset.chain.id, address)));
     final balance = balanceAsync?.value?.amount ?? '0';
     // 法币折算：余额查询里已带实时单价。
-    final priceUsd = balanceAsync?.value?.priceUsd ?? 0;
+    final price = balanceAsync?.value?.price ?? 0;
     final inputValue = double.tryParse(_controller.text.trim()) ?? 0;
 
     return Scaffold(
@@ -132,7 +132,7 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
                     SizedBox(height: 8.s),
                     // —— 输入金额的法币折算 —— //
                     AmountText(
-                      inputValue * priceUsd,
+                      inputValue * price,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

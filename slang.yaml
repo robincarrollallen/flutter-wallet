@@ -6,3 +6,8 @@ output_file_name: translations.g.dart
 flutter_integration: true
 fallback_strategy: base_locale
 string_interpolation: braces
+
+# 按 Map 而非嵌套类生成：键是 ISO 4217 代码，需按币种代码动态查名，
+# 且 TRY 等代码与 Dart 关键字冲突，生成不了合法字段名。
+maps:
+  - currencyNames

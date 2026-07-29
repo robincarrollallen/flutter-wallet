@@ -47,6 +47,55 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$tabs$en tabs = Translations$tabs$en.internal(_root);
 	late final Translations$home$en home = Translations$home$en.internal(_root);
 	late final Translations$settings$en settings = Translations$settings$en.internal(_root);
+	late final Translations$currency$en currency = Translations$currency$en.internal(_root);
+	Map<String, String> get currencyNames => {
+		'USD': 'United States Dollar',
+		'EUR': 'Euro',
+		'GBP': 'British Pound',
+		'JPY': 'Japanese Yen',
+		'CNY': 'Chinese Yuan',
+		'HKD': 'Hong Kong Dollar',
+		'TWD': 'New Taiwan Dollar',
+		'KRW': 'South Korean Won',
+		'AUD': 'Australian Dollar',
+		'NZD': 'New Zealand Dollar',
+		'CAD': 'Canadian Dollar',
+		'SGD': 'Singapore Dollar',
+		'PHP': 'Philippine Peso',
+		'THB': 'Thai Baht',
+		'VND': 'Vietnamese Dong',
+		'INR': 'Indian Rupee',
+		'IDR': 'Indonesian Rupiah',
+		'MYR': 'Malaysian Ringgit',
+		'BDT': 'Bangladeshi Taka',
+		'PKR': 'Pakistani Rupee',
+		'LKR': 'Sri Lankan Rupee',
+		'MMK': 'Myanmar Kyat',
+		'BRL': 'Brazilian Real',
+		'MXN': 'Mexican Peso',
+		'ARS': 'Argentine Peso',
+		'CLP': 'Chilean Peso',
+		'BMD': 'Bermudian Dollar',
+		'VEF': 'Venezuelan Bolívar',
+		'CHF': 'Swiss Franc',
+		'SEK': 'Swedish Krona',
+		'NOK': 'Norwegian Krone',
+		'DKK': 'Danish Krone',
+		'PLN': 'Polish Zloty',
+		'CZK': 'Czech Koruna',
+		'HUF': 'Hungarian Forint',
+		'RUB': 'Russian Ruble',
+		'UAH': 'Ukrainian Hryvnia',
+		'GEL': 'Georgian Lari',
+		'TRY': 'Turkish Lira',
+		'ILS': 'Israeli New Shekel',
+		'AED': 'UAE Dirham',
+		'SAR': 'Saudi Riyal',
+		'KWD': 'Kuwaiti Dinar',
+		'BHD': 'Bahraini Dinar',
+		'NGN': 'Nigerian Naira',
+		'ZAR': 'South African Rand',
+	};
 	late final Translations$search$en search = Translations$search$en.internal(_root);
 	late final Translations$scan$en scan = Translations$scan$en.internal(_root);
 	late final Translations$balance$en balance = Translations$balance$en.internal(_root);
@@ -132,6 +181,21 @@ class Translations$settings$en {
 
 	/// en: 'About'
 	String get about => 'About';
+}
+
+// Path: currency
+class Translations$currency$en {
+	Translations$currency$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Currency'
+	String get title => 'Currency';
+
+	/// en: 'Search currency'
+	String get searchHint => 'Search currency';
 }
 
 // Path: search
@@ -425,6 +489,54 @@ extension on Translations {
 			'settings.general' => 'General',
 			'settings.security' => 'Security',
 			'settings.about' => 'About',
+			'currency.title' => 'Currency',
+			'currency.searchHint' => 'Search currency',
+			'currencyNames.USD' => 'United States Dollar',
+			'currencyNames.EUR' => 'Euro',
+			'currencyNames.GBP' => 'British Pound',
+			'currencyNames.JPY' => 'Japanese Yen',
+			'currencyNames.CNY' => 'Chinese Yuan',
+			'currencyNames.HKD' => 'Hong Kong Dollar',
+			'currencyNames.TWD' => 'New Taiwan Dollar',
+			'currencyNames.KRW' => 'South Korean Won',
+			'currencyNames.AUD' => 'Australian Dollar',
+			'currencyNames.NZD' => 'New Zealand Dollar',
+			'currencyNames.CAD' => 'Canadian Dollar',
+			'currencyNames.SGD' => 'Singapore Dollar',
+			'currencyNames.PHP' => 'Philippine Peso',
+			'currencyNames.THB' => 'Thai Baht',
+			'currencyNames.VND' => 'Vietnamese Dong',
+			'currencyNames.INR' => 'Indian Rupee',
+			'currencyNames.IDR' => 'Indonesian Rupiah',
+			'currencyNames.MYR' => 'Malaysian Ringgit',
+			'currencyNames.BDT' => 'Bangladeshi Taka',
+			'currencyNames.PKR' => 'Pakistani Rupee',
+			'currencyNames.LKR' => 'Sri Lankan Rupee',
+			'currencyNames.MMK' => 'Myanmar Kyat',
+			'currencyNames.BRL' => 'Brazilian Real',
+			'currencyNames.MXN' => 'Mexican Peso',
+			'currencyNames.ARS' => 'Argentine Peso',
+			'currencyNames.CLP' => 'Chilean Peso',
+			'currencyNames.BMD' => 'Bermudian Dollar',
+			'currencyNames.VEF' => 'Venezuelan Bolívar',
+			'currencyNames.CHF' => 'Swiss Franc',
+			'currencyNames.SEK' => 'Swedish Krona',
+			'currencyNames.NOK' => 'Norwegian Krone',
+			'currencyNames.DKK' => 'Danish Krone',
+			'currencyNames.PLN' => 'Polish Zloty',
+			'currencyNames.CZK' => 'Czech Koruna',
+			'currencyNames.HUF' => 'Hungarian Forint',
+			'currencyNames.RUB' => 'Russian Ruble',
+			'currencyNames.UAH' => 'Ukrainian Hryvnia',
+			'currencyNames.GEL' => 'Georgian Lari',
+			'currencyNames.TRY' => 'Turkish Lira',
+			'currencyNames.ILS' => 'Israeli New Shekel',
+			'currencyNames.AED' => 'UAE Dirham',
+			'currencyNames.SAR' => 'Saudi Riyal',
+			'currencyNames.KWD' => 'Kuwaiti Dinar',
+			'currencyNames.BHD' => 'Bahraini Dinar',
+			'currencyNames.NGN' => 'Nigerian Naira',
+			'currencyNames.ZAR' => 'South African Rand',
 			'search.title' => 'Search',
 			'search.hint' => 'Search tokens, addresses or transactions',
 			'search.empty' => 'Type a keyword to start searching',

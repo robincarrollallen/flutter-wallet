@@ -1,4 +1,9 @@
 import 'chain.dart';
+import '../../../core/enums/backup_method.dart';
+import '../../../core/enums/wallet_source.dart';
+
+export '../../../core/enums/backup_method.dart';
+export '../../../core/enums/wallet_source.dart';
 
 /// 【状态数据】应用内长期持有、驱动 UI 的钱包模型。
 /// 只保存非敏感信息；助记词 / 私钥等敏感数据应存入 flutter_secure_storage，
@@ -47,7 +52,9 @@ class Wallet {
   String? addressFor(Chain chain) {
     final a = addresses[chain.id];
     if (a != null) return a;
-    if (addresses.isEmpty && chain.kind == ChainKind.evm && address.isNotEmpty) {
+    if (addresses.isEmpty &&
+        chain.kind == ChainKind.evm &&
+        address.isNotEmpty) {
       return address;
     }
     return null;
@@ -57,7 +64,11 @@ class Wallet {
   List<Chain> get chainsWithAddress =>
       SupportedChains.all.where((c) => addressFor(c) != null).toList();
 
-  Wallet copyWith({String? name, String? icon, Set<BackupMethod>? backupMethods}) {
+  Wallet copyWith({
+    String? name,
+    String? icon,
+    Set<BackupMethod>? backupMethods,
+  }) {
     return Wallet(
       id: id,
       name: name ?? this.name,
@@ -72,33 +83,35 @@ class Wallet {
 
   /// 序列化为可持久化的 JSON（仅非敏感元数据）。
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'address': address,
-        'source': source.name,
-        'addresses': addresses,
-        'createdAt': createdAt?.toIso8601String(),
-        'icon': icon,
-        'backupMethods': backupMethods.map((m) => m.name).toList(),
-      };
+    'id': id,
+    'name': name,
+    'address': address,
+    'source': source.name,
+    'addresses': addresses,
+    'createdAt': createdAt?.toIso8601String(),
+    'icon': icon,
+    'backupMethods': backupMethods.map((m) => m.name).toList(),
+  };
 
   /// 从持久化的 JSON 还原；source 缺失或非法时回退到 mnemonic。
   factory Wallet.fromJson(Map<String, dynamic> json) => Wallet(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        address: json['address'] as String,
-        source: WalletSource.values.asNameMap()[json['source']] ??
-            WalletSource.mnemonic,
-        addresses: (json['addresses'] as Map?)?.map(
-              (k, v) => MapEntry(k as String, v as String),
-            ) ??
-            const {},
-        createdAt: json['createdAt'] is String
-            ? DateTime.tryParse(json['createdAt'] as String)
-            : null,
-        icon: json['icon'] as String? ?? 'account_balance_wallet',
-        backupMethods: _backupMethodsFromJson(json),
-      );
+    id: json['id'] as String,
+    name: json['name'] as String,
+    address: json['address'] as String,
+    source:
+        WalletSource.values.asNameMap()[json['source']] ??
+        WalletSource.mnemonic,
+    addresses:
+        (json['addresses'] as Map?)?.map(
+          (k, v) => MapEntry(k as String, v as String),
+        ) ??
+        const {},
+    createdAt: json['createdAt'] is String
+        ? DateTime.tryParse(json['createdAt'] as String)
+        : null,
+    icon: json['icon'] as String? ?? 'account_balance_wallet',
+    backupMethods: _backupMethodsFromJson(json),
+  );
 
   /// 解析备份方式集合；兼容旧字段 `backUp`(int 1)→ {manual}。
   static Set<BackupMethod> _backupMethodsFromJson(Map<String, dynamic> json) {
@@ -116,18 +129,3 @@ class Wallet {
     return const {};
   }
 }
-
-/// 备份方式：手动抄写 / iCloud 云备份 / Google Drive 云备份。
-enum BackupMethod { manual, iCloud, googleDrive }
-
-/// 钱包来源的中文标签（创建方式）。新建/导入/详情页统一调用，避免重复。
-String walletSourceLabel(WalletSource source) => switch (source) {
-      WalletSource.mnemonic => '新建助记词',
-      WalletSource.imported => '助记词导入',
-      WalletSource.importedPrivateKey => '私钥导入',
-      WalletSource.hardware => '硬件钱包',
-    };
-
-/// 钱包来源：新建助记词 / 助记词导入 / 私钥导入 / 硬件钱包。
-/// 注意：`imported` 历史上即表示助记词导入，旧持久化数据据此沿用，无需迁移。
-enum WalletSource { mnemonic, imported, importedPrivateKey, hardware }

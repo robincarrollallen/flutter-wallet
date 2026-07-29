@@ -15,7 +15,7 @@ const _chainIconsCacheKey = 'chain_icons_cache';
 
 /// 链图标缓存有效期。链 logo 基本不变，没有任何实时性要求，
 /// 给足 7 天把这次请求摊薄到可忽略——它与行情共用 CoinGecko 的限流配额。
-const _chainIconsTtl = Duration(days: 7);
+const _chainIconsCacheDuration = Duration(days: 7);
 
 /// 各链自己的图标：平台 id -> 图标 URL。
 ///
@@ -26,7 +26,8 @@ final chainIconsProvider = FutureProvider<ChainIcons>((ref) async {
   final prefs = ref.watch(sharedPrefsProvider);
 
   final (cached, cachedAt) = _readCache(prefs);
-  if (cached != null && DateTime.now().difference(cachedAt!) < _chainIconsTtl) {
+  if (cached != null &&
+      DateTime.now().difference(cachedAt!) < _chainIconsCacheDuration) {
     return cached;
   }
 

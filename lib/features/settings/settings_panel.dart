@@ -1,10 +1,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/responsive/screen_adapter.dart';
 import '../../i18n/translations.g.dart';
+import '../../providers/modules/currency_provider.dart';
 import 'appearance_view.dart';
+import 'currency/view.dart';
 import 'theme_colors_view.dart';
 
 /// 设置面板：从屏幕顶部下滑进入的全屏毛玻璃覆盖层。
@@ -83,6 +86,23 @@ class SettingsPanel extends StatelessWidget {
                         );
                       },
                     ),
+                    // 币种：全应用金额折算所用的法币，行尾显示当前选择。
+                    // 只用 Consumer 包这一行——整个面板是毛玻璃覆盖层，
+                    // 若改成 ConsumerWidget，切币种会让整层重建。
+                    Consumer(
+                      builder: (context, ref, _) => _SettingsTile(
+                        icon: Icons.attach_money,
+                        title: t.currency.title,
+                        trailingText: ref.watch(currencyProvider),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CurrencyScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                     _SettingsTile(
                       icon: Icons.shield_outlined,
                       title: t.settings.security,
@@ -115,18 +135,44 @@ class SettingsPanel extends StatelessWidget {
 }
 
 class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({required this.icon, required this.title, this.onTap});
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    this.trailingText,
+    this.onTap,
+  });
 
   final IconData icon;
   final String title;
+
+  /// 箭头左侧的当前值文案（如当前币种代码）；null 时只显示箭头。
+  final String? trailingText;
+
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final value = trailingText;
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
-      trailing: const Icon(Icons.chevron_right),
+      // mainAxisSize.min 必须保留，否则 Row 会撑满整个 ListTile 宽度。
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (value != null) ...[
+            Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(width: 4.s),
+          ],
+          const Icon(Icons.chevron_right),
+        ],
+      ),
       onTap: onTap ?? () {},
     );
   }

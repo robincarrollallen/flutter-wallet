@@ -10,6 +10,7 @@ import '../../features/wallet/data/evm_tx_service.dart';
 import '../../features/wallet/data/wallet_service.dart';
 import '../../features/wallet/services/wallet_key_service.dart';
 import '../prefs_provider.dart';
+import 'currency_provider.dart';
 import 'wallet_provider.dart';
 
 /// 单例 service，供各 provider 注入使用。
@@ -25,30 +26,35 @@ final evmFeeProvider = FutureProvider.autoDispose.family<BigInt, String>(
       const EvmTxService().estimateNativeFee(SupportedChains.byId(chainId)),
 );
 
-/// 行情类型别名：coinGeckoId -> (美元单价, 图标 URL)。
-typedef Markets = Map<String, ({double usd, String? logoUrl})>;
+/// 行情类型别名：coinGeckoId -> (当前计价币种下的单价, 图标 URL)。
+typedef Markets = Map<String, ({double price, String? logoUrl})>;
 
 /// 行情缓存在 SharedPreferences 中的存储键。
-const _marketsCacheKey = 'markets_cache';
+/// 按币种分键：切换法币后不会读到上一币种的价格，切回来也仍能命中各自的缓存。
+String _marketsCacheKey(String currency) => 'markets_cache_$currency';
 
 /// 行情缓存有效期。CoinGecko 免费档约 5~15 次/分钟，超限返回 429，
 /// 因此宁可让价格滞后 5 分钟，也不要把配额耗在来回切页上。
-const _marketsTtl = Duration(minutes: 5);
+const _marketCacheDuration = Duration(minutes: 5);
 
-/// 全部受支持链币种的实时行情：coinGeckoId -> (美元单价, 图标 URL)。
+/// 全部受支持链币种的实时行情：coinGeckoId -> (单价, 图标 URL)。
 /// 一次请求覆盖所有链，避免每张卡片重复请求行情。
+///
+/// 单价按 [currencyProvider] 选定的法币由 CoinGecko 直接返回（无本地汇率换算），
+/// 切换法币即重取——缓存按币种分键，不会互相覆盖。
 ///
 /// 三层防护，逐层兜底：
 /// 1. [Ref.keepAlive] 保住内存缓存——Riverpod 3.x 默认 autoDispose，
 ///    不保活的话每次离开首页缓存即销毁，回来就是一次全新请求。
-/// 2. 落盘缓存 + TTL：[_marketsTtl] 内直接返回磁盘数据，完全不发请求，冷启动也命中。
+/// 2. 落盘缓存 + TTL：[_marketCacheDuration] 内直接返回磁盘数据，完全不发请求，冷启动也命中。
 /// 3. 请求失败（含 429）时回退到过期的旧缓存——旧价格远好过 $0.00 和首字母图标。
 final marketsProvider = FutureProvider<Markets>((ref) async {
   ref.keepAlive();
   final prefs = ref.watch(sharedPrefsProvider);
+  final currency = ref.watch(currencyProvider);
 
-  final (cached, cachedAt) = _readCache(prefs);
-  if (cached != null && DateTime.now().difference(cachedAt!) < _marketsTtl) {
+  final (cached, cachedAt) = _readCache(prefs, currency);
+  if (cached != null && DateTime.now().difference(cachedAt!) < _marketCacheDuration) {
     return cached;
   }
 
@@ -59,25 +65,25 @@ final marketsProvider = FutureProvider<Markets>((ref) async {
     ...SupportedChains.all.map((c) => c.coinGeckoId),
     ...SupportedChains.allTokens.map((e) => e.$2.coinGeckoId),
   };
-  final fresh = await service.fetchMarkets(ids);
+  final fresh = await service.fetchMarkets(ids, vsCurrency: currency);
 
   // fetchMarkets 吞掉异常后返回空 map，空即代表失败：退回旧缓存，别用 $0.00 覆盖 UI。
   if (fresh.isEmpty) return cached ?? const {};
 
-  await _writeCache(prefs, fresh);
+  await _writeCache(prefs, currency, fresh);
   return fresh;
 });
 
 /// 读取落盘的行情缓存。返回 (数据, 写入时刻)；无缓存或脏数据时返回 (null, null)。
-(Markets?, DateTime?) _readCache(SharedPreferences prefs) {
-  final raw = prefs.getString(_marketsCacheKey);
+(Markets?, DateTime?) _readCache(SharedPreferences prefs, String currency) {
+  final raw = prefs.getString(_marketsCacheKey(currency));
   if (raw == null) return (null, null);
   try {
     final json = jsonDecode(raw) as Map<String, dynamic>;
     final at = DateTime.fromMillisecondsSinceEpoch(json['at'] as int);
     final data = (json['data'] as Map<String, dynamic>).map(
       (id, v) => MapEntry(id, (
-        usd: (v['usd'] as num).toDouble(),
+        price: (v['price'] as num).toDouble(),
         logoUrl: v['logoUrl'] as String?,
       )),
     );
@@ -89,15 +95,19 @@ final marketsProvider = FutureProvider<Markets>((ref) async {
 }
 
 /// 把行情连同写入时刻落盘。
-Future<void> _writeCache(SharedPreferences prefs, Markets markets) {
+Future<void> _writeCache(
+  SharedPreferences prefs,
+  String currency,
+  Markets markets,
+) {
   final json = {
     'at': DateTime.now().millisecondsSinceEpoch,
     'data': {
       for (final e in markets.entries)
-        e.key: {'usd': e.value.usd, 'logoUrl': e.value.logoUrl},
+        e.key: {'price': e.value.price, 'logoUrl': e.value.logoUrl},
     },
   };
-  return prefs.setString(_marketsCacheKey, jsonEncode(json));
+  return prefs.setString(_marketsCacheKey(currency), jsonEncode(json));
 }
 
 /// 下拉刷新：强制重取行情与余额。返回的 Future 完成即代表刷新结束，
@@ -111,12 +121,15 @@ Future<void> refreshHomeData(WidgetRef ref, {String? walletId}) async {
     ...SupportedChains.all.map((c) => c.coinGeckoId),
     ...SupportedChains.allTokens.map((e) => e.$2.coinGeckoId),
   };
-  final fresh = await ref.read(walletServiceProvider).fetchMarkets(ids);
+  final currency = ref.read(currencyProvider);
+  final fresh = await ref
+      .read(walletServiceProvider)
+      .fetchMarkets(ids, vsCurrency: currency);
 
   // 空即代表失败（fetchMarkets 吞异常后返回空 map）：跳过写盘与 invalidate，
   // marketsProvider 保持原值，UI 上的价格不动。
   if (fresh.isNotEmpty) {
-    await _writeCache(ref.read(sharedPrefsProvider), fresh);
+    await _writeCache(ref.read(sharedPrefsProvider), currency, fresh);
     // 让 marketsProvider 重读刚落盘的数据。此刻 TTL 尚新，它会直接命中缓存返回，
     // 不会因为这次 invalidate 再多发一次请求。
     ref.invalidate(marketsProvider);
@@ -148,13 +161,13 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String)>(
       address: address,
       amount: base.amount,
       symbol: base.symbol,
-      priceUsd: market?.usd ?? 0,
+      price: market?.price ?? 0,
       logoUrl: market?.logoUrl,
     );
   },
 );
 
-/// 单个钱包跨链折算后的总资产价值（美元）。按 walletId 查询。
+/// 单个钱包跨链折算后的总资产价值（当前计价法币）。按 walletId 查询。
 final walletTotalProvider = FutureProvider.family<double, String>((
   ref,
   walletId,
@@ -180,7 +193,7 @@ final walletTotalProvider = FutureProvider.family<double, String>((
   return total;
 });
 
-/// 全部钱包 × 全部链折算后的总资产价值（美元）。
+/// 全部钱包 × 全部链折算后的总资产价值（当前计价法币）。
 /// 任一钱包、链余额或行情变化都会自动重算。
 final portfolioTotalProvider = FutureProvider<double>((ref) async {
   final wallets = ref.watch(walletListProvider);

@@ -5,7 +5,7 @@ class AccountBalance {
     required this.address,
     required this.amount,
     required this.symbol,
-    this.priceUsd = 0,
+    this.price = 0,
     this.logoUrl,
   });
 
@@ -15,8 +15,9 @@ class AccountBalance {
   final String amount;
   final String symbol;
 
-  /// 该币种当前单价（美元）。用于折算总资产价值。
-  final double priceUsd;
+  /// 该币种当前单价，计价法币由 [currencyProvider] 决定（默认 USD）。
+  /// 用于折算总资产价值。
+  final double price;
 
   /// 该币种图标 URL（来自 CoinGecko，动态获取，可能为 null）。
   final String? logoUrl;
@@ -24,6 +25,6 @@ class AccountBalance {
   /// 数值化后的持仓数量（解析失败按 0 计）。
   double get amountValue => double.tryParse(amount) ?? 0;
 
-  /// 该币种持仓折算的法币总价值（美元）。
-  double get fiatValue => amountValue * priceUsd;
+  /// 该币种持仓折算的法币总价值（与 [price] 同币种）。
+  double get fiatValue => amountValue * price;
 }

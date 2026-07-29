@@ -5,6 +5,7 @@ import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../core/widgets/app_toast.dart';
 import '../../../../../core/widgets/asset_icon.dart';
 import '../../../../../providers/modules/balance_provider.dart';
+import '../../../../../providers/modules/currency_provider.dart';
 import '../../../../../providers/modules/recent_address_provider.dart';
 import '../../../../../providers/modules/wallet_provider.dart';
 import '../../../data/dto/send_tx_request.dart';
@@ -97,16 +98,17 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       error: (_, _) => '--',
       data: (fee) {
         final amount = EvmTxService.formatUnits(fee, asset.chain.decimals);
-        final priceUsd = from.isEmpty
+        final price = from.isEmpty
             ? 0.0
             : ref
                       .watch(balanceProvider((asset.chain.id, from)))
                       .value
-                      ?.priceUsd ??
+                      ?.price ??
                   0.0;
-        if (priceUsd <= 0) return '≈ $amount ${asset.chain.symbol}';
-        final fiat = (double.tryParse(amount) ?? 0) * priceUsd;
-        return '≈ $amount ${asset.chain.symbol}（\$${fiat.toStringAsFixed(2)}）';
+        if (price <= 0) return '≈ $amount ${asset.chain.symbol}';
+        final fiat = (double.tryParse(amount) ?? 0) * price;
+        final symbol = ref.watch(currencySymbolProvider);
+        return '≈ $amount ${asset.chain.symbol}（$symbol${fiat.toStringAsFixed(2)}）';
       },
     );
   }
