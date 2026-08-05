@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/blockchain/chain_registry.dart';
+import '../../../../core/blockchain/token.dart';
 import '../../../../providers/modules/wallet_provider.dart';
-import '../../../wallet/domain/chain.dart';
-import '../../../wallet/domain/token.dart';
 import '../../../wallet/domain/wallet.dart';
 import '../pill/logic.dart';
 import '../pill/state.dart';

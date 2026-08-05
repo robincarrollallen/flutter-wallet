@@ -1,4 +1,4 @@
-import '../../../domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 
 /// 一个可发送的资产条目：目前仅支持各链原生币（代币发送尚未接入）。
 class SendAsset {

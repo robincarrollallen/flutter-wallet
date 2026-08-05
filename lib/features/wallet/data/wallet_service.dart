@@ -3,11 +3,14 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../core/blockchain/chain_registry.dart';
+import '../../../core/blockchain/units.dart';
 import '../../../core/constants/currency_symbols.dart';
+import '../../../core/utils/evm_hex.dart';
+import '../../../core/utils/json_rpc.dart';
 import 'dto/send_tx_request.dart';
-import 'evm_tx_service.dart';
+import 'evm_transaction_service.dart';
 import '../domain/account_balance.dart';
-import '../domain/chain.dart';
 import '../domain/wallet.dart';
 import '../services/wallet_key_service.dart';
 
@@ -15,7 +18,6 @@ import '../services/wallet_key_service.dart';
 /// 余额均走各链**测试网**公共节点 / 浏览器 API；单价走 CoinGecko 主网行情。
 class WalletService {
   const WalletService({this.keyService});
-  static int _nextRpcRequestId = 0;
 
   /// 签名私钥解析器；发送转账必需，仅查余额/行情的场景可不注入。
   final WalletKeyService? keyService;
@@ -23,10 +25,9 @@ class WalletService {
   /// 查询某条链上某地址的原生币余额（不含单价，单价由上层 priceProvider 注入）。
   Future<AccountBalance> fetchBalance(Chain chain, String address) async {
     final raw = switch (chain.kind) {
-      ChainKind.evm || ChainKind.solana || ChainKind.sui => await _rpcNativeBalance(
-        chain,
-        address,
-      ),
+      ChainKind.evm ||
+      ChainKind.solana ||
+      ChainKind.sui => await _rpcNativeBalance(chain, address),
       ChainKind.bitcoin => await _bitcoinBalance(chain, address),
       // Tron / Aptos 原生币余额查询（代币查询另见 tokens，暂未接入）。
       ChainKind.tron => await _tronBalance(chain, address),
@@ -34,7 +35,7 @@ class WalletService {
     };
     return AccountBalance(
       address: address,
-      amount: _formatUnits(raw, chain.decimals),
+      amount: formatUnits(raw, chain.decimals),
       symbol: chain.symbol,
     );
   }
@@ -119,7 +120,7 @@ class WalletService {
           throw StateError('WalletService 未注入 WalletKeyService，无法签名');
         }
         final privateKey = await keys.resolveEvmSigningKey(wallet);
-        return const EvmTxService().sendNative(
+        return const EvmTransactionService().sendNative(
           chain: chain,
           privateKeyHex: privateKey,
           to: request.to,
@@ -144,19 +145,21 @@ class WalletService {
     }
     return switch (method) {
       RpcMethod.ethGetBalance => () async {
-        final result = await _rpcCall(chain.endpoint, method.wireName, [
+        final result = await jsonRpcCall(chain.endpoint, method.wireName, [
           address,
           'latest',
         ]);
-        return _hexToBigInt(result as String);
+        return parseEvmHexQuantity(result as String);
       }(),
       RpcMethod.solGetBalance => () async {
-        final result = await _rpcCall(chain.endpoint, method.wireName, [address]);
+        final result = await jsonRpcCall(chain.endpoint, method.wireName, [
+          address,
+        ]);
         return BigInt.from(((result as Map)['value'] as num?) ?? 0);
       }(),
       RpcMethod.suiGetBalance => () async {
         try {
-          final result = await _rpcCall(chain.endpoint, method.wireName, [
+          final result = await jsonRpcCall(chain.endpoint, method.wireName, [
             address,
             '0x2::sui::SUI',
           ]);
@@ -208,41 +211,6 @@ class WalletService {
   }
 
   // —— 网络工具 —— //
-
-  Future<Object?> _rpcCall(
-    String url,
-    String method,
-    List<Object?> params,
-  ) async {
-    final requestId = ++_nextRpcRequestId;
-    final client = HttpClient();
-    try {
-      final request = await client.postUrl(Uri.parse(url));
-      request.headers.contentType = ContentType.json;
-      request.add(
-        utf8.encode(
-          jsonEncode({
-            'jsonrpc': '2.0',
-            'id': requestId,
-            'method': method,
-            'params': params,
-          }),
-        ),
-      );
-      final response = await request.close();
-      final body = await response.transform(utf8.decoder).join();
-      final json = jsonDecode(body) as Map<String, dynamic>;
-      if (json['id'] != requestId) {
-        throw Exception('RPC id mismatch: expected $requestId, got ${json['id']}');
-      }
-      if (json['error'] != null) {
-        throw Exception('RPC error: ${json['error']}');
-      }
-      return json['result'];
-    } finally {
-      client.close();
-    }
-  }
 
   /// 纯 REST POST（非 JSON-RPC 信封），返回解码后的 JSON 对象。供 Tron 使用。
   Future<Map<String, dynamic>> _postJson(
@@ -303,21 +271,5 @@ class WalletService {
     } finally {
       client.close();
     }
-  }
-
-  BigInt _hexToBigInt(String hex) {
-    final clean = hex.startsWith('0x') ? hex.substring(2) : hex;
-    if (clean.isEmpty) return BigInt.zero;
-    return BigInt.parse(clean, radix: 16);
-  }
-
-  /// 将最小单位（大整数）按 decimals 转为可读金额字符串。
-  String _formatUnits(BigInt value, int decimals) {
-    if (decimals == 0) return value.toString();
-    final divisor = BigInt.from(10).pow(decimals);
-    final whole = value ~/ divisor;
-    final fraction = value.remainder(divisor).toString().padLeft(decimals, '0');
-    final trimmed = fraction.replaceFirst(RegExp(r'0+$'), '');
-    return trimmed.isEmpty ? whole.toString() : '$whole.$trimmed';
   }
 }

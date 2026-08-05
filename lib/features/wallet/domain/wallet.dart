@@ -1,6 +1,6 @@
-import 'chain.dart';
 import '../../../core/enums/backup_method.dart';
 import '../../../core/enums/wallet_source.dart';
+import '../../../core/blockchain/chain_registry.dart';
 
 export '../../../core/enums/backup_method.dart';
 export '../../../core/enums/wallet_source.dart';

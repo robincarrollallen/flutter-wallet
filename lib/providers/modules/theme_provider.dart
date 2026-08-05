@@ -8,43 +8,33 @@ enum AppThemeName {
   light,
   dark;
 
-  /// 该主题对应的展示模式（亮色→白天，暗色→黑夜）。
-  ThemeMode get mode =>
-      this == AppThemeName.light ? ThemeMode.light : ThemeMode.dark;
+  ThemeMode get mode => this == AppThemeName.light ? ThemeMode.light : ThemeMode.dark; // 该主题对应的展示模式（亮色→白天，暗色→黑夜）
 
-  /// 该主题的种子色：决定 [lightTheme] / [darkTheme] 的整套配色。
-  /// 切换主题名即切换种子色，main.dart 的 theme / darkTheme 随之重建。
-  Color get seedColor =>
-      this == AppThemeName.light ? Colors.deepPurple : Colors.teal;
+  Color get seedColor => this == AppThemeName.light ? Colors.deepPurple : Colors.teal; // 主题种子色<喂给 ColorScheme.fromSeed(seedColor: ...)>
 
-  /// 该主题名下的浅色 ThemeData（供 MaterialApp.theme）。
+  /// 浅色主题 ThemeData（供 MaterialApp.theme）。
   ThemeData get lightTheme => ThemeData(
-    colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
-    extensions: const [AppColors.light],
+    colorScheme: ColorScheme.fromSeed(seedColor: seedColor), // 配色表
+    extensions: const [AppColors.light], // 扩展色<自定义属性>
   );
 
-  /// 该主题名下的深色 ThemeData（供 MaterialApp.darkTheme）。
+  /// 深色主题 ThemeData（供 MaterialApp.darkTheme）。
   ThemeData get darkTheme => ThemeData(
     colorScheme: ColorScheme.fromSeed(
-      seedColor: seedColor,
-      brightness: Brightness.dark,
+      seedColor: seedColor, // 种子色<自动延伸主题色>
+      brightness: Brightness.dark, // 明暗基调<默认浅低深字>
     ),
-    extensions: const [AppColors.dark],
+    extensions: const [AppColors.dark], // 扩展色<自定义属性>
   );
 }
 
-/// 外观状态：同时持有「主题名称」与「主题模式」两个属性。
-///
-/// - [themeName]：选中的配色（亮色 / 暗色），驱动 MaterialApp 的 theme / darkTheme 取向。
-/// - [themeMode]：显示模式（跟随系统 / 白天 / 黑夜），驱动 MaterialApp 的 themeMode。
-///
-/// 「模式」组与「主题」组两处 UI 都读写同一份状态，避免两个来源给出冲突的 themeMode。
-@immutable
+/// 外观状态：同时持有「主题名称」与「主题模式」两个属性
+@immutable // 注解: 字段全是 final，建好就不能改(可以更改对象中的字段值)
 class Appearance {
   const Appearance({required this.themeName, required this.themeMode});
 
-  final AppThemeName themeName;
-  final ThemeMode themeMode;
+  final AppThemeName themeName; // 选中的配色（亮色 / 暗色），驱动 MaterialApp 的 theme / darkTheme 取向
+  final ThemeMode themeMode; // 显示模式（跟随系统 / 白天 / 黑夜），驱动 MaterialApp 的 themeMode
 
   Appearance copyWith({AppThemeName? themeName, ThemeMode? themeMode}) =>
       Appearance(
@@ -54,17 +44,18 @@ class Appearance {
 }
 
 /// 外观（主题 + 模式）状态，用 PersistentNotifier 持久化两个字段。
-class AppearanceNotifier extends Notifier<Appearance>
-    with PersistentNotifier<Appearance> {
+class AppearanceNotifier extends Notifier<Appearance> with PersistentNotifier<Appearance> {
   @override
-  String get persistKey => 'appearance';
+  String get persistKey => 'appearance'; // 定义持久化标识<persistKey>(重写)
 
+  /// 定义持久化内容
   @override
   Map<String, dynamic> toJson(Appearance state) => {
     'themeName': state.themeName.name,
     'themeMode': state.themeMode.name,
   };
 
+  /// 还原状态
   @override
   Appearance fromJson(Map<String, dynamic> json, Appearance fallback) =>
       fallback.copyWith(
@@ -72,6 +63,7 @@ class AppearanceNotifier extends Notifier<Appearance>
         themeMode: ThemeMode.values.asNameMap()[json['themeMode']],
       );
 
+  /// 初始化设置
   @override
   Appearance build() => restore(
     const Appearance(
@@ -80,7 +72,7 @@ class AppearanceNotifier extends Notifier<Appearance>
     ),
   );
 
-  /// 选择「模式」：白天 / 黑夜同时把主题名同步过去；跟随系统时保留原主题名。
+  /// 选择「模式」：白天 / 黑夜同时把主题名同步过去；跟随系统时保留原主题名(自动落盘<持久化>：restore 中 的 listenSelf 监听)
   void setMode(ThemeMode mode) {
     switch (mode) {
       case ThemeMode.light:
@@ -97,6 +89,7 @@ class AppearanceNotifier extends Notifier<Appearance>
       state = state.copyWith(themeName: name, themeMode: name.mode);
 }
 
+/// 供外部调用(ref.read, ref.watch...)
 final appearanceProvider = NotifierProvider<AppearanceNotifier, Appearance>(
   AppearanceNotifier.new,
 );

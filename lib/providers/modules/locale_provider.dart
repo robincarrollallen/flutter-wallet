@@ -9,13 +9,12 @@ import '../../i18n/translations.g.dart';
 /// - 写时由 toJson 决定存什么，读时 fromJson 全量恢复。
 /// - build() 把初值（设备语言）交给 restore()，再同步给 slang。
 /// - set() 改 state 即自动落盘；额外需要通知 slang，所以仍手动调 LocaleSettings。
-class LocaleNotifier extends Notifier<AppLocale>
-    with PersistentNotifier<AppLocale> {
+class LocaleNotifier extends Notifier<AppLocale> with PersistentNotifier<AppLocale> {
   @override
-  String get persistKey => 'app_locale';
+  String get persistKey => 'app_locale';  // 定义持久化标识<persistKey>(重写)
 
   @override
-  Map<String, dynamic> toJson(AppLocale state) => {'locale': state.languageTag};
+  Map<String, dynamic> toJson(AppLocale state) => {'locale': state.languageTag}; // 定义持久化内容
 
   @override
   AppLocale fromJson(Map<String, dynamic> json, AppLocale fallback) {
@@ -25,14 +24,13 @@ class LocaleNotifier extends Notifier<AppLocale>
 
   @override
   AppLocale build() {
-    final locale = restore(AppLocaleUtils.findDeviceLocale());
-    // 让 context.t / TranslationProvider 使用该 locale。
+    final locale = restore(AppLocaleUtils.findDeviceLocale()); // 让 context.t / TranslationProvider 使用该 locale。
     LocaleSettings.setLocale(locale);
     return locale;
   }
 
   void set(AppLocale locale) {
-    state = locale; // 自动落盘
+    state = locale; // 落盘<持久化>
     LocaleSettings.setLocale(locale);
   }
 }

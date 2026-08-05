@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/features/wallet/data/evm_tx_service.dart';
-import 'package:wallet/features/wallet/domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
+import 'package:wallet/core/blockchain/units.dart';
 import 'package:wallet/features/wallet/screens/send/coins/logic.dart';
 import 'package:wallet/features/wallet/screens/send/coins/state.dart';
 
@@ -198,63 +198,54 @@ void main() {
     expect(asset.coinGeckoId, 'solana');
   });
 
-  group('EvmTxService.parseUnits', () {
+  group('parseUnits', () {
     test('整数金额', () {
-      expect(
-        EvmTxService.parseUnits('1', 18),
-        BigInt.parse('1000000000000000000'),
-      );
-      expect(EvmTxService.parseUnits('0', 18), BigInt.zero);
+      expect(parseUnits('1', 18), BigInt.parse('1000000000000000000'));
+      expect(parseUnits('0', 18), BigInt.zero);
     });
 
     test('小数金额不丢精度', () {
       expect(
-        EvmTxService.parseUnits('1.234567890123456789', 18),
+        parseUnits('1.234567890123456789', 18),
         BigInt.parse('1234567890123456789'),
       );
-      expect(EvmTxService.parseUnits('0.5', 6), BigInt.from(500000));
+      expect(parseUnits('0.5', 6), BigInt.from(500000));
     });
 
     test('decimals 为 0', () {
-      expect(EvmTxService.parseUnits('42', 0), BigInt.from(42));
+      expect(parseUnits('42', 0), BigInt.from(42));
     });
 
     test('小数位超过精度上限抛异常', () {
-      expect(
-        () => EvmTxService.parseUnits('0.1234567', 6),
-        throwsFormatException,
-      );
+      expect(() => parseUnits('0.1234567', 6), throwsFormatException);
     });
 
     test('非法格式抛异常', () {
-      expect(() => EvmTxService.parseUnits('', 18), throwsFormatException);
-      expect(() => EvmTxService.parseUnits('abc', 18), throwsFormatException);
-      expect(() => EvmTxService.parseUnits('-1', 18), throwsFormatException);
-      expect(() => EvmTxService.parseUnits('1.', 18), throwsFormatException);
+      expect(() => parseUnits('', 18), throwsFormatException);
+      expect(() => parseUnits('abc', 18), throwsFormatException);
+      expect(() => parseUnits('-1', 18), throwsFormatException);
+      expect(() => parseUnits('1.', 18), throwsFormatException);
     });
   });
 
-  group('EvmTxService.formatUnits', () {
+  group('formatUnits', () {
     test('整数与零', () {
-      expect(
-        EvmTxService.formatUnits(BigInt.parse('1000000000000000000'), 18),
-        '1',
-      );
-      expect(EvmTxService.formatUnits(BigInt.zero, 18), '0');
-      expect(EvmTxService.formatUnits(BigInt.from(42), 0), '42');
+      expect(formatUnits(BigInt.parse('1000000000000000000'), 18), '1');
+      expect(formatUnits(BigInt.zero, 18), '0');
+      expect(formatUnits(BigInt.from(42), 0), '42');
     });
 
     test('小数去尾零', () {
-      expect(EvmTxService.formatUnits(BigInt.from(500000), 6), '0.5');
+      expect(formatUnits(BigInt.from(500000), 6), '0.5');
       expect(
-        EvmTxService.formatUnits(BigInt.parse('1234567890123456789'), 18),
+        formatUnits(BigInt.parse('1234567890123456789'), 18),
         '1.234567890123456789',
       );
     });
 
     test('与 parseUnits 互逆', () {
       for (final s in ['1', '0.5', '123.456', '0.000001']) {
-        expect(EvmTxService.formatUnits(EvmTxService.parseUnits(s, 18), 18), s);
+        expect(formatUnits(parseUnits(s, 18), 18), s);
       }
     });
   });

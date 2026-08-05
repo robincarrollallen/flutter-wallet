@@ -6,7 +6,7 @@ import '../../../../core/widgets/amount_text.dart';
 import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/chain_icon_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
-import '../../domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 import '../../../../core/widgets/token_icon.dart';
 import '../../../../core/navigation/panel_routes.dart';
 import 'logic.dart';
@@ -23,17 +23,21 @@ class ReceiveSheet extends StatefulWidget {
   /// 以底部弹窗形式展示。
   static Future<void> show(BuildContext context) {
     final navigator = Navigator.of(context);
-    return navigator.push(_BarrierClosesSheetRoute<void>(
-      capturedThemes:
-          InheritedTheme.capture(from: context, to: navigator.context),
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.s)),
+    return navigator.push(
+      _BarrierClosesSheetRoute<void>(
+        capturedThemes: InheritedTheme.capture(
+          from: context,
+          to: navigator.context,
+        ),
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.s)),
+        ),
+        builder: (_) => const ReceiveSheet(),
       ),
-      builder: (_) => const ReceiveSheet(),
-    ));
+    );
   }
 
   @override
@@ -60,8 +64,10 @@ class _BarrierClosesSheetRoute<T> extends ModalBottomSheetRoute<T> {
   Widget buildModalBarrier() {
     return AnimatedModalBarrier(
       color: animation!.drive(
-        ColorTween(begin: barrierColor.withValues(alpha: 0), end: barrierColor)
-            .chain(CurveTween(curve: barrierCurve)),
+        ColorTween(
+          begin: barrierColor.withValues(alpha: 0),
+          end: barrierColor,
+        ).chain(CurveTween(curve: barrierCurve)),
       ),
       semanticsLabel: barrierLabel,
       barrierSemanticsDismissible: semanticsDismissible,
@@ -200,7 +206,8 @@ class _ReceiveHomePageState extends ConsumerState<_ReceiveHomePage>
                   icon: TokenIcon(
                     symbol: c.symbol,
                     // 三级降级：链图标 -> 币图标（如 Bitcoin 无平台 id）-> 首字母圆底。
-                    logoUrl: chainIcons[c.coinGeckoPlatformId] ??
+                    logoUrl:
+                        chainIcons[c.coinGeckoPlatformId] ??
                         markets[c.coinGeckoId]?.logoUrl,
                     size: 24.s,
                   ),
@@ -271,7 +278,8 @@ class _AssetList extends StatelessWidget {
       itemBuilder: (context, i) {
         final a = assets[i];
         final tokenLogoUrl = markets[a.coinGeckoId]?.logoUrl;
-        final chainLogoUrl = chainIcons[a.chain.coinGeckoPlatformId] ??
+        final chainLogoUrl =
+            chainIcons[a.chain.coinGeckoPlatformId] ??
             markets[a.chain.coinGeckoId]?.logoUrl;
         return ListTile(
           leading: AssetIcon(
@@ -282,7 +290,9 @@ class _AssetList extends StatelessWidget {
           ),
           title: Text(a.symbol),
           // 在「全部」页附带链名，便于区分同名代币归属。
-          subtitle: Text(chain == null ? '${a.name} · ${a.chain.name}' : a.name),
+          subtitle: Text(
+            chain == null ? '${a.name} · ${a.chain.name}' : a.name,
+          ),
           // 右侧展示持仓「数量 + 折算价值」。
           trailing: _AssetAmount(asset: a),
           // 弹窗内跳转：在嵌套 Navigator 里滑入收款地址子页。

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/features/wallet/domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 import 'package:wallet/features/wallet/services/mnemonic_service.dart';
 import 'package:wallet/features/wallet/services/private_key_service.dart';
 
@@ -59,10 +59,12 @@ void main() {
       final b = MnemonicService.deriveWallet(validMnemonic);
       for (final kind in [ChainKind.tron, ChainKind.sui, ChainKind.aptos]) {
         final chain = SupportedChains.all.firstWhere((c) => c.kind == kind);
-        expect(a.addresses[chain.id], isNotEmpty,
-            reason: '${chain.id} 应派生出地址');
-        expect(a.addresses[chain.id], b.addresses[chain.id],
-            reason: '${chain.id} 派生应稳定');
+        expect(a.addresses[chain.id], isNotEmpty, reason: '${chain.id} 应派生出地址');
+        expect(
+          a.addresses[chain.id],
+          b.addresses[chain.id],
+          reason: '${chain.id} 派生应稳定',
+        );
       }
     });
   });
@@ -78,9 +80,13 @@ void main() {
 
     test('EVM 各链导出同一把 0x hex 私钥', () {
       final eth = MnemonicService.derivePrivateKey(
-          validMnemonic, SupportedChains.ethereumSepolia);
+        validMnemonic,
+        SupportedChains.ethereumSepolia,
+      );
       final poly = MnemonicService.derivePrivateKey(
-          validMnemonic, SupportedChains.polygonAmoy);
+        validMnemonic,
+        SupportedChains.polygonAmoy,
+      );
       expect(eth, startsWith('0x'));
       expect(eth.length, 66); // 0x + 64 hex
       expect(eth, poly, reason: 'EVM 多链共用同一私钥');
@@ -89,12 +95,16 @@ void main() {
     test('Sui 导出为 suiprivkey bech32，Bitcoin 为 WIF', () {
       expect(
         MnemonicService.derivePrivateKey(
-            validMnemonic, SupportedChains.suiTestnet),
+          validMnemonic,
+          SupportedChains.suiTestnet,
+        ),
         startsWith('suiprivkey1'),
       );
       // testnet WIF 以 'c' 或 '9' 开头（0xEF 版本字节）。
       final wif = MnemonicService.derivePrivateKey(
-          validMnemonic, SupportedChains.bitcoinTestnet);
+        validMnemonic,
+        SupportedChains.bitcoinTestnet,
+      );
       expect(wif, isNotEmpty);
       expect(wif.startsWith('c') || wif.startsWith('9'), isTrue);
     });
@@ -109,11 +119,17 @@ void main() {
       ]) {
         final exported = MnemonicService.derivePrivateKey(validMnemonic, chain);
         final kind = PrivateKeyService.detect(exported);
-        expect(kind, isNot(PrivateKeyKind.unknown),
-            reason: '${chain.id} 导出串应可被识别');
+        expect(
+          kind,
+          isNot(PrivateKeyKind.unknown),
+          reason: '${chain.id} 导出串应可被识别',
+        );
         final reimported = PrivateKeyService.derive(kind, exported);
-        expect(reimported.primaryAddress, wallet.addresses[chain.id],
-            reason: '${chain.id} 回导地址应与派生地址一致');
+        expect(
+          reimported.primaryAddress,
+          wallet.addresses[chain.id],
+          reason: '${chain.id} 回导地址应与派生地址一致',
+        );
       }
     });
   });

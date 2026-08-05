@@ -6,7 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/chain_icon_provider.dart';
-import '../../domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 import '../../../../core/widgets/token_icon.dart';
 import '../../domain/wallet.dart';
 
@@ -39,7 +39,8 @@ class AddressManagementScreen extends ConsumerWidget {
             chain: chain,
             address: wallet.addressFor(chain),
             // 三级降级：链图标 -> 币图标（Bitcoin 无平台 id 走这层）-> 首字母圆底。
-            logoUrl: chainIcons[chain.coinGeckoPlatformId] ??
+            logoUrl:
+                chainIcons[chain.coinGeckoPlatformId] ??
                 markets[chain.coinGeckoId]?.logoUrl,
           );
         },
@@ -80,8 +81,9 @@ class _AddressTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     chain.name,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Text(
@@ -128,9 +130,9 @@ class _AddressTile extends StatelessWidget {
 
   void _copy(BuildContext context, String value) {
     Clipboard.setData(ClipboardData(text: value));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('已复制')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已复制')));
   }
 
   void _showQr(BuildContext context) {

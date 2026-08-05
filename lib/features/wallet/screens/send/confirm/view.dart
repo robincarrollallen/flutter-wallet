@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/blockchain/units.dart';
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../core/widgets/app_toast.dart';
 import '../../../../../core/widgets/asset_icon.dart';
@@ -9,7 +10,6 @@ import '../../../../../providers/modules/currency_provider.dart';
 import '../../../../../providers/modules/recent_address_provider.dart';
 import '../../../../../providers/modules/wallet_provider.dart';
 import '../../../data/dto/send_tx_request.dart';
-import '../../../data/evm_tx_service.dart';
 import '../coins/state.dart';
 import '../result/view.dart';
 
@@ -78,11 +78,11 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      // 节点错误（余额不足 / nonce 异常等）与「暂未支持」透传原因，其余给通用文案。
+      // 统一转为 Exception 后，优先透传异常文案；其余给通用文案。
       final reason = switch (e) {
-        EvmRpcException(:final message) => '发送失败：$message',
         UnsupportedError(:final message) => message ?? '该链转账暂未支持',
         FormatException(:final message) => message,
+        Exception _ => '发送失败：${_stripExceptionPrefix(e.toString())}',
         _ => '发送失败，请稍后重试',
       };
       AppToast.show(context, reason);
@@ -97,13 +97,10 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       loading: () => '查询中…',
       error: (_, _) => '--',
       data: (fee) {
-        final amount = EvmTxService.formatUnits(fee, asset.chain.decimals);
+        final amount = formatUnits(fee, asset.chain.decimals);
         final price = from.isEmpty
             ? 0.0
-            : ref
-                      .watch(balanceProvider((asset.chain.id, from)))
-                      .value
-                      ?.price ??
+            : ref.watch(balanceProvider((asset.chain.id, from))).value?.price ??
                   0.0;
         if (price <= 0) return '≈ $amount ${asset.chain.symbol}';
         final fiat = (double.tryParse(amount) ?? 0) * price;
@@ -111,6 +108,13 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
         return '≈ $amount ${asset.chain.symbol}（$symbol${fiat.toStringAsFixed(2)}）';
       },
     );
+  }
+
+  String _stripExceptionPrefix(String message) {
+    const prefix = 'Exception: ';
+    return message.startsWith(prefix)
+        ? message.substring(prefix.length)
+        : message;
   }
 
   @override

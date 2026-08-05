@@ -1,4 +1,4 @@
-import '../../domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 import 'state.dart';
 
 /// 接收弹窗的纯逻辑：构建与过滤可接收资产列表，不依赖 UI/状态框架。

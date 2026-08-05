@@ -1,6 +1,6 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 
-import '../../../domain/chain.dart';
 import './state.dart';
 
 /// 发送弹窗的纯逻辑：资产列表构建/过滤与地址、金额校验，不依赖 UI/状态框架。

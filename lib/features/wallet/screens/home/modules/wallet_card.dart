@@ -5,7 +5,7 @@ import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../i18n/translations.g.dart';
 import '../../../../../core/widgets/amount_text.dart';
 import '../../../../../providers/modules/balance_provider.dart';
-import '../../../domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 import '../../../domain/wallet.dart';
 import '../../../domain/wallet_avatar.dart';
 
@@ -32,8 +32,9 @@ class WalletCard extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     wallet.name,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -137,8 +138,10 @@ class _ChainTile extends ConsumerWidget {
         data: (b) => Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            AmountText.raw('${b.amount} ${b.symbol}',
-                style: theme.textTheme.bodyMedium),
+            AmountText.raw(
+              '${b.amount} ${b.symbol}',
+              style: theme.textTheme.bodyMedium,
+            ),
             AmountText(
               b.fiatValue,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -159,9 +162,12 @@ class _ChainTile extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(chain.name,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  chain.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 SizedBox(height: 2.s),
                 Text(
                   address ?? '（未派生地址）',
@@ -179,4 +185,3 @@ class _ChainTile extends ConsumerWidget {
     );
   }
 }
-

@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/blockchain/chain_registry.dart';
 import '../../features/wallet/domain/account_balance.dart';
-import '../../features/wallet/domain/chain.dart';
 import '../../features/wallet/domain/wallet.dart';
-import '../../features/wallet/data/evm_tx_service.dart';
+import '../../features/wallet/data/evm_transaction_service.dart';
 import '../../features/wallet/data/wallet_service.dart';
 import '../../features/wallet/services/wallet_key_service.dart';
 import '../prefs_provider.dart';
@@ -22,8 +22,9 @@ final walletServiceProvider = Provider<WalletService>(
 /// chainId -> EVM 原生转账的预估费用上限（wei）。
 /// autoDispose：仅发送流程使用，进确认页才查、离开即弃，不常驻缓存。
 final evmFeeProvider = FutureProvider.autoDispose.family<BigInt, String>(
-  (ref, chainId) =>
-      const EvmTxService().estimateNativeFee(SupportedChains.byId(chainId)),
+  (ref, chainId) => const EvmTransactionService().estimateNativeFee(
+    SupportedChains.byId(chainId),
+  ),
 );
 
 /// 行情类型别名：coinGeckoId -> (当前计价币种下的单价, 图标 URL)。
@@ -54,7 +55,8 @@ final marketsProvider = FutureProvider<Markets>((ref) async {
   final currency = ref.watch(currencyProvider);
 
   final (cached, cachedAt) = _readCache(prefs, currency);
-  if (cached != null && DateTime.now().difference(cachedAt!) < _marketCacheDuration) {
+  if (cached != null &&
+      DateTime.now().difference(cachedAt!) < _marketCacheDuration) {
     return cached;
   }
 

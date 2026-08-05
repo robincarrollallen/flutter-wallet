@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 
-import '../domain/chain.dart';
 import '../domain/wallet.dart';
 import 'mnemonic_service.dart';
 import 'secure_wallet_storage.dart';
@@ -53,10 +53,10 @@ class WalletKeyService {
         throw StateError('缺少助记词');
       }
       // 与导出共用同一派生定义：EVM 主链的规范格式即 0x hex，可直接签名。
-      return compute(
-        derivePrivateKeyInBackground,
-        (mnemonic, SupportedChains.ethereumSepolia.id),
-      );
+      return compute(derivePrivateKeyInBackground, (
+        mnemonic,
+        SupportedChains.ethereumSepolia.id,
+      ));
     }
 
     final privateKey = await _storage.readPrivateKey(wallet.id);

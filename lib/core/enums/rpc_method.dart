@@ -9,3 +9,25 @@ extension RpcMethodX on RpcMethod {
     RpcMethod.suiGetBalance => 'suix_getBalance',
   };
 }
+
+/// EVM JSON-RPC 方法（用于交易发送与估费流程）。
+enum EvmRpcMethod {
+  getTransactionCount,
+  getBalance,
+  sendRawTransaction,
+  getBlockByNumber,
+  maxPriorityFeePerGas,
+  gasPrice,
+}
+
+/// EvmRpcMethod 的链上方法名映射。
+extension EvmRpcMethodX on EvmRpcMethod {
+  String get wireName => switch (this) {
+    EvmRpcMethod.getTransactionCount => 'eth_getTransactionCount',
+    EvmRpcMethod.getBalance => 'eth_getBalance',
+    EvmRpcMethod.sendRawTransaction => 'eth_sendRawTransaction',
+    EvmRpcMethod.getBlockByNumber => 'eth_getBlockByNumber',
+    EvmRpcMethod.maxPriorityFeePerGas => 'eth_maxPriorityFeePerGas',
+    EvmRpcMethod.gasPrice => 'eth_gasPrice',
+  };
+}

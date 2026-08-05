@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 
 import '../../../../../../core/responsive/screen_adapter.dart';
-import '../../../../domain/chain.dart';
 import '../../../../domain/wallet.dart';
 import '../../widgets/panel/view.dart';
 import '../../../../../../core/navigation/panel_routes.dart';
@@ -36,9 +36,9 @@ class ExportPrivateKeyPage extends ConsumerWidget {
   /// 导出某条链私钥：直接展示私钥页面。
   // TODO: 安全码（设置 / 校验）功能暂时移除，后续补回后在此恢复校验逻辑。
   void _onSelectChain(BuildContext context, WidgetRef ref, Chain chain) {
-    Navigator.of(context).push(
-      panelSlideRoute(PrivateKeyViewPage(wallet: wallet, chain: chain)),
-    );
+    Navigator.of(
+      context,
+    ).push(panelSlideRoute(PrivateKeyViewPage(wallet: wallet, chain: chain)));
   }
 }
 

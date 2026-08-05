@@ -1,6 +1,6 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 
-import '../domain/chain.dart';
 import 'mnemonic_service.dart';
 
 /// 自动判断出的私钥类型。
@@ -46,8 +46,7 @@ class PrivateKeyService {
       PrivateKeyKind.evmHex => _deriveEvm(s),
       PrivateKeyKind.solanaBase58 => _deriveSolana(s),
       PrivateKeyKind.suiBech32 => _deriveSui(s),
-      PrivateKeyKind.unknown =>
-        throw ArgumentError('无法识别的私钥，无法派生'),
+      PrivateKeyKind.unknown => throw ArgumentError('无法识别的私钥，无法派生'),
     };
   }
 
@@ -133,10 +132,7 @@ class PrivateKeyService {
     final chain = SupportedChains.all.firstWhere(
       (c) => c.kind == ChainKind.sui,
     );
-    return DerivedWallet(
-      addresses: {chain.id: addr},
-      primaryPrivateKey: s,
-    );
+    return DerivedWallet(addresses: {chain.id: addr}, primaryPrivateKey: s);
   }
 
   /// 解析 Sui `suiprivkey1...`：返回 (方案标志, 32 字节私钥)。

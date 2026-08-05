@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../features/wallet/domain/chain.dart';
+import '../../core/blockchain/chain_registry.dart';
 import '../prefs_provider.dart';
 import 'balance_provider.dart';
 
@@ -63,9 +63,6 @@ final chainIconsProvider = FutureProvider<ChainIcons>((ref) async {
 
 /// 把链图标连同写入时刻落盘。
 Future<void> _writeCache(SharedPreferences prefs, ChainIcons icons) {
-  final json = {
-    'at': DateTime.now().millisecondsSinceEpoch,
-    'data': icons,
-  };
+  final json = {'at': DateTime.now().millisecondsSinceEpoch, 'data': icons};
   return prefs.setString(_chainIconsCacheKey, jsonEncode(json));
 }

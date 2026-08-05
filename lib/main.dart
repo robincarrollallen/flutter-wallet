@@ -11,7 +11,7 @@ import 'providers/prefs_provider.dart';
 import 'i18n/translations.g.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized(); // 手动把 Flutter 引擎与 Dart 层之间的绑定初始化好
   final sharedPreferences = await SharedPreferences.getInstance(); // 同步拿到 prefs 实例，注入到 provider，供各 Notifier 的 build() 同步读取。
 
   runApp(

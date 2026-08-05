@@ -1,5 +1,5 @@
-import '../../domain/chain.dart';
-import '../../domain/token.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
+import 'package:wallet/core/blockchain/token.dart';
 
 /// 一个可接收的资产条目：链上的原生币或其某个代币。
 ///

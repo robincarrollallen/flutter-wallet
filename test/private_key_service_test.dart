@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/features/wallet/domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 import 'package:wallet/features/wallet/services/private_key_service.dart';
 
 void main() {
@@ -31,8 +31,10 @@ void main() {
       expect(PrivateKeyService.detect(suiBech), PrivateKeyKind.suiBech32);
     });
     test('助记词词组 / 乱码 / 空 → unknown', () {
-      expect(PrivateKeyService.detect('abandon ability able'),
-          PrivateKeyKind.unknown);
+      expect(
+        PrivateKeyService.detect('abandon ability able'),
+        PrivateKeyKind.unknown,
+      );
       expect(PrivateKeyService.detect('not-a-key!!!'), PrivateKeyKind.unknown);
       expect(PrivateKeyService.detect('   '), PrivateKeyKind.unknown);
     });
@@ -46,23 +48,30 @@ void main() {
       final w = PrivateKeyService.derive(PrivateKeyKind.evmHex, '0x$evmHex');
       expect(w.primaryAddress, evmAddr);
       expect(w.primaryPrivateKey, '0x$evmHex');
-      for (final c in SupportedChains.all.where((c) => c.kind == ChainKind.evm)) {
+      for (final c in SupportedChains.all.where(
+        (c) => c.kind == ChainKind.evm,
+      )) {
         expect(w.addresses[c.id], evmAddr);
       }
     });
     test('同一把私钥同时还原 Tron 地址', () {
       final w = PrivateKeyService.derive(PrivateKeyKind.evmHex, evmHex);
-      final tron =
-          SupportedChains.all.firstWhere((c) => c.kind == ChainKind.tron);
+      final tron = SupportedChains.all.firstWhere(
+        (c) => c.kind == ChainKind.tron,
+      );
       expect(w.addresses[tron.id], tronAddr);
     });
   });
 
   group('PrivateKeyService.derive Solana', () {
     test('还原 Solana 地址', () {
-      final w = PrivateKeyService.derive(PrivateKeyKind.solanaBase58, solBase58);
-      final sol =
-          SupportedChains.all.firstWhere((c) => c.kind == ChainKind.solana);
+      final w = PrivateKeyService.derive(
+        PrivateKeyKind.solanaBase58,
+        solBase58,
+      );
+      final sol = SupportedChains.all.firstWhere(
+        (c) => c.kind == ChainKind.solana,
+      );
       expect(w.primaryAddress, solAddr);
       expect(w.addresses[sol.id], solAddr);
     });
@@ -71,8 +80,9 @@ void main() {
   group('PrivateKeyService.derive Sui', () {
     test('还原 Sui 地址', () {
       final w = PrivateKeyService.derive(PrivateKeyKind.suiBech32, suiBech);
-      final sui =
-          SupportedChains.all.firstWhere((c) => c.kind == ChainKind.sui);
+      final sui = SupportedChains.all.firstWhere(
+        (c) => c.kind == ChainKind.sui,
+      );
       expect(w.primaryAddress, suiAddr);
       expect(w.addresses[sui.id], suiAddr);
     });

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../../core/responsive/screen_adapter.dart';
-import '../../../../domain/chain.dart';
 import '../../../../domain/wallet.dart';
 import '../../../../services/wallet_key_service.dart';
 import '../../widgets/panel/view.dart';
@@ -235,19 +235,16 @@ class _RevealedContent extends StatelessWidget {
             color: theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8.s),
           ),
-          child: SelectableText(
-            privateKey,
-            style: theme.textTheme.bodyMedium,
-          ),
+          child: SelectableText(privateKey, style: theme.textTheme.bodyMedium),
         ),
         SizedBox(height: 16.s),
         // 复制按钮。
         OutlinedButton.icon(
           onPressed: () {
             Clipboard.setData(ClipboardData(text: privateKey));
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('私钥已复制')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('私钥已复制')));
           },
           icon: Icon(Icons.copy_rounded, size: 18.s),
           label: const Text('复制私钥'),

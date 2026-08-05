@@ -1,11 +1,11 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 
-import '../../../core/enums/chain_kind.dart';
-import '../../../core/enums/rpc_method.dart';
+import '../enums/chain_kind.dart';
+import '../enums/rpc_method.dart';
 import 'token.dart';
 
-export '../../../core/enums/chain_kind.dart';
-export '../../../core/enums/rpc_method.dart';
+export '../enums/chain_kind.dart';
+export '../enums/rpc_method.dart';
 
 /// 一条受支持链的静态配置。
 class Chain {
@@ -28,16 +28,13 @@ class Chain {
   final String name; // 链的名称(UI 展示给用户看)
   final String symbol; // 原生币符号，例如 ETH / BTC / SOL(余额、资产列表、转账页面等地方显示币种简称)
   final ChainKind kind; // 链的类型(决定“用哪套逻辑”去派生地址、查余额、调用接口和签名)
-  final Bip44Coins
-  coin; // BIP44 币种枚举(决定助记词派生路径；同一助记词在不同链会因为这个值派生出不同地址, EVM 多链共用 ethereum)
-  final String
-  endpoint; // 该链的节点/API 地址(实际网络请求入口, EVM/Solana 通常是 RPC，Bitcoin 是区块浏览器 API)
+  final Bip44Coins coin; // BIP44 币种枚举(决定助记词派生路径；同一助记词在不同链会因为这个值派生出不同地址, EVM 多链共用 ethereum)
+  final String endpoint; // 该链的节点/API 地址(实际网络请求入口, EVM/Solana 通常是 RPC，Bitcoin 是区块浏览器 API)
   final String coinGeckoId; // CoinGecko 里的币种 ID (拉取价格<通常是 USD 单价>, 做资产估值)
   final int decimals; // 原生币最小单位精度<如 ETH=18，BTC=8>(金额换算: 链上最小单位 <-> 人类可读金额)
   final int? evmChainId; // EVM 链的 chainId<数字>(EIP-155 签名必需, 非 EVM 链为空)
   final RpcMethod? nativeBalanceRpcMethod; // 原生币余额 RPC 方法（非 JSON-RPC 链为空）
-  final String?
-  coinGeckoPlatformId; // CoinGecko asset_platforms 的平台 id，用于取该链自己的图标(如 Base / Arbitrum 都有 ETH)
+  final String? coinGeckoPlatformId; // CoinGecko asset_platforms 的平台 id，用于取该链自己的图标(如 Base / Arbitrum 都有 ETH)
   final List<Token> tokens; // 该链上受支持的代币（默认空 = 仅原生币）
 }
 

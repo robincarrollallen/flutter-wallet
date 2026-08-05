@@ -8,7 +8,7 @@ import '../../../../../core/widgets/asset_icon.dart';
 import '../../../../../providers/modules/balance_provider.dart';
 import '../../../../../providers/modules/chain_icon_provider.dart';
 import '../../../../../providers/modules/wallet_provider.dart';
-import '../../../domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 import 'logic.dart';
 import '../recipient/view.dart';
 import './state.dart';

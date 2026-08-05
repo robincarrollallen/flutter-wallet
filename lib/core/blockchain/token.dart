@@ -1,6 +1,6 @@
-import '../../../core/enums/token_standard.dart';
+import '../enums/token_standard.dart';
 
-export '../../../core/enums/token_standard.dart';
+export '../enums/token_standard.dart';
 
 /// 挂在某条链上的单个代币的静态配置。
 class Token {

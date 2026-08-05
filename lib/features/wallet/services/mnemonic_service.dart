@@ -1,6 +1,5 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
-
-import '../domain/chain.dart';
+import 'package:wallet/core/blockchain/chain_registry.dart';
 
 /// 助记词相关能力的统一封装：集中 blockchain_utils 的调用，
 /// 隔离第三方库细节，便于将来替换与单测。
@@ -15,10 +14,9 @@ class MnemonicService {
       Bip39MnemonicValidator().isValid(mnemonic);
 
   /// 生成新助记词，默认 12 词。
-  static String generate() =>
-      Bip39MnemonicGenerator()
-          .fromWordsNumber(Bip39WordsNum.wordsNum12)
-          .toStr();
+  static String generate() => Bip39MnemonicGenerator()
+      .fromWordsNumber(Bip39WordsNum.wordsNum12)
+      .toStr();
 
   /// 由助记词派生以太坊首地址（BIP44 默认路径 m/44'/60'/0'/0/0），返回 0x… 字符串。
   static String deriveEthAddress(String mnemonic) =>
@@ -58,9 +56,10 @@ class MnemonicService {
     return switch (chain.kind) {
       ChainKind.evm || ChainKind.tron => _formatPrivateKey(raw),
       ChainKind.aptos => _formatPrivateKey(raw),
-      ChainKind.solana => Base58Encoder.encode(
-          [...raw, ...acct.publicKey.compressed.sublist(1)],
-        ),
+      ChainKind.solana => Base58Encoder.encode([
+        ...raw,
+        ...acct.publicKey.compressed.sublist(1),
+      ]),
       ChainKind.sui => Bech32Encoder.encode('suiprivkey', [0x00, ...raw]),
       ChainKind.bitcoin => acct.privateKey.toWif(),
     };
@@ -87,13 +86,11 @@ class MnemonicService {
 
 /// 多链派生结果：各链地址（+ 私钥导入场景的主私钥）。
 class DerivedWallet {
-  const DerivedWallet({
-    required this.addresses,
-    this.primaryPrivateKey,
-  });
+  const DerivedWallet({required this.addresses, this.primaryPrivateKey});
 
   final Map<String, String> addresses; // chainId -> 该链地址。
-  final String? primaryPrivateKey; // 主私钥，仅私钥导入钱包需要（无助记词，签名/导出只能靠已存私钥; 助记词派生（deriveWallet）为 null——私钥一律按需现场重派生，不预存。
+  final String?
+  primaryPrivateKey; // 主私钥，仅私钥导入钱包需要（无助记词，签名/导出只能靠已存私钥; 助记词派生（deriveWallet）为 null——私钥一律按需现场重派生，不预存。
 
   /// 主地址（私钥导入钱包）：优先取 EVM 主链地址；
   /// 非 EVM 私钥导入时 map 只有该链一项，取其唯一地址。
