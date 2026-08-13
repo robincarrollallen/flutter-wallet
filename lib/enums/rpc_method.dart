@@ -18,6 +18,9 @@ enum EvmRpcMethod {
   getBlockByNumber,
   maxPriorityFeePerGas,
   gasPrice,
+  estimateGas,
+  getCode,
+  getTransactionReceipt,
 }
 
 /// EvmRpcMethod 的链上方法名映射。
@@ -29,5 +32,8 @@ extension EvmRpcMethodX on EvmRpcMethod {
     EvmRpcMethod.getBlockByNumber => 'eth_getBlockByNumber',
     EvmRpcMethod.maxPriorityFeePerGas => 'eth_maxPriorityFeePerGas',
     EvmRpcMethod.gasPrice => 'eth_gasPrice',
+    EvmRpcMethod.estimateGas => 'eth_estimateGas',
+    EvmRpcMethod.getCode => 'eth_getCode',
+    EvmRpcMethod.getTransactionReceipt => 'eth_getTransactionReceipt',
   };
 }

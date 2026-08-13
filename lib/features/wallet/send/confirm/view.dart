@@ -21,6 +21,7 @@ class SendConfirmPage extends ConsumerStatefulWidget {
     required this.asset,
     required this.toAddress,
     required this.amount,
+    this.isMaxAmount = false,
     this.tokenLogoUrl,
     this.chainLogoUrl,
   });
@@ -28,6 +29,10 @@ class SendConfirmPage extends ConsumerStatefulWidget {
   final SendAsset asset;
   final String toAddress;
   final String amount;
+
+  /// 金额是否来自「最大」（= 全额余额）。仅该场景允许从转出额中扣除网络费用，
+  /// 本页展示扣除后的发送上限。
+  final bool isMaxAmount;
   final String? tokenLogoUrl;
   final String? chainLogoUrl;
 
@@ -48,7 +53,13 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       final result = await ref
           .read(walletServiceProvider)
           .sendTransaction(
-            SendTxRequest(from: from, to: widget.toAddress, amount: widget.amount, chainId: widget.asset.chain.id),
+            SendTxRequest(
+              from: from,
+              to: widget.toAddress,
+              amount: widget.amount,
+              chainId: widget.asset.chain.id,
+              deductFeeFromAmount: widget.isMaxAmount,
+            ),
             wallet,
           );
       if (!mounted) return; // 确保当前 Widget 仍然存在于页面树（未被销毁）
@@ -62,9 +73,10 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
           builder: (_) => SendResultPage(
             asset: widget.asset,
             toAddress: widget.toAddress,
-            // gas 不足自动扣费时实际金额会小于输入金额，结果页按链上实际值展示。
+            // MAX 场景下链上重估费用后金额可能再被扣减，结果页按链上实际值展示。
             amount: result.sentAmount,
             txHash: result.hash,
+            status: result.status,
           ),
         ),
         (route) => route.isFirst,
@@ -83,10 +95,26 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     }
   }
 
-  /// 费用行文案：按费率上限（maxFeePerGas × 21000）估算并附法币折算；
+  /// 全额转出（MAX）时的发送上限：可用余额 − 费用上限。
+  /// 费用或余额尚未就绪、以及扣完不为正时回退用户输入值，由发送时的链上校验兜底。
+  /// 非 MAX 场景恒为用户输入的金额。
+  String _sendableAmount(SendAsset asset, String from) {
+    if (!widget.isMaxAmount || from.isEmpty) return widget.amount;
+    final fee = ref.watch(evmFeeProvider((asset.chain.id, from, widget.toAddress))).value;
+    final balance = ref.watch(balanceProvider((asset.chain.id, from))).value?.amount;
+    if (fee == null || balance == null) return widget.amount;
+    try {
+      final net = parseUnits(balance, asset.chain.decimals) - fee;
+      return net <= BigInt.zero ? widget.amount : formatUnits(net, asset.chain.decimals);
+    } on FormatException {
+      return widget.amount;
+    }
+  }
+
+  /// 费用行文案：按费率上限 × gasLimit 估算并附法币折算；
   /// 查询失败回退 `--`——估费只是展示，不阻塞发送，最终由节点把关。
   String _feeText(SendAsset asset, String from) {
-    final feeAsync = ref.watch(evmFeeProvider(asset.chain.id));
+    final feeAsync = ref.watch(evmFeeProvider((asset.chain.id, from, widget.toAddress)));
     return feeAsync.when(
       loading: () => '查询中…',
       error: (_, _) => '--',
@@ -112,6 +140,8 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     final asset = widget.asset;
     final wallet = ref.watch(activeWalletProvider);
     final from = wallet?.addressFor(asset.chain) ?? '';
+    // MAX 场景展示扣除网络费用后的发送上限，与实际上链金额保持一致。
+    final sendable = _sendableAmount(asset, from);
 
     return Scaffold(
       body: SafeArea(
@@ -146,7 +176,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                     ),
                     SizedBox(height: 12.s),
                     Text(
-                      '${widget.amount} ${asset.symbol}',
+                      '$sendable ${asset.symbol}',
                       style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 4.s),
@@ -154,6 +184,15 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                       asset.chain.name,
                       style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
+                    // —— 全额转出：说明金额已扣除网络费用 —— //
+                    if (widget.isMaxAmount) ...[
+                      SizedBox(height: 4.s),
+                      Text(
+                        '全额转出：可用 ${widget.amount} ${asset.symbol}，已扣除预估网络费用',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
                     SizedBox(height: 24.s),
                     // —— 明细卡片 —— //
                     Container(

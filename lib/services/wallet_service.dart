@@ -18,8 +18,12 @@ class WalletService {
 
   /// 发起转账：按链类型分发。EVM 已接入真实签名广播；其余链暂未支持。
   /// [wallet] 用于解析签名私钥（私钥明文仅在本次调用内使用）。
-  /// 返回 (交易哈希, 实际发送金额)——gas 不足自动扣费时实际金额会小于入参。
-  Future<({String hash, String sentAmount})> sendTransaction(SendTxRequest request, Wallet wallet) async {
+  /// 返回 (交易哈希, 实际发送金额, 上链状态)——仅 [SendTxRequest.deductFeeFromAmount]
+  /// 为 true（MAX 全额转出）时，实际金额才可能小于入参。
+  Future<({String hash, String sentAmount, EvmSendStatus status})> sendTransaction(
+    SendTxRequest request,
+    Wallet wallet,
+  ) async {
     final chainId = request.chainId;
     if (chainId == null) {
       throw ArgumentError('sendTransaction 缺少 chainId');
@@ -35,8 +39,10 @@ class WalletService {
         return const EvmTransactionService().sendNative(
           chain: chain,
           privateKeyHex: privateKey,
+          fromAddress: request.from,
           to: request.to,
           amount: request.amount,
+          deductFeeFromAmount: request.deductFeeFromAmount,
         );
       case ChainKind.bitcoin:
       case ChainKind.solana:

@@ -12,10 +12,17 @@ import 'wallet_provider.dart';
 
 export '../../data/datasource/remote/coingecko_api.dart' show Markets;
 
-/// chainId -> EVM 原生转账的预估费用上限（wei）。
+/// (chainId, from, to) -> EVM 原生转账的预估费用上限（wei）。
 /// autoDispose：仅发送流程使用，进确认页才查、离开即弃，不常驻缓存。
-final evmFeeProvider = FutureProvider.autoDispose.family<BigInt, String>(
-  (ref, chainId) => const EvmTransactionService().estimateNativeFee(SupportedChains.byId(chainId)),
+final evmFeeProvider = FutureProvider.autoDispose.family<BigInt, (String, String, String)>(
+  (ref, key) {
+    final (chainId, from, to) = key;
+    return const EvmTransactionService().estimateNativeFee(
+      SupportedChains.byId(chainId),
+      from: from,
+      to: to,
+    );
+  },
 );
 
 /// 全部受支持链币种与代币的 coinGeckoId 集合，行情按这份清单一次取全。

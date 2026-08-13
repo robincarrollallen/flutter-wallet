@@ -130,6 +130,17 @@ void main() {
     test('余额不足', () {
       expect(SendLogic.validateAmount('2', '1.0'), '余额不足');
     });
+
+    test('按 decimals 精确比较，不受 double 精度影响', () {
+      expect(
+        SendLogic.validateAmount('0.100000000000000001', '0.1', decimals: 18),
+        '余额不足',
+      );
+      expect(
+        SendLogic.validateAmount('0.1', '0.100000000000000001', decimals: 18),
+        isNull,
+      );
+    });
   });
 
   test('SendAsset 展示字段取自链本身', () {

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
+import '../../../../services/evm_transaction_service.dart';
 import '../../../../widgets/app_toast.dart';
 import '../coins/state.dart';
 
-/// 发送结果页：展示已提交的交易哈希（当前为占位实现返回的 mock 哈希），
-/// 支持复制；「完成」回到首页。
+/// 发送结果页：展示上链状态与交易哈希，支持复制；「完成」回到首页。
 class SendResultPage extends StatelessWidget {
   const SendResultPage({
     super.key,
@@ -14,16 +14,38 @@ class SendResultPage extends StatelessWidget {
     required this.toAddress,
     required this.amount,
     required this.txHash,
+    this.status = EvmSendStatus.pending,
   });
 
   final SendAsset asset;
   final String toAddress;
   final String amount;
   final String txHash;
+  final EvmSendStatus status;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final (icon, color, title, subtitle) = switch (status) {
+      EvmSendStatus.confirmed => (
+        Icons.check_circle_rounded,
+        theme.colorScheme.primary,
+        '已确认',
+        '交易已上链确认',
+      ),
+      EvmSendStatus.failed => (
+        Icons.error_rounded,
+        theme.colorScheme.error,
+        '上链失败',
+        '交易已广播但执行失败，gas 可能已消耗',
+      ),
+      EvmSendStatus.pending => (
+        Icons.hourglass_top_rounded,
+        theme.colorScheme.tertiary,
+        '确认中',
+        '已广播，等待网络确认（可稍后在区块浏览器查看）',
+      ),
+    };
 
     // 结果页是流程终点：禁用返回手势（确认页已被移出栈，无处可退）。
     return PopScope(
@@ -35,10 +57,16 @@ class SendResultPage extends StatelessWidget {
             child: Column(
               children: [
                 const Spacer(),
-                Icon(Icons.check_circle_rounded, size: 64.s, color: theme.colorScheme.primary),
+                Icon(icon, size: 64.s, color: color),
                 SizedBox(height: 16.s),
-                Text('已提交', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                Text(title, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                 SizedBox(height: 8.s),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                SizedBox(height: 4.s),
                 Text(
                   '$amount ${asset.symbol} · ${asset.chain.name}',
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),

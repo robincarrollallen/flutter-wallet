@@ -26,6 +26,10 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
   final _controller = TextEditingController();
   String? _error;
 
+  /// 当前输入是否由「最大」按钮填入（= 全额余额，网络费用留到确认页扣减）。
+  /// 只有它为 true 时，才允许链上从转出额里扣费；用户一旦手动改动输入即失效。
+  bool _isMax = false;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -34,7 +38,7 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
 
   void _next(String balance) {
     final input = _controller.text.trim();
-    final error = SendLogic.validateAmount(input, balance);
+    final error = SendLogic.validateAmount(input, balance, decimals: widget.asset.chain.decimals);
     if (error != null) {
       setState(() => _error = error);
       return;
@@ -45,6 +49,7 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
           asset: widget.asset,
           toAddress: widget.toAddress,
           amount: input,
+          isMaxAmount: _isMax,
           tokenLogoUrl: widget.tokenLogoUrl,
           chainLogoUrl: widget.chainLogoUrl,
         ),
@@ -99,7 +104,11 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
                       autofocus: true,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       style: theme.textTheme.headlineSmall,
-                      onChanged: (_) => setState(() => _error = null),
+                      // 手动改动即不再是 MAX，后续不允许链上自动扣费。
+                      onChanged: (_) => setState(() {
+                        _error = null;
+                        _isMax = false;
+                      }),
                       decoration: InputDecoration(
                         hintText: '0',
                         errorText: _error,
@@ -137,9 +146,10 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
                                 ),
                         ),
                         TextButton(
-                          // 手续费为占位实现，MAX 直接填满余额，不做扣减。
+                          // 填满全部余额并标记为「全额转出」，网络费用在确认页按实时费率扣减展示。
                           onPressed: () => setState(() {
                             _controller.text = balance;
+                            _isMax = true;
                             _error = null;
                           }),
                           child: const Text('最大'),

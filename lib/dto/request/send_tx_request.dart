@@ -1,14 +1,30 @@
 /// 【请求数据】发起转账时提交给后端 / 节点的请求体。
 /// 仅用于序列化为 API 入参，不在 UI 中长期持有。
 class SendTxRequest {
-  const SendTxRequest({required this.from, required this.to, required this.amount, this.chainId});
+  const SendTxRequest({
+    required this.from,
+    required this.to,
+    required this.amount,
+    this.chainId,
+    this.deductFeeFromAmount = false,
+  });
 
   final String from;
   final String to;
   final String amount;
   final String? chainId;
 
+  /// 是否为「全额转出（MAX）」：仅该场景允许链上重估费用后从转出额中扣费。
+  /// 手输金额恒为 false——余额不足必须报错而非静默改小金额。
+  final bool deductFeeFromAmount;
+
   Map<String, dynamic> toJson() {
-    return {'from': from, 'to': to, 'amount': amount, if (chainId != null) 'chainId': chainId};
+    return {
+      'from': from,
+      'to': to,
+      'amount': amount,
+      if (chainId != null) 'chainId': chainId,
+      'deductFeeFromAmount': deductFeeFromAmount,
+    };
   }
 }

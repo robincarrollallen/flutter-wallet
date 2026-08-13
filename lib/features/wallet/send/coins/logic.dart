@@ -1,5 +1,6 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 import '../../../../blockchain/chain_registry.dart';
+import '../../../../blockchain/units.dart';
 
 import 'state.dart';
 
@@ -99,13 +100,19 @@ class SendLogic {
 
   /// 校验发送金额。合法返回 null，否则返回错误文案。
   /// [balance] 为当前可用余额的十进制字符串（来自余额查询）。
-  static String? validateAmount(String input, String balance) {
+  /// 用 [parseUnits] 做精确比较，避免 double 精度误差。
+  static String? validateAmount(String input, String balance, {int decimals = 18}) {
     final raw = input.trim();
     if (raw.isEmpty) return '请输入金额';
-    final value = double.tryParse(raw);
-    if (value == null || value <= 0) return '金额无效';
-    final available = double.tryParse(balance) ?? 0;
-    if (value > available) return '余额不足';
-    return null;
+    try {
+      final value = parseUnits(raw, decimals);
+      if (value <= BigInt.zero) return '金额无效';
+      final availableRaw = balance.trim().isEmpty ? '0' : balance.trim();
+      final available = parseUnits(availableRaw, decimals);
+      if (value > available) return '余额不足';
+      return null;
+    } on FormatException {
+      return '金额无效';
+    }
   }
 }
