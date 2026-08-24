@@ -2,11 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-const Duration _jsonRpcTimeout = Duration(seconds: 15); // 默认 15 秒超时
-const int _maxErrorBodyPreviewChars = 300; // 最大错误体预览字符数
+import 'http_config.dart';
 
 int _nextJsonRpcRequestId = 0; // 自增请求初始 ID
-final HttpClient _jsonRpcHttpClient = HttpClient()..connectionTimeout = _jsonRpcTimeout; // 创建 HTTP 客户端
 
 /// 通用 JSON-RPC 调用：统一使用自增请求 id，并在错误时抛出 Exception。
 Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) async {
@@ -16,17 +14,17 @@ Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) asy
     jsonEncode({'jsonrpc': '2.0', 'id': requestId, 'method': method, 'params': params}),
   );
   try {
-    final request = await _jsonRpcHttpClient.postUrl(uri).timeout(_jsonRpcTimeout); // 创建 HTTP 请求
+    final request = await sharedHttpClient.postUrl(uri).timeout(kRemoteTimeout); // 创建 HTTP 请求
     request.headers.contentType = ContentType.json; // 设置请求头
     request.add(payload); // 添加请求体
 
-    final response = await request.close().timeout(_jsonRpcTimeout); // 发送请求
-    final body = await response.transform(utf8.decoder).join().timeout(_jsonRpcTimeout); // 获取响应体
+    final response = await request.close().timeout(kRemoteTimeout); // 发送请求
+    final body = await response.transform(utf8.decoder).join().timeout(kRemoteTimeout); // 获取响应体
 
     if (response.statusCode < 200 || response.statusCode >= 300) { // 如果响应状态码不在 200-299 范围内则抛出异常
       throw Exception(
         'RPC HTTP error [$method] $url: status=${response.statusCode}, '
-        'body=${_previewBody(body)}',
+        'body=${previewBody(body)}',
       );
     }
 
@@ -48,7 +46,7 @@ Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) asy
     }
     return decoded['result']; // 返回结果
   } on TimeoutException {
-    throw Exception('RPC timeout [$method] $url after ${_jsonRpcTimeout.inSeconds}s'); // 超时异常
+    throw Exception('RPC timeout [$method] $url after ${kRemoteTimeout.inSeconds}s'); // 超时异常
   } on FormatException catch (e) {
     throw Exception('RPC invalid JSON [$method] $url: ${e.message}'); // 格式异常
   }
@@ -75,8 +73,3 @@ String _formatRpcError(Object error) {
   return error.toString();
 }
 
-/// 预览响应体
-String _previewBody(String body) {
-  if (body.length <= _maxErrorBodyPreviewChars) return body;
-  return '${body.substring(0, _maxErrorBodyPreviewChars)}...';
-}

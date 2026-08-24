@@ -1,5 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../blockchain/chain_registry.dart';
 import '../../blockchain/units.dart';
 import '../../domain/account_balance.dart';
@@ -20,6 +18,3 @@ class BalanceRepository {
     return AccountBalance(address: address, amount: formatUnits(raw, chain.decimals), symbol: chain.symbol);
   }
 }
-
-/// 定义 provider，供各 provider / UI 注入使用。
-final balanceRepositoryProvider = Provider<BalanceRepository>((ref) => const BalanceRepository(ChainBalanceApi()));

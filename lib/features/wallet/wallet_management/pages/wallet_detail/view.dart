@@ -5,6 +5,7 @@ import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../widgets/amount_text.dart';
 import '../../../../../providers/modules/balance_provider.dart';
+import '../../../../../providers/modules/currency_provider.dart';
 import '../../../../../providers/modules/wallet_provider.dart';
 import '../../../../../domain/wallet.dart';
 import '../backup_method/view.dart';
@@ -98,8 +99,10 @@ class WalletDetailPage extends ConsumerWidget {
                               .when(
                                 loading: () => const Text('加载中…', textAlign: TextAlign.right),
                                 error: (_, _) => const Text('获取失败', textAlign: TextAlign.right),
+                                // isPartial：部分链取数失败，前缀 ~ 表示这是不完整的合计。
                                 data: (v) => AmountText(
-                                  v,
+                                  v.value,
+                                  symbol: v.isPartial ? '~${ref.watch(currencySymbolProvider)}' : null,
                                   textAlign: TextAlign.right,
                                   style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                                 ),

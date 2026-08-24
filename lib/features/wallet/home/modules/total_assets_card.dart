@@ -7,8 +7,10 @@ import '../../../../i18n/translations.g.dart';
 import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/balance_visibility_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
+import '../../../../blockchain/chain_registry.dart';
 import '../../../../domain/wallet.dart';
 import '../../../../domain/wallet_avatar.dart';
+import '../../../../domain/wallet_total.dart';
 import '../../address_management/address_management_view.dart';
 import '../../receive/view.dart';
 import '../../send/coins/view.dart';
@@ -25,7 +27,9 @@ class TotalAssetsCard extends ConsumerWidget {
     final t = context.t;
     final wallet = ref.watch(activeWalletProvider);
     // 总资产只算当前选中钱包的跨链合计；无钱包时显示 0。
-    final total = wallet == null ? const AsyncValue.data(0.0) : ref.watch(walletTotalProvider(wallet.id));
+    final total = wallet == null
+        ? const AsyncValue.data(WalletTotal.empty)
+        : ref.watch(walletTotalProvider(wallet.id));
     final hidden = ref.watch(balanceHiddenProvider);
 
     return Card(
@@ -94,12 +98,33 @@ class TotalAssetsCard extends ConsumerWidget {
                 t.balance.unavailable,
                 style: theme.textTheme.headlineMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer),
               ),
-              data: (value) => AmountText(
-                value,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
-                ),
+              data: (v) => Column(
+                children: [
+                  AmountText(
+                    v.value,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  // 部分链取数失败：数字仍然出，但必须标明它是不完整的——
+                  // 否则用户会把缩水后的金额当成真实资产。tooltip 里报出具体链名。
+                  if (v.isPartial)
+                    Tooltip(
+                      message: v.failedChainIds.map((id) => SupportedChains.byId(id).name).join('、'),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.error_outline, size: 14.s, color: theme.colorScheme.onPrimaryContainer),
+                          SizedBox(width: 4.s),
+                          Text(
+                            t.home.partialAssets,
+                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
             ),
             // —— 功能按钮栏：发送 / 接收 / 历史 / 更多（仅有钱包时展示，逻辑待补） —— //

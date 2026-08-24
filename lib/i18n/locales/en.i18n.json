@@ -13,6 +13,7 @@
     "createWallet": "Create Wallet",
     "totalAssets": "Total Assets",
     "assetsScanning": "Scanning on-chain assets…",
+    "partialAssets": "Some chains failed to load",
     "searchHint": "Search tokens, addresses or transactions",
     "settings": "Settings",
     "scan": "Scan"

@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import '../../../blockchain/chain_registry.dart';
 import '../../../core/utils/evm_hex.dart';
+import 'http_config.dart';
 import 'json_rpc.dart';
 import 'rest_client.dart';
 
@@ -36,14 +39,12 @@ class ChainBalanceApi {
         final result = await jsonRpcCall(chain.endpoint, method.wireName, [address]);
         return BigInt.from(((result as Map)['value'] as num?) ?? 0);
       }(),
+      // 无币地址 suix_getBalance 会正常返回 totalBalance:"0"，不需要兜底 catch：
+      // 下面的 null 判断已覆盖响应缺字段的情况，再包一层只会把 RPC 故障伪装成「余额 0」。
       RpcMethod.suiGetBalance => () async {
-        try {
-          final result = await jsonRpcCall(chain.endpoint, method.wireName, [address, '0x2::sui::SUI']);
-          final total = (result as Map)['totalBalance'] as String?;
-          return total == null ? BigInt.zero : BigInt.parse(total);
-        } catch (_) {
-          return BigInt.zero;
-        }
+        final result = await jsonRpcCall(chain.endpoint, method.wireName, [address, '0x2::sui::SUI']);
+        final total = (result as Map)['totalBalance'] as String?;
+        return total == null ? BigInt.zero : BigInt.parse(total);
       }(),
     };
   }
@@ -59,28 +60,29 @@ class ChainBalanceApi {
   }
 
   /// Tron：REST POST wallet/getaccount，返回 balance（单位 sun，1e6）。
-  /// 未激活账户返回 {}（无 balance 字段）；查询失败均按 0 处理。
+  ///
+  /// 未激活账户返回 {}（无 balance 字段）——这是**业务上真实的 0**，由下面的 `?? 0`
+  /// 覆盖，不需要 catch。反过来说，能抛出来的都是传输故障，必须原样上抛：
+  /// 把它伪装成「余额 0」会让用户的总资产凭空缩水且毫无提示。
   Future<BigInt> _tronBalance(Chain chain, String address) async {
-    try {
-      final json = await postJson('${chain.endpoint}/wallet/getaccount', {
-        'address': address,
-        'visible': true, // 传入的是 base58（T...）地址
-      });
-      return BigInt.from((json['balance'] as num?)?.toInt() ?? 0);
-    } catch (_) {
-      return BigInt.zero;
-    }
+    final json = await postJson('${chain.endpoint}/wallet/getaccount', {
+      'address': address,
+      'visible': true, // 传入的是 base58（T...）地址
+    });
+    return BigInt.from((json['balance'] as num?)?.toInt() ?? 0);
   }
 
   /// Aptos：REST GET .../balance/0x1::aptos_coin::AptosCoin，响应体为标量数字
-  /// （单位 octa，1e8）。账户不存在时返回 404，按 0 处理。
+  /// （单位 octa，1e8）。
   Future<BigInt> _aptosBalance(Chain chain, String address) async {
+    final uri = Uri.parse('${chain.endpoint}/v1/accounts/$address/balance/0x1::aptos_coin::AptosCoin');
     try {
-      final uri = Uri.parse('${chain.endpoint}/v1/accounts/$address/balance/0x1::aptos_coin::AptosCoin');
-      final body = await getText(uri); // 404 时抛异常，下方 catch 归零
-      return BigInt.parse(body.trim().replaceAll('"', ''));
-    } catch (_) {
-      return BigInt.zero;
+      return BigInt.parse((await getText(uri)).trim().replaceAll('"', ''));
+    } on HttpStatusException catch (e) {
+      // 账户从未上链时 Aptos 返回 404 —— 这是「确实没有这个账户 = 余额 0」，属业务空值。
+      // 其余状态码（429 限流 / 5xx）一律上抛，交给上层显示为「取数失败」而非 0。
+      if (e.statusCode == HttpStatus.notFound) return BigInt.zero;
+      rethrow;
     }
   }
 }

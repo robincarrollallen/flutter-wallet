@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../blockchain/chain_registry.dart';
 import '../../data/datasource/remote/coingecko_api.dart' show ChainIcons;
-import '../../data/repository/market_repository.dart';
+import '../market_repository_provider.dart';
 
 export '../../data/datasource/remote/coingecko_api.dart' show ChainIcons;
 

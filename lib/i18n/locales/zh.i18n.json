@@ -13,6 +13,7 @@
     "createWallet": "创建钱包",
     "totalAssets": "总资产",
     "assetsScanning": "正在扫描链上资产…",
+    "partialAssets": "部分链数据获取失败",
     "searchHint": "搜索代币、地址或交易",
     "settings": "设置",
     "scan": "扫一扫"

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/format/amount_formatter.dart';
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../widgets/amount_text.dart';
 import '../../../providers/modules/balance_provider.dart';
 import '../../../providers/modules/chain_icon_provider.dart';
+import '../../../providers/modules/currency_provider.dart';
 import '../../../providers/modules/wallet_provider.dart';
 import '../../../blockchain/chain_registry.dart';
 import '../../../widgets/token_icon.dart';
@@ -238,29 +240,82 @@ class _AssetList extends StatelessWidget {
     return ListView.builder(
       padding: EdgeInsets.symmetric(vertical: 8.s),
       itemCount: assets.length,
-      itemBuilder: (context, i) {
-        final a = assets[i];
-        final tokenLogoUrl = markets[a.coinGeckoId]?.logoUrl;
-        final chainLogoUrl = chainIcons[a.chain.coinGeckoPlatformId] ?? markets[a.chain.coinGeckoId]?.logoUrl;
-        return ListTile(
-          leading: AssetIcon(
-            symbol: a.symbol,
-            tokenLogoUrl: tokenLogoUrl,
-            chainSymbol: a.chain.symbol,
-            chainLogoUrl: chainLogoUrl,
-          ),
-          title: Text(a.symbol),
-          // 在「全部」页附带链名，便于区分同名代币归属。
-          subtitle: Text(chain == null ? '${a.name} · ${a.chain.name}' : a.name),
-          // 右侧展示持仓「数量 + 折算价值」。
-          trailing: _AssetAmount(asset: a),
-          // 弹窗内跳转：在嵌套 Navigator 里滑入收款地址子页。
-          onTap: () => Navigator.of(context).push(
-            panelSlideRoute<void>(ReceiveAddressPage(asset: a, tokenLogoUrl: tokenLogoUrl, chainLogoUrl: chainLogoUrl)),
-          ),
-        );
-      },
+      itemBuilder: (context, i) => _AssetTile(
+        asset: assets[i],
+        showChainName: chain == null,
+        markets: markets,
+        chainIcons: chainIcons,
+      ),
     );
+  }
+}
+
+/// 单个资产行：图标 + 符号/全名 + 副标题链名单价 + 右侧持仓。
+class _AssetTile extends ConsumerWidget {
+  const _AssetTile({
+    required this.asset,
+    required this.showChainName,
+    required this.markets,
+    required this.chainIcons,
+  });
+
+  final ReceiveAsset asset;
+  final bool showChainName;
+  final Markets markets;
+  final ChainIcons chainIcons;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final tokenLogoUrl = markets[asset.coinGeckoId]?.logoUrl;
+    final chainLogoUrl = chainIcons[asset.chain.coinGeckoPlatformId] ?? markets[asset.chain.coinGeckoId]?.logoUrl;
+    final subtitle = _subtitle(ref);
+    return ListTile(
+      leading: AssetIcon(
+        symbol: asset.symbol,
+        tokenLogoUrl: tokenLogoUrl,
+        chainSymbol: asset.chain.symbol,
+        chainLogoUrl: chainLogoUrl,
+      ),
+      title: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Text(asset.symbol),
+          SizedBox(width: 6.s),
+          Flexible(
+            child: Text(
+              asset.name,
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+      subtitle: subtitle.isEmpty ? null : Text(subtitle),
+      trailing: _AssetAmount(asset: asset),
+      onTap: () => Navigator.of(context).push(
+        panelSlideRoute<void>(
+          ReceiveAddressPage(asset: asset, tokenLogoUrl: tokenLogoUrl, chainLogoUrl: chainLogoUrl),
+        ),
+      ),
+    );
+  }
+
+  /// 副标题：「链名 · 当前单价」。全名已挪到主标题右侧，此处不再重复。
+  ///
+  /// 「全部」页附带链名，便于区分同名代币归属；原生币的名称本身就是链名，
+  /// 不再写第二遍。单价取自已注入的 [markets]，不额外发请求。行情加载中
+  /// 或拉取失败时不显示 $0.00，免得用户误以为该币真的没价值。
+  ///
+  /// 刻意不用 AmountText：掩码是为了藏持仓，单价是公开行情，与隐私无关。
+  String _subtitle(WidgetRef ref) {
+    final price = markets[asset.coinGeckoId]?.price;
+    final priceText = price == null ? null : formatAmount(price, symbol: ref.watch(currencySymbolProvider));
+    if (showChainName && asset.name != asset.chain.name) {
+      return priceText == null ? asset.chain.name : '${asset.chain.name} · $priceText';
+    }
+    return priceText ?? '';
   }
 }
 

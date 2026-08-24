@@ -1,12 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../blockchain/chain_registry.dart';
+import '../../data/datasource/remote/chain_balance_api.dart';
 import '../../data/datasource/remote/coingecko_api.dart' show Markets;
 import '../../data/repository/balance_repository.dart';
-import '../../data/repository/market_repository.dart';
 import '../../domain/account_balance.dart';
 import '../../domain/wallet.dart';
+import '../../domain/wallet_total.dart';
 import '../../services/evm_transaction_service.dart';
+import '../market_repository_provider.dart';
 import 'currency_provider.dart';
 import 'wallet_provider.dart';
 
@@ -79,7 +81,7 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String)>(
   final (chainId, address) = key;
   final chain = SupportedChains.byId(chainId);
 
-  final base = await ref.watch(balanceRepositoryProvider).getBalance(chain, address);
+  final base = await const BalanceRepository(ChainBalanceApi()).getBalance(chain, address);
   final markets = await ref.watch(marketsProvider.future);
   final market = markets[chain.coinGeckoId];
 
@@ -90,10 +92,31 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String)>(
     price: market?.price ?? 0,
     logoUrl: market?.logoUrl,
   );
-});
+}, retry: _noRetry);
+
+/// 关掉 Riverpod 3.x 的自动重试。
+///
+/// 默认策略是最多重试 10 次、指数退避 200ms→6.4s，一条链失败要耗掉近 40 秒才
+/// 落定成 error；这期间 provider 停在「带着错误的 loading」态，`.future` 迟迟不完成——
+/// 总资产会一直转圈，下拉刷新的指示器也收不起来。11 条链 × 多个钱包同时重试更是雪上加霜。
+///
+/// 本应用有明确的手动重试入口（下拉刷新），失败时直接把错误交出去、让对应的链显示
+/// 「--」要诚实得多。这也是当初 Sui/Tron/Aptos 把异常吞成「余额 0」的根因——
+/// 那是在绕开这个卡顿，代价是谎报余额；现在从源头关掉重试，才好把那些 catch 拆掉。
+Duration? _noRetry(int retryCount, Object error) => null;
 
 /// 单个钱包跨链折算后的总资产价值（当前计价法币）。按 walletId 查询。
-final walletTotalProvider = FutureProvider.family<double, String>((ref, walletId) async {
+///
+/// **并发拉取**：先在同步段把每条链的 Future 全部取出来，再统一 await。
+/// ref.watch 必须跑在第一个 await 之前——否则 Riverpod 3.x 的依赖登记与
+/// autoDispose 都会失准；而且写成循环内 await 的话，下一条链要等上一条 resolve
+/// 才开始发请求，十来条链的耗时直接变成累加。
+///
+/// **容错**：单链失败不拖垮整体——跳过它，用成功的链先给出总额，
+/// 并把失败的链 id 带回给 UI 提示「数据不完整」。逐链的错误展示仍归
+/// [balanceProvider] 自己负责（各 _ChainTile 的 .when(error:)），
+/// 容错只发生在汇总这一层，不会污染下游。
+final walletTotalProvider = FutureProvider.family<WalletTotal, String>((ref, walletId) async {
   final wallets = ref.watch(walletListProvider);
   Wallet? wallet;
   for (final w in wallets) {
@@ -102,29 +125,42 @@ final walletTotalProvider = FutureProvider.family<double, String>((ref, walletId
       break;
     }
   }
-  if (wallet == null) return 0;
-  var total = 0.0;
-  for (final chain in SupportedChains.all) {
-    final address = wallet.addressFor(chain);
-    if (address == null) continue;
-    final balance = await ref.watch(balanceProvider((chain.id, address)).future);
-    total += balance.fiatValue;
-  }
-  return total;
+  if (wallet == null) return WalletTotal.empty;
+
+  // 行情整体失败属于「全盘没数据」，不是「部分链失败」：此时每条链都会失败，
+  // 报成 0 元 + 一句部分失败提示是误导。先在这里让它抛出去，UI 走 error 态。
+  final marketsFuture = ref.watch(marketsProvider.future);
+
+  // —— 同步段：只登记依赖、取 Future，一个 await 都不能有 —— //
+  final pending = <(String, Future<AccountBalance>)>[
+    for (final chain in wallet.chainsWithAddress)
+      (chain.id, ref.watch(balanceProvider((chain.id, wallet.addressFor(chain)!)).future)),
+  ];
+
+  await marketsFuture;
+
+  // 不能直接把原始 Future 交给 Future.wait：它虽然默认 eagerError=false，
+  // 但仍会在全部完成后重新抛出第一个错误，一条链失败就整单归零。
+  // 所以在进 wait 之前就把异常就地转成 null，wait 本身永远看不到错误。
+  final results = await Future.wait([
+    for (final (chainId, future) in pending)
+      future.then<(String, AccountBalance?)>((b) => (chainId, b), onError: (_, _) => (chainId, null)),
+  ]);
+
+  return aggregateWalletTotal(results);
 });
 
-/// 全部钱包 × 全部链折算后的总资产价值（当前计价法币）。
-/// 任一钱包、链余额或行情变化都会自动重算。
-final portfolioTotalProvider = FutureProvider<double>((ref) async {
-  final wallets = ref.watch(walletListProvider);
-  var total = 0.0;
-  for (final w in wallets) {
-    for (final chain in SupportedChains.all) {
-      final address = w.addressFor(chain);
-      if (address == null) continue;
-      final balance = await ref.watch(balanceProvider((chain.id, address)).future);
-      total += balance.fiatValue;
+/// 把逐链结果折成总额 + 失败清单。
+/// 抽成纯函数，测试不必起 ProviderContainer 就能覆盖聚合规则。
+WalletTotal aggregateWalletTotal(List<(String, AccountBalance?)> results) {
+  var value = 0.0;
+  final failed = <String>[];
+  for (final (chainId, balance) in results) {
+    if (balance == null) {
+      failed.add(chainId);
+    } else {
+      value += balance.fiatValue;
     }
   }
-  return total;
-});
+  return WalletTotal(value: value, failedChainIds: failed);
+}

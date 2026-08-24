@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../../../widgets/amount_text.dart';
 import '../../../../../../../providers/modules/balance_provider.dart';
+import '../../../../../../../providers/modules/currency_provider.dart';
 import '../../../../../../../domain/wallet.dart';
 import '../../../../../../../domain/wallet_avatar.dart';
 
@@ -52,7 +53,14 @@ class WalletTile extends ConsumerWidget {
           // 副标题：钱包总余额。
           loading: () => Text('…', maxLines: 1, style: subtitleStyle),
           error: (_, _) => Text('--', maxLines: 1, style: subtitleStyle),
-          data: (value) => AmountText(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: subtitleStyle),
+          // 列表行太窄放不下图标提示，用 ~ 前缀表示这是部分链失败后的不完整合计。
+          data: (v) => AmountText(
+            v.value,
+            symbol: v.isPartial ? '~${ref.watch(currencySymbolProvider)}' : null,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: subtitleStyle,
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,

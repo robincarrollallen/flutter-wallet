@@ -152,6 +152,9 @@ class Translations$home$en {
 	/// en: 'Scanning on-chain assets…'
 	String get assetsScanning => 'Scanning on-chain assets…';
 
+	/// en: 'Some chains failed to load'
+	String get partialAssets => 'Some chains failed to load';
+
 	/// en: 'Search tokens, addresses or transactions'
 	String get searchHint => 'Search tokens, addresses or transactions';
 
@@ -482,6 +485,7 @@ extension on Translations {
 			'home.createWallet' => 'Create Wallet',
 			'home.totalAssets' => 'Total Assets',
 			'home.assetsScanning' => 'Scanning on-chain assets…',
+			'home.partialAssets' => 'Some chains failed to load',
 			'home.searchHint' => 'Search tokens, addresses or transactions',
 			'home.settings' => 'Settings',
 			'home.scan' => 'Scan',

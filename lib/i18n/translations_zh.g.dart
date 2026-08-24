@@ -127,6 +127,7 @@ class _Translations$home$zh extends Translations$home$en {
 	@override String get createWallet => '创建钱包';
 	@override String get totalAssets => '总资产';
 	@override String get assetsScanning => '正在扫描链上资产…';
+	@override String get partialAssets => '部分链数据获取失败';
 	@override String get searchHint => '搜索代币、地址或交易';
 	@override String get settings => '设置';
 	@override String get scan => '扫一扫';
@@ -344,6 +345,7 @@ extension on TranslationsZh {
 			'home.createWallet' => '创建钱包',
 			'home.totalAssets' => '总资产',
 			'home.assetsScanning' => '正在扫描链上资产…',
+			'home.partialAssets' => '部分链数据获取失败',
 			'home.searchHint' => '搜索代币、地址或交易',
 			'home.settings' => '设置',
 			'home.scan' => '扫一扫',
