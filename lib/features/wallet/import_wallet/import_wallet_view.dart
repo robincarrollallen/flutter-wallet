@@ -7,6 +7,7 @@ import '../../../widgets/placeholder_screen.dart';
 import '../import_mnemonic/import_mnemonic_view.dart';
 import 'import_wallet_logic.dart';
 import 'import_wallet_state.dart';
+import '../../../enums/import_kind.dart';
 
 class ImportWalletScreen extends ConsumerWidget {
   const ImportWalletScreen({super.key});

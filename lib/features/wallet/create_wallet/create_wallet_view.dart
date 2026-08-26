@@ -5,6 +5,7 @@ import '../../../core/responsive/screen_adapter.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../widgets/confetti_overlay.dart';
 import 'create_wallet_state.dart';
+import '../../../enums/create_phase.dart';
 
 /// 新建助记词钱包流程页：
 /// 进入即开始创建（生成助记词 + 派生地址），全程播放过渡动画并屏蔽返回；

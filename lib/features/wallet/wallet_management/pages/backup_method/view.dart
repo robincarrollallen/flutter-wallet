@@ -10,6 +10,7 @@ import '../../../../../core/navigation/panel_routes.dart';
 import '../cloud_backup/view.dart';
 import '../manual_backup/view.dart';
 import 'logic.dart';
+import '../../../../../enums/backup_choice.dart';
 
 /// 备份步骤一：选择备份方式（手动备份 / 云备份），并显示各方式的备份状态。
 class BackupMethodPage extends ConsumerWidget {

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../constants/currency_symbols.dart';
 import '../persistent_notifier.dart';
+import '../../enums/prefs_key.dart';
 
 /// 可选法币列表：直接取内置符号表的键——表里有符号才显示得出金额。
 /// 该表已对齐 CoinGecko `/simple/supported_vs_currencies` 的全部法币（46 种），
@@ -15,7 +16,7 @@ final List<String> supportedCurrencyCodes = defaultCurrencySymbols.keys.toList()
 /// 因此切换币种会让 [marketsProvider] 重新取数——缓存按币种分键，互不覆盖。
 class CurrencyNotifier extends Notifier<String> with PersistentNotifier<String> {
   @override
-  String get persistKey => 'fiat_currency';
+  PrefsKey get persistKey => PrefsKey.fiatCurrency;
 
   @override
   Map<String, dynamic> toJson(String state) => {'code': state};

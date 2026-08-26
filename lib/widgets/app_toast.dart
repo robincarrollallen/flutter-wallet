@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/responsive/screen_adapter.dart';
-
-/// Toast 显示位置。
-enum ToastPosition { top, center, bottom }
+import '../enums/toast_position.dart';
 
 /// 全局轻提示：基于 [Overlay] 实现，可指定显示位置（默认顶部），
 /// 自动消失、淡入 + 轻微位移动画，连续调用会替换上一条。

@@ -7,9 +7,7 @@ import '../../../services/mnemonic_service.dart';
 import '../../../data/datasource/local/secure_wallet_storage.dart';
 import '../../../providers/modules/wallet_provider.dart';
 import '../../../i18n/translations.g.dart';
-
-/// 创建钱包的阶段：生成中 / 成功 / 失败。
-enum CreatePhase { generating, success, failed }
+import '../../../enums/create_phase.dart';
 
 /// 创建钱包页面状态（不可变）。
 class CreateWalletState {

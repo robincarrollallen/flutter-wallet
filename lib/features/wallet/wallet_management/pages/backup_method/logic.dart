@@ -2,9 +2,6 @@ import 'dart:io';
 
 import '../../../../../domain/wallet.dart';
 
-/// 备份方式选择（手动 / 云）。区别于领域层的 [BackupMethod]（含具体云 provider）。
-enum BackupChoice { manual, cloud }
-
 /// 备份方式选择页的纯逻辑：与平台相关的云备份文案 / 方式，不依赖 UI / 状态。
 class BackupMethodLogic {
   const BackupMethodLogic._();

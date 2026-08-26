@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../providers/persistent_notifier.dart';
 import 'logic.dart';
+import '../../../../enums/prefs_key.dart';
 
 /// 搜索历史：最近搜索词，持久化到 SharedPreferences（去重置顶、有上限）。
 class SearchHistoryNotifier extends Notifier<List<String>> with PersistentNotifier<List<String>> {
@@ -9,7 +10,7 @@ class SearchHistoryNotifier extends Notifier<List<String>> with PersistentNotifi
   List<String> build() => restore(const []);
 
   @override
-  String get persistKey => 'search.history';
+  PrefsKey get persistKey => PrefsKey.searchHistory;
 
   @override
   Map<String, dynamic> toJson(List<String> state) => {'items': state};

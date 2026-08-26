@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/services/mnemonic_service.dart';
 import 'package:wallet/services/private_key_service.dart';
+import 'package:wallet/enums/private_key_kind.dart';
 
 void main() {
   // BIP39 标准测试向量（全 abandon + about）。

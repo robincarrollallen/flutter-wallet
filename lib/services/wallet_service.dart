@@ -5,6 +5,7 @@ import '../dto/request/send_tx_request.dart';
 import '../domain/wallet.dart';
 import 'evm_transaction_service.dart';
 import 'wallet_key_service.dart';
+import '../enums/evm_send_status.dart';
 
 /// 转账编排：校验请求 → 按链类型分发 → 解析签名私钥 → 委托各链交易服务广播。
 ///

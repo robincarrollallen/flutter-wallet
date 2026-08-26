@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'prefs_provider.dart';
+import '../enums/prefs_key.dart';
 
 /// 给任意 Notifier 复用的持久化能力——**写时过滤、读时全量**。
 ///
@@ -20,7 +21,7 @@ import 'prefs_provider.dart';
 /// class SettingsNotifier extends Notifier<Settings>
 ///     with PersistentNotifier<Settings> {
 ///   @override
-///   String get persistKey => 'settings';
+///   PrefsKey get persistKey => PrefsKey.appearance;
 ///
 ///   @override
 ///   Map<String, dynamic> toJson(Settings s) => {
@@ -44,8 +45,8 @@ import 'prefs_provider.dart';
 mixin PersistentNotifier<T> on Notifier<T> {
   SharedPreferences get _prefs => ref.read(sharedPrefsProvider);
 
-  /// 整份 state 在 SharedPreferences 中的存储键。
-  String get persistKey;
+  /// 整份 state 在 SharedPreferences 中的存储键，必须来自 [PrefsKey] 清单。
+  PrefsKey get persistKey;
 
   /// 写：把 state 转成 JSON——**只放要持久化的字段**，省略的字段即被过滤。
   Map<String, dynamic> toJson(T state);
@@ -58,7 +59,7 @@ mixin PersistentNotifier<T> on Notifier<T> {
   /// 返回恢复后的初始 state；[initial] 同时充当缺失字段的默认值。
   T restore(T initial) {
     var s = initial;
-    final raw = _prefs.getString(persistKey);
+    final raw = _prefs.getString(persistKey.value);
     if (raw != null) {
       try {
         final json = jsonDecode(raw);
@@ -67,12 +68,13 @@ mixin PersistentNotifier<T> on Notifier<T> {
         // 脏数据：当作没存过，用默认值。
       }
     }
+    /// 监听 state 变化，自动落盘
     listenSelf((_, next) {
-      _prefs.setString(persistKey, jsonEncode(toJson(next)));
+      _prefs.setString(persistKey.value, jsonEncode(toJson(next)));
     });
     return s;
   }
 
   /// 清空本 Notifier 的持久化数据（下次重启回到默认值）。
-  Future<void> clearPersisted() => _prefs.remove(persistKey);
+  Future<void> clearPersisted() => _prefs.remove(persistKey.value);
 }

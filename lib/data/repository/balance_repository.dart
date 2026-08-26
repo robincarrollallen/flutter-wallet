@@ -6,7 +6,6 @@ import '../datasource/remote/chain_balance_api.dart';
 /// 账户余额的统一入口：把数据源返回的原始最小单位换算成领域对象。
 ///
 /// 不含单价——单价来自 [MarketRepository]，由上层按需合并。
-/// 余额没有缓存：每次都查最新链上状态。
 class BalanceRepository {
   const BalanceRepository(this._api);
 

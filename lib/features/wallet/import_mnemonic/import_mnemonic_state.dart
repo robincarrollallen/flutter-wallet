@@ -9,6 +9,7 @@ import '../../../services/private_key_service.dart';
 import '../../../data/datasource/local/secure_wallet_storage.dart';
 import '../../../i18n/translations.g.dart';
 import 'import_mnemonic_logic.dart';
+import '../../../enums/secret_type.dart';
 
 /// 页面 UI 状态（不可变）。
 class ImportMnemonicState {

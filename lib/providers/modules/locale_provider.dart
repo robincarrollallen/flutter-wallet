@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../persistent_notifier.dart';
 import '../../i18n/translations.g.dart';
+import '../../enums/prefs_key.dart';
 
 /// 应用语言，用 PersistentNotifier 持久化。
 ///
@@ -11,11 +12,13 @@ import '../../i18n/translations.g.dart';
 /// - set() 改 state 即自动落盘；额外需要通知 slang，所以仍手动调 LocaleSettings。
 class LocaleNotifier extends Notifier<AppLocale> with PersistentNotifier<AppLocale> {
   @override
-  String get persistKey => 'app_locale'; // 定义持久化标识<persistKey>(重写)
+  PrefsKey get persistKey => PrefsKey.locale; // 定义持久化标识<persistKey>(重写)
 
+  /// 定义持久化内容(重写)
   @override
   Map<String, dynamic> toJson(AppLocale state) => {'locale': state.languageTag}; // 定义持久化内容
 
+  /// 还原状态
   @override
   AppLocale fromJson(Map<String, dynamic> json, AppLocale fallback) {
     final tag = json['locale'];

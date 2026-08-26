@@ -1,4 +1,5 @@
 import 'package:flutter/painting.dart';
+import '../../../enums/import_kind.dart';
 
 /// 钱包品牌数据：决定卡片里展示哪些 logo。
 /// 新增/删除钱包只改这份数据，无需改动 UI。
@@ -9,9 +10,6 @@ class WalletBrand {
   final String fallbackLabel;
   final Color fallbackColor;
 }
-
-/// 导入方式：软件钱包（助记词/私钥）或硬件钱包。
-enum ImportKind { software, hardware }
 
 /// 导入入口选项：标题 + 该入口展示的品牌列表。
 class ImportOption {

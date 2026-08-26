@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
-import '../../../../services/evm_transaction_service.dart';
 import '../../../../widgets/app_toast.dart';
 import '../coins/state.dart';
+import '../../../../enums/evm_send_status.dart';
 
 /// 发送结果页：展示上链状态与交易哈希，支持复制；「完成」回到首页。
 class SendResultPage extends StatelessWidget {

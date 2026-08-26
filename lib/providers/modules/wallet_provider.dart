@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/wallet.dart';
 import '../../data/datasource/local/secure_wallet_storage.dart';
 import '../persistent_notifier.dart';
+import '../../enums/prefs_key.dart';
 
 /// 钱包列表的状态管理。
 /// 元数据（id/name/address/source）持久化到 SharedPreferences；
@@ -12,7 +13,7 @@ class WalletListNotifier extends Notifier<List<Wallet>> with PersistentNotifier<
   List<Wallet> build() => restore(const []);
 
   @override
-  String get persistKey => 'wallet.list';
+  PrefsKey get persistKey => PrefsKey.walletList;
 
   @override
   Map<String, dynamic> toJson(List<Wallet> state) => {'wallets': state.map((w) => w.toJson()).toList()};
@@ -70,7 +71,7 @@ class CurrentWalletIdNotifier extends Notifier<String?> with PersistentNotifier<
   String? build() => restore(null);
 
   @override
-  String get persistKey => 'wallet.currentId';
+  PrefsKey get persistKey => PrefsKey.walletCurrentId;
 
   @override
   Map<String, dynamic> toJson(String? state) => {'id': state};

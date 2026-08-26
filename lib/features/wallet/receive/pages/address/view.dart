@@ -8,6 +8,7 @@ import '../../../../../providers/modules/wallet_provider.dart';
 import '../../state.dart';
 import '../../../../../widgets/asset_icon.dart';
 import '../../../../../widgets/app_toast.dart';
+import '../../../../../enums/toast_position.dart';
 
 /// 收款地址子页：在接收弹窗内部滑入展示（嵌套 Navigator）。
 /// 内容：资产标识 + 地址二维码 + 地址全文 + 复制按钮。

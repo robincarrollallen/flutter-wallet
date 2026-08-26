@@ -3,9 +3,7 @@ import '../blockchain/units.dart';
 import '../blockchain/chain_registry.dart';
 import '../core/utils/evm_hex.dart';
 import '../data/datasource/remote/json_rpc.dart';
-
-/// 广播后的上链结果：已确认成功 / 上链失败 / 超时仍 pending。
-enum EvmSendStatus { confirmed, failed, pending }
+import '../enums/evm_send_status.dart';
 
 /// EVM 原生币转账：取 nonce / 估费 / 估 gas → 构造交易 → 本地签名 → 广播 → 轮询 receipt。
 /// 仅处理原生币（ERC20 暂未接入）。EOA→EOA 通常为 21000；合约收款走 eth_estimateGas。

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../persistent_notifier.dart';
+import '../../enums/prefs_key.dart';
 
 /// 一条最近使用过的收款地址记录。
 class RecentAddress {
@@ -28,7 +29,7 @@ class RecentAddressesNotifier extends Notifier<List<RecentAddress>> with Persist
   List<RecentAddress> build() => restore(const []);
 
   @override
-  String get persistKey => 'send.recentAddresses';
+  PrefsKey get persistKey => PrefsKey.recentAddresses;
 
   @override
   Map<String, dynamic> toJson(List<RecentAddress> state) => {'entries': state.map((e) => e.toJson()).toList()};
