@@ -131,6 +131,8 @@ class _Translations$home$zh extends Translations$home$en {
 	@override String get searchHint => '搜索代币、地址或交易';
 	@override String get settings => '设置';
 	@override String get scan => '扫一扫';
+	@override String get tokens => '代币';
+	@override String get manageTokens => '管理代币';
 }
 
 // Path: settings
@@ -349,6 +351,8 @@ extension on TranslationsZh {
 			'home.searchHint' => '搜索代币、地址或交易',
 			'home.settings' => '设置',
 			'home.scan' => '扫一扫',
+			'home.tokens' => '代币',
+			'home.manageTokens' => '管理代币',
 			'settings.title' => '设置',
 			'settings.general' => '通用',
 			'settings.security' => '安全',

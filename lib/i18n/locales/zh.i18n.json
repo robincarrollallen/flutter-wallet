@@ -16,7 +16,9 @@
     "partialAssets": "部分链数据获取失败",
     "searchHint": "搜索代币、地址或交易",
     "settings": "设置",
-    "scan": "扫一扫"
+    "scan": "扫一扫",
+    "tokens": "代币",
+    "manageTokens": "管理代币"
   },
   "settings": {
     "title": "设置",

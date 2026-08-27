@@ -87,6 +87,6 @@ class DerivedWallet {
 DerivedWallet deriveWalletInBackground(String mnemonic) => MnemonicService.deriveWallet(mnemonic);
 
 /// 由助记词派生某条链的私钥<签名/导出共用>（compute 顶层入口）
-/// 入参为 (助记词, chainId)：避免把含 Token 列表的 [Chain] 跨 isolate 传输（经[SupportedChains.byId] 还原为 Chain）
+/// 入参为 (助记词, chainId)：不把 [Chain] 整份塞进 isolate，到对端再 [SupportedChains.byId] 还原。
 String derivePrivateKeyInBackground((String, String) args) =>
     MnemonicService.derivePrivateKey(args.$1, SupportedChains.byId(args.$2));

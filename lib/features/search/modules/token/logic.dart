@@ -1,5 +1,6 @@
 import '../../../../blockchain/chain_registry.dart';
 import '../../../../blockchain/token.dart';
+import '../../../../blockchain/token_catalog.dart';
 import '../../../../domain/wallet.dart';
 
 /// 代币 Tab 的纯匹配逻辑：与状态/UI 无关，便于单测与复用。
@@ -18,14 +19,13 @@ class TokenSearchLogic {
         .toList(growable: false);
   }
 
-  /// 按名称 / 符号匹配各链下挂的代币（如 USDC），返回 (所在链, 代币) 对。
+  /// 按名称 / 符号匹配目录中的代币（如 USDC），返回 (所在链, 代币) 对。
   /// 同名代币可能存在于多条链（如多链 USDC），故逐链展开而非去重。
-  static List<(Chain, Token)> matchTokens(String q) {
+  static List<(Chain, Token)> matchTokens(String q, TokenCatalog catalog) {
     if (q.isEmpty) return const [];
     return [
-      for (final c in SupportedChains.all)
-        for (final tk in c.tokens)
-          if (tk.name.toLowerCase().contains(q) || tk.symbol.toLowerCase().contains(q)) (c, tk),
+      for (final (c, tk) in catalog.tokens)
+        if (tk.name.toLowerCase().contains(q) || tk.symbol.toLowerCase().contains(q)) (c, tk),
     ];
   }
 

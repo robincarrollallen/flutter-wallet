@@ -16,7 +16,9 @@
     "partialAssets": "Some chains failed to load",
     "searchHint": "Search tokens, addresses or transactions",
     "settings": "Settings",
-    "scan": "Scan"
+    "scan": "Scan",
+    "tokens": "Tokens",
+    "manageTokens": "Manage tokens"
   },
   "settings": {
     "title": "Settings",

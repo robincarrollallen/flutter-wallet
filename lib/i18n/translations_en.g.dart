@@ -163,6 +163,12 @@ class Translations$home$en {
 
 	/// en: 'Scan'
 	String get scan => 'Scan';
+
+	/// en: 'Tokens'
+	String get tokens => 'Tokens';
+
+	/// en: 'Manage tokens'
+	String get manageTokens => 'Manage tokens';
 }
 
 // Path: settings
@@ -489,6 +495,8 @@ extension on Translations {
 			'home.searchHint' => 'Search tokens, addresses or transactions',
 			'home.settings' => 'Settings',
 			'home.scan' => 'Scan',
+			'home.tokens' => 'Tokens',
+			'home.manageTokens' => 'Manage tokens',
 			'settings.title' => 'Settings',
 			'settings.general' => 'General',
 			'settings.security' => 'Security',

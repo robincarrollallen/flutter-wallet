@@ -9,6 +9,7 @@ import '../../domain/wallet.dart';
 import '../../domain/wallet_total.dart';
 import '../../services/evm_transaction_service.dart';
 import '../market_repository_provider.dart';
+import '../token_catalog_provider.dart';
 import 'currency_provider.dart';
 import 'wallet_provider.dart';
 
@@ -16,22 +17,10 @@ export '../../data/datasource/remote/coingecko_api.dart' show Markets;
 
 /// (chainId, from, to) -> EVM 原生转账的预估费用上限（wei）。
 /// autoDispose：仅发送流程使用，进确认页才查、离开即弃，不常驻缓存。
-final evmFeeProvider = FutureProvider.autoDispose.family<BigInt, (String, String, String)>(
-  (ref, key) {
-    final (chainId, from, to) = key;
-    return const EvmTransactionService().estimateNativeFee(
-      SupportedChains.byId(chainId),
-      from: from,
-      to: to,
-    );
-  },
-);
-
-/// 全部受支持链币种与代币的 coinGeckoId 集合，行情按这份清单一次取全。
-Iterable<String> _allCoinGeckoIds() => {
-  ...SupportedChains.all.map((c) => c.coinGeckoId),
-  ...SupportedChains.allTokens.map((e) => e.$2.coinGeckoId),
-};
+final evmFeeProvider = FutureProvider.autoDispose.family<BigInt, (String, String, String)>((ref, key) {
+  final (chainId, from, to) = key;
+  return const EvmTransactionService().estimateNativeFee(SupportedChains.byId(chainId), from: from, to: to);
+});
 
 /// 全部受支持链币种的实时行情：coinGeckoId -> (单价, 图标 URL)。
 /// 一次请求覆盖所有链，避免每张卡片重复请求行情。
@@ -45,7 +34,9 @@ Iterable<String> _allCoinGeckoIds() => {
 final marketsProvider = FutureProvider<Markets>((ref) async {
   ref.keepAlive();
   final currency = ref.watch(currencyProvider);
-  return ref.watch(marketRepositoryProvider).getMarkets(currency: currency, ids: _allCoinGeckoIds());
+  // select 字符串：远程 loading→data 若 id 集合不变，不会重拉行情。
+  final idsKey = ref.watch(tokenCatalogProvider.select((c) => c.coinGeckoIdsKey));
+  return ref.watch(marketRepositoryProvider).getMarkets(currency: currency, ids: idsKey.split(','));
 });
 
 /// 下拉刷新：强制重取行情与余额。返回的 Future 完成即代表刷新结束，
@@ -55,8 +46,15 @@ final marketsProvider = FutureProvider<Markets>((ref) async {
 /// 兜底用的旧缓存已经被删掉，页面会直接掉到 $0.00。
 /// 这里改为先把新数据拿到手，成功才覆盖缓存——失败时旧缓存原封不动，维持旧价格。
 Future<void> refreshHomeData(WidgetRef ref, {String? walletId}) async {
+  final catalogUpdated = await ref.read(tokenRepositoryProvider).refreshCatalog();
+  if (catalogUpdated) {
+    ref.invalidate(remoteTokensProvider);
+    await ref.read(remoteTokensProvider.future);
+  }
+
   final currency = ref.read(currencyProvider);
-  final updated = await ref.read(marketRepositoryProvider).refreshMarkets(currency: currency, ids: _allCoinGeckoIds());
+  final ids = ref.read(tokenCatalogProvider).coinGeckoIds;
+  final updated = await ref.read(marketRepositoryProvider).refreshMarkets(currency: currency, ids: ids);
 
   // 取数失败时跳过 invalidate，marketsProvider 保持原值，UI 上的价格不动。
   if (updated) {
@@ -77,12 +75,23 @@ Future<void> refreshHomeData(WidgetRef ref, {String? walletId}) async {
 
 /// 按 (chainId, address) 查询某链余额，并附带实时单价。
 /// AsyncValue 自动提供 loading / error / data 三态。
+///
+/// 同步段写法（与 [walletTotalProvider] 一致）：ref.watch 必须跑在第一个 await
+/// 之前，否则余额一失败就登记不上对 [marketsProvider] 的依赖，行情刷新时这条链
+/// 不会重算。顺带让余额与行情两个请求并发，首屏不必串行等两个往返。
 final balanceProvider = FutureProvider.family<AccountBalance, (String, String)>((ref, key) async {
   final (chainId, address) = key;
   final chain = SupportedChains.byId(chainId);
 
-  final base = await const BalanceRepository(ChainBalanceApi()).getBalance(chain, address);
-  final markets = await ref.watch(marketsProvider.future);
+  // —— 同步段：只登记依赖、取 Future，一个 await 都不能有 —— //
+  final marketsFuture = ref.watch(marketsProvider.future);
+  final baseFuture = const BalanceRepository(ChainBalanceApi()).getBalance(chain, address);
+
+  // 先 await 裸 Future：baseFuture 没有任何内部监听者，若把它晾在一边先等行情，
+  // 它中途失败就是一次「无人处理的异步错误」。marketsFuture 由 Riverpod 托管，
+  // 挂着不动是安全的。这个顺序同时保留了原有的错误优先级——余额错误盖过行情错误。
+  final base = await baseFuture;
+  final markets = await marketsFuture;
   final market = markets[chain.coinGeckoId];
 
   return AccountBalance(

@@ -2,12 +2,11 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 
 import '../enums/chain_kind.dart';
 import '../enums/rpc_method.dart';
-import 'token.dart';
 
 export '../enums/chain_kind.dart';
 export '../enums/rpc_method.dart';
 
-/// 一条受支持链的静态配置。
+/// 一条受支持链的静态配置。代币不挂在链上，由 TokenCatalog 单独提供。
 class Chain {
   const Chain({
     required this.id,
@@ -21,7 +20,6 @@ class Chain {
     this.evmChainId,
     this.nativeBalanceRpcMethod,
     this.coinGeckoPlatformId,
-    this.tokens = const [],
   });
 
   final String id; // 链的唯一标识符(用于查找链配置、保存用户选择、做数据关联, byId 就靠它)
@@ -35,7 +33,6 @@ class Chain {
   final int? evmChainId; // EVM 链的 chainId<数字>(EIP-155 签名必需, 非 EVM 链为空)
   final RpcMethod? nativeBalanceRpcMethod; // 原生币余额 RPC 方法（非 JSON-RPC 链为空）
   final String? coinGeckoPlatformId; // CoinGecko asset_platforms 的平台 id，用于取该链自己的图标(如 Base / Arbitrum 都有 ETH)
-  final List<Token> tokens; // 该链上受支持的代币（默认空 = 仅原生币）
 }
 
 /// 全部受支持链（均为测试网）。
@@ -54,16 +51,6 @@ class SupportedChains {
     evmChainId: 11155111,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'ethereum',
-    tokens: [
-      Token(
-        symbol: 'USDC',
-        name: 'USD Coin',
-        standard: TokenStandard.erc20,
-        identifier: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
-        coinGeckoId: 'usd-coin',
-        decimals: 6,
-      ),
-    ],
   );
 
   static const polygonAmoy = Chain(
@@ -78,16 +65,6 @@ class SupportedChains {
     evmChainId: 80002,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'polygon-pos',
-    tokens: [
-      Token(
-        symbol: 'USDC',
-        name: 'USD Coin',
-        standard: TokenStandard.erc20,
-        identifier: '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582',
-        coinGeckoId: 'usd-coin',
-        decimals: 6,
-      ),
-    ],
   );
 
   static const bscTestnet = Chain(
@@ -116,16 +93,6 @@ class SupportedChains {
     evmChainId: 84532,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'base',
-    tokens: [
-      Token(
-        symbol: 'USDC',
-        name: 'USD Coin',
-        standard: TokenStandard.erc20,
-        identifier: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-        coinGeckoId: 'usd-coin',
-        decimals: 6,
-      ),
-    ],
   );
 
   static const arbitrumSepolia = Chain(
@@ -140,16 +107,6 @@ class SupportedChains {
     evmChainId: 421614,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'arbitrum-one',
-    tokens: [
-      Token(
-        symbol: 'USDC',
-        name: 'USD Coin',
-        standard: TokenStandard.erc20,
-        identifier: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
-        coinGeckoId: 'usd-coin',
-        decimals: 6,
-      ),
-    ],
   );
 
   static const plasmaTestnet = Chain(
@@ -188,16 +145,6 @@ class SupportedChains {
     decimals: 9,
     nativeBalanceRpcMethod: RpcMethod.solGetBalance,
     coinGeckoPlatformId: 'solana',
-    tokens: [
-      Token(
-        symbol: 'USDC',
-        name: 'USD Coin',
-        standard: TokenStandard.spl,
-        identifier: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
-        coinGeckoId: 'usd-coin',
-        decimals: 6,
-      ),
-    ],
   );
 
   // —— 以下三条非 EVM 链的原生币余额查询已接入（Tron/Sui/Aptos）；代币查询暂未接入。 ——
@@ -225,16 +172,6 @@ class SupportedChains {
     decimals: 9,
     nativeBalanceRpcMethod: RpcMethod.suiGetBalance,
     coinGeckoPlatformId: 'sui',
-    tokens: [
-      Token(
-        symbol: 'USDC',
-        name: 'USD Coin',
-        standard: TokenStandard.suiCoin,
-        identifier: '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC',
-        coinGeckoId: 'usd-coin',
-        decimals: 6,
-      ),
-    ],
   );
 
   static const aptosTestnet = Chain(
@@ -247,16 +184,6 @@ class SupportedChains {
     coinGeckoId: 'aptos',
     decimals: 8,
     coinGeckoPlatformId: 'aptos',
-    tokens: [
-      Token(
-        symbol: 'USDC',
-        name: 'USD Coin',
-        standard: TokenStandard.aptosCoin,
-        identifier: '0x69091fbab5f7d635ee7ac5098cf0c1efbe31d68fec0f2cd565e8d168daf52832',
-        coinGeckoId: 'usd-coin',
-        decimals: 6,
-      ),
-    ],
   );
 
   /// 首页展示顺序。
@@ -284,7 +211,4 @@ class SupportedChains {
   }
 
   static Chain byId(String id) => all.firstWhere((c) => c.id == id);
-
-  /// 遍历全部 (链, 代币) 对，供余额列表 / 行情批量拉取使用。
-  static Iterable<(Chain, Token)> get allTokens => all.expand((c) => c.tokens.map((t) => (c, t)));
 }

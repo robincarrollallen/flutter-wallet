@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
+import '../../../../../blockchain/listed_asset.dart';
 import '../../../../../providers/modules/wallet_provider.dart';
-import '../../state.dart';
 import '../../../../../widgets/asset_icon.dart';
 import '../../../../../widgets/app_toast.dart';
 import '../../../../../enums/toast_position.dart';
@@ -15,7 +15,7 @@ import '../../../../../enums/toast_position.dart';
 class ReceiveAddressPage extends ConsumerWidget {
   const ReceiveAddressPage({super.key, required this.asset, this.tokenLogoUrl, this.chainLogoUrl});
 
-  final ReceiveAsset asset;
+  final ListedAsset asset;
 
   /// 列表页已拿到的图标 URL，直接透传避免重复查询行情。
   final String? tokenLogoUrl;
