@@ -13,7 +13,8 @@ enum PrefsKey {
   walletCurrentId('wallet.currentId'), // 当前选中钱包 id
   recentAddresses('send.recentAddresses'), // 转账最近使用地址
   searchHistory('search.history'), // 搜索历史
-  customTokens('token.custom'); // 用户自定义代币
+  customTokens('token.custom'), // 用户自定义代币
+  hiddenAssets('asset.hidden'); // 用户手动隐藏的资产（原生币 / 代币）
 
   const PrefsKey(this.value);
 

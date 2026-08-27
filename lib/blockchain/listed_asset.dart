@@ -21,6 +21,15 @@ class ListedAsset {
   /// 查行情图标用的 CoinGecko id。
   String get coinGeckoId => token?.coinGeckoId ?? chain.coinGeckoId;
 
+  /// 持久化用的资产身份键（显示/隐藏就按它记）。
+  ///
+  /// 代币沿用 [TokenCatalog.identityKey]（大小写已规范化），原生币没有 identifier，
+  /// 用 `<chainId>::native` 占位——`native` 不是合法合约地址，撞不上代币键。
+  String get key => token == null ? nativeKey(chain) : TokenCatalog.identityKey(token!);
+
+  /// 原生币的身份键，无需先造 [ListedAsset] 即可查询隐藏状态。
+  static String nativeKey(Chain chain) => '${chain.id}::native';
+
   /// 从 [catalog] 展开：每条链原生币 + 该链代币。[chain] 为空表示全部链。
   static List<ListedAsset> fromCatalog(TokenCatalog catalog, {Chain? chain}) => [
     for (final (c, tk) in catalog.assetsOf(chain)) ListedAsset(chain: c, token: tk),

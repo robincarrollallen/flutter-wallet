@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../blockchain/chain_registry.dart';
+import '../../blockchain/listed_asset.dart';
 import '../../data/datasource/remote/chain_balance_api.dart';
 import '../../data/datasource/remote/coingecko_api.dart' show Markets;
 import '../../data/repository/balance_repository.dart';
@@ -125,6 +126,11 @@ Duration? _noRetry(int retryCount, Object error) => null;
 /// 并把失败的链 id 带回给 UI 提示「数据不完整」。逐链的错误展示仍归
 /// [balanceProvider] 自己负责（各 _ChainTile 的 .when(error:)），
 /// 容错只发生在汇总这一层，不会污染下游。
+///
+/// **隐藏项不计入**：用户在管理代币页关掉的资产不进总额，口径与列表一致。
+/// 目前只有原生币有余额来源（代币余额尚未接入，恒为 0），所以这里等价于
+/// 跳过原生币被隐藏的链；代币余额接入后需在此一并过滤。
+/// 被跳过的链不算「失败」，不进 failedChainIds。
 final walletTotalProvider = FutureProvider.family<WalletTotal, String>((ref, walletId) async {
   final wallets = ref.watch(walletListProvider);
   Wallet? wallet;
@@ -141,9 +147,11 @@ final walletTotalProvider = FutureProvider.family<WalletTotal, String>((ref, wal
   final marketsFuture = ref.watch(marketsProvider.future);
 
   // —— 同步段：只登记依赖、取 Future，一个 await 都不能有 —— //
+  final hidden = ref.watch(hiddenAssetsProvider);
   final pending = <(String, Future<AccountBalance>)>[
     for (final chain in wallet.chainsWithAddress)
-      (chain.id, ref.watch(balanceProvider((chain.id, wallet.addressFor(chain)!)).future)),
+      if (!hidden.contains(ListedAsset.nativeKey(chain)))
+        (chain.id, ref.watch(balanceProvider((chain.id, wallet.addressFor(chain)!)).future)),
   ];
 
   await marketsFuture;

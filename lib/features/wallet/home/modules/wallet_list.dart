@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../blockchain/listed_asset.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/chain_icon_provider.dart';
@@ -24,10 +23,9 @@ class WalletList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final catalog = ref.watch(tokenCatalogProvider);
     final markets = ref.watch(marketsProvider).value ?? const {};
     final chainIcons = ref.watch(chainIconsProvider).value ?? const {};
-    final assets = ListedAsset.fromCatalog(catalog);
+    final assets = ref.watch(visibleAssetsProvider(null));
 
     return RefreshIndicator(
       onRefresh: () => _onRefresh(ref),

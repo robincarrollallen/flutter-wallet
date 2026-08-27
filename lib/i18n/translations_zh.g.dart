@@ -42,6 +42,7 @@ class TranslationsZh extends Translations with BaseTranslations<AppLocale, Trans
 	@override String get appTitle => '我的钱包';
 	@override late final _Translations$tabs$zh tabs = _Translations$tabs$zh._(_root);
 	@override late final _Translations$home$zh home = _Translations$home$zh._(_root);
+	@override late final _Translations$manageTokens$zh manageTokens = _Translations$manageTokens$zh._(_root);
 	@override late final _Translations$settings$zh settings = _Translations$settings$zh._(_root);
 	@override late final _Translations$currency$zh currency = _Translations$currency$zh._(_root);
 	@override Map<String, String> get currencyNames => {
@@ -133,6 +134,18 @@ class _Translations$home$zh extends Translations$home$en {
 	@override String get scan => '扫一扫';
 	@override String get tokens => '代币';
 	@override String get manageTokens => '管理代币';
+}
+
+// Path: manageTokens
+class _Translations$manageTokens$zh extends Translations$manageTokens$en {
+	_Translations$manageTokens$zh._(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => '管理代币';
+	@override String get searchHint => '搜索代币或公链';
+	@override String get empty => '未找到相关资产';
 }
 
 // Path: settings
@@ -353,6 +366,9 @@ extension on TranslationsZh {
 			'home.scan' => '扫一扫',
 			'home.tokens' => '代币',
 			'home.manageTokens' => '管理代币',
+			'manageTokens.title' => '管理代币',
+			'manageTokens.searchHint' => '搜索代币或公链',
+			'manageTokens.empty' => '未找到相关资产',
 			'settings.title' => '设置',
 			'settings.general' => '通用',
 			'settings.security' => '安全',

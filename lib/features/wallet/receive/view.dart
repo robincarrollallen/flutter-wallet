@@ -222,8 +222,7 @@ class _AssetList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final catalog = ref.watch(tokenCatalogProvider);
-    final assets = ReceiveLogic.filter(ReceiveLogic.assetsOf(chain, catalog), query);
+    final assets = ReceiveLogic.filter(ref.watch(visibleAssetsProvider(chain?.id)), query);
     if (assets.isEmpty) {
       return Center(
         child: Text(

@@ -46,6 +46,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	late final Translations$tabs$en tabs = Translations$tabs$en.internal(_root);
 	late final Translations$home$en home = Translations$home$en.internal(_root);
+	late final Translations$manageTokens$en manageTokens = Translations$manageTokens$en.internal(_root);
 	late final Translations$settings$en settings = Translations$settings$en.internal(_root);
 	late final Translations$currency$en currency = Translations$currency$en.internal(_root);
 	Map<String, String> get currencyNames => {
@@ -169,6 +170,24 @@ class Translations$home$en {
 
 	/// en: 'Manage tokens'
 	String get manageTokens => 'Manage tokens';
+}
+
+// Path: manageTokens
+class Translations$manageTokens$en {
+	Translations$manageTokens$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Manage tokens'
+	String get title => 'Manage tokens';
+
+	/// en: 'Search tokens or chains'
+	String get searchHint => 'Search tokens or chains';
+
+	/// en: 'No matching assets'
+	String get empty => 'No matching assets';
 }
 
 // Path: settings
@@ -497,6 +516,9 @@ extension on Translations {
 			'home.scan' => 'Scan',
 			'home.tokens' => 'Tokens',
 			'home.manageTokens' => 'Manage tokens',
+			'manageTokens.title' => 'Manage tokens',
+			'manageTokens.searchHint' => 'Search tokens or chains',
+			'manageTokens.empty' => 'No matching assets',
 			'settings.title' => 'Settings',
 			'settings.general' => 'General',
 			'settings.security' => 'Security',

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../i18n/translations.g.dart';
+import '../../manage_tokens/view.dart';
 
-/// 首页「代币」区块头部：左侧标题，右侧配置按钮（功能稍后补）。
+/// 首页「代币」区块头部：左侧标题，右侧进入管理代币页。
 class TokenSectionHeader extends StatelessWidget {
   const TokenSectionHeader({super.key});
 
@@ -21,7 +22,7 @@ class TokenSectionHeader extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.tune, size: 22.s),
             tooltip: t.home.manageTokens,
-            onPressed: () {},
+            onPressed: () => Navigator.of(context).push(ManageTokensScreen.route()),
           ),
         ],
       ),

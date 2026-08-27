@@ -20,6 +20,11 @@
     "tokens": "代币",
     "manageTokens": "管理代币"
   },
+  "manageTokens": {
+    "title": "管理代币",
+    "searchHint": "搜索代币或公链",
+    "empty": "未找到相关资产"
+  },
   "settings": {
     "title": "设置",
     "general": "通用",

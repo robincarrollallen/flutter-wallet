@@ -20,6 +20,11 @@
     "tokens": "Tokens",
     "manageTokens": "Manage tokens"
   },
+  "manageTokens": {
+    "title": "Manage tokens",
+    "searchHint": "Search tokens or chains",
+    "empty": "No matching assets"
+  },
   "settings": {
     "title": "Settings",
     "general": "General",
