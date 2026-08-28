@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/units.dart';
 import 'package:wallet/features/wallet/send/coins/logic.dart';
-import 'package:wallet/features/wallet/send/coins/state.dart';
+import 'package:wallet/blockchain/listed_asset.dart';
 
 void main() {
   group('SendLogic.assetsOf', () {
@@ -143,8 +143,8 @@ void main() {
     });
   });
 
-  test('SendAsset 展示字段取自链本身', () {
-    const asset = SendAsset(chain: SupportedChains.solanaDevnet);
+  test('ListedAsset 展示字段取自链本身', () {
+    const asset = ListedAsset(chain: SupportedChains.solanaDevnet);
     expect(asset.symbol, 'SOL');
     expect(asset.name, 'Solana Devnet');
     expect(asset.coinGeckoId, 'solana');

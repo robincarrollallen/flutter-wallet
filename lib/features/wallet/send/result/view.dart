@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
-import '../coins/state.dart';
+import '../../../../blockchain/listed_asset.dart';
 import '../../../../enums/evm_send_status.dart';
 
 /// 发送结果页：展示上链状态与交易哈希，支持复制；「完成」回到首页。
@@ -17,7 +17,7 @@ class SendResultPage extends StatelessWidget {
     this.status = EvmSendStatus.pending,
   });
 
-  final SendAsset asset;
+  final ListedAsset asset;
   final String toAddress;
   final String amount;
   final String txHash;

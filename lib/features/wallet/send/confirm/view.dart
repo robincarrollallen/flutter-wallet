@@ -11,7 +11,7 @@ import '../../../../providers/modules/currency_provider.dart';
 import '../../../../providers/modules/recent_address_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
 import '../../../../dto/request/send_tx_request.dart';
-import '../coins/state.dart';
+import '../../../../blockchain/listed_asset.dart';
 import '../result/view.dart';
 
 /// 确认发送子页：汇总资产 / 发送方 / 收款方 / 金额，确认后提交交易。
@@ -26,7 +26,7 @@ class SendConfirmPage extends ConsumerStatefulWidget {
     this.chainLogoUrl,
   });
 
-  final SendAsset asset;
+  final ListedAsset asset;
   final String toAddress;
   final String amount;
 
@@ -98,7 +98,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   /// 全额转出（MAX）时的发送上限：可用余额 − 费用上限。
   /// 费用或余额尚未就绪、以及扣完不为正时回退用户输入值，由发送时的链上校验兜底。
   /// 非 MAX 场景恒为用户输入的金额。
-  String _sendableAmount(SendAsset asset, String from) {
+  String _sendableAmount(ListedAsset asset, String from) {
     if (!widget.isMaxAmount || from.isEmpty) return widget.amount;
     final fee = ref.watch(evmFeeProvider((asset.chain.id, from, widget.toAddress))).value;
     final balance = ref.watch(balanceProvider((asset.chain.id, from))).value?.amount;
@@ -113,7 +113,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
 
   /// 费用行文案：按费率上限 × gasLimit 估算并附法币折算；
   /// 查询失败回退 `--`——估费只是展示，不阻塞发送，最终由节点把关。
-  String _feeText(SendAsset asset, String from) {
+  String _feeText(ListedAsset asset, String from) {
     final feeAsync = ref.watch(evmFeeProvider((asset.chain.id, from, widget.toAddress)));
     return feeAsync.when(
       loading: () => '查询中…',

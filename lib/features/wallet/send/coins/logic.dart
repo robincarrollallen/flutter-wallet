@@ -2,7 +2,7 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 import '../../../../blockchain/chain_registry.dart';
 import '../../../../blockchain/units.dart';
 
-import 'state.dart';
+import '../../../../blockchain/listed_asset.dart';
 
 /// 发送弹窗的纯逻辑：资产列表构建/过滤与地址、金额校验，不依赖 UI/状态框架。
 class SendLogic {
@@ -11,14 +11,17 @@ class SendLogic {
   /// 顶部 Tab 顺序即首页链顺序。
   static List<Chain> get chains => SupportedChains.all;
 
-  /// 指定链的可发送资产（仅原生币）；[chain] 为空表示全部链。
-  static List<SendAsset> assetsOf(Chain? chain) {
+  /// 指定链的可发送资产；[chain] 为空表示全部链。
+  ///
+  /// 目前只造原生币（`token` 留空）——代币转账尚未接入。等接入后这里改成
+  /// 从 TokenCatalog 展开即可，列表行与后续页面无需再动。
+  static List<ListedAsset> assetsOf(Chain? chain) {
     final source = chain == null ? SupportedChains.all : [chain];
-    return [for (final c in source) SendAsset(chain: c)];
+    return [for (final c in source) ListedAsset(chain: c)];
   }
 
   /// 按关键词过滤（匹配符号 / 名称，忽略大小写）。
-  static List<SendAsset> filter(List<SendAsset> assets, String query) {
+  static List<ListedAsset> filter(List<ListedAsset> assets, String query) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return assets;
     return assets.where((a) {
@@ -31,12 +34,12 @@ class SendLogic {
   /// [fiatValueOf] 返回该资产的法币价值：null 表示余额仍在加载
   /// （留在可发送组尾部，数据到达后自动重排）；0（含无地址按 0 处理）
   /// 归入零余额组，保持链默认顺序。可发送组按价值降序排列。
-  static (List<SendAsset> sendable, List<SendAsset> rest) partition(
-    List<SendAsset> assets,
-    double? Function(SendAsset) fiatValueOf,
+  static (List<ListedAsset> sendable, List<ListedAsset> rest) partition(
+    List<ListedAsset> assets,
+    double? Function(ListedAsset) fiatValueOf,
   ) {
-    final sendable = <SendAsset>[];
-    final rest = <SendAsset>[];
+    final sendable = <ListedAsset>[];
+    final rest = <ListedAsset>[];
     for (final a in assets) {
       final value = fiatValueOf(a);
       if (value == null || value > 0) {

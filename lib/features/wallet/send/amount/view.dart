@@ -6,14 +6,14 @@ import '../../../../widgets/amount_text.dart';
 import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
 import '../coins/logic.dart';
-import '../coins/state.dart';
+import '../../../../blockchain/listed_asset.dart';
 import '../confirm/view.dart';
 
 /// 金额输入子页：展示可用余额，支持 MAX 一键填入与法币折算。
 class SendAmountPage extends ConsumerStatefulWidget {
   const SendAmountPage({super.key, required this.asset, required this.toAddress, this.tokenLogoUrl, this.chainLogoUrl});
 
-  final SendAsset asset;
+  final ListedAsset asset;
   final String toAddress;
   final String? tokenLogoUrl;
   final String? chainLogoUrl;

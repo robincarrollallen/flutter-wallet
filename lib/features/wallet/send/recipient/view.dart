@@ -8,7 +8,7 @@ import '../../../../providers/modules/recent_address_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
 import '../../../../domain/wallet_avatar.dart';
 import '../coins/logic.dart';
-import '../coins/state.dart';
+import '../../../../blockchain/listed_asset.dart';
 import '../amount/view.dart';
 
 /// 收款地址页：发送流程第二步，普通路由进入。
@@ -17,7 +17,7 @@ import '../amount/view.dart';
 class SendRecipientPage extends ConsumerStatefulWidget {
   const SendRecipientPage({super.key, required this.asset, this.tokenLogoUrl, this.chainLogoUrl});
 
-  final SendAsset asset;
+  final ListedAsset asset;
 
   /// 列表页已拿到的图标 URL，直接透传避免重复查询行情。
   final String? tokenLogoUrl;
@@ -242,7 +242,7 @@ class _SendRecipientPageState extends ConsumerState<SendRecipientPage> {
 class _RecentList extends ConsumerWidget {
   const _RecentList({required this.asset, required this.onSelect});
 
-  final SendAsset asset;
+  final ListedAsset asset;
   final ValueChanged<String> onSelect;
 
   @override
@@ -265,7 +265,7 @@ class _RecentList extends ConsumerWidget {
 class _MyWalletsList extends ConsumerWidget {
   const _MyWalletsList({required this.asset, required this.onSelect});
 
-  final SendAsset asset;
+  final ListedAsset asset;
   final ValueChanged<String> onSelect;
 
   @override
