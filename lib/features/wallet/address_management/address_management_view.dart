@@ -22,7 +22,7 @@ class AddressManagementScreen extends ConsumerWidget {
     // 在此一次性取表再逐行分发，避免每个 tile 各自 watch 造成 N 次重建。
     // 首帧未就绪时取空表，图标自然回退，就绪后整页重建。
     final chainIcons = ref.watch(chainIconsProvider).icons;
-    final markets = ref.watch(marketsProvider).value ?? const {};
+    final markets = ref.watch(marketsProvider).markets;
 
     return Scaffold(
       appBar: AppBar(backgroundColor: theme.colorScheme.inversePrimary, title: const Text('地址管理')),

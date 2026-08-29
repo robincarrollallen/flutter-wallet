@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/data/datasource/remote/coingecko_api.dart';
 import 'package:wallet/enums/prefs_key.dart';
-import 'package:wallet/providers/market_repository_provider.dart';
+import 'package:wallet/providers/coingecko_api_provider.dart';
 import 'package:wallet/providers/modules/chain_icon_provider.dart';
 import 'package:wallet/providers/prefs_provider.dart';
 

@@ -1,7 +1,7 @@
 import 'chain_registry.dart';
 import 'token.dart';
 
-/// 打包进应用的代币目录：远程拉取失败或未配置远端 URL 时，由 TokenRepository 回退到这里。
+/// 打包进应用的代币目录：远程拉取失败或未配置远端 URL 时，由 RemoteTokensNotifier 回退到这里。
 ///
 /// 测试网合约没有公开的通用 token list API；远端 JSON 成功后优先用远端结果，这份列表不再参与合并。
 class BundledTokenCatalog {

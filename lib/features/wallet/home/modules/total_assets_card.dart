@@ -77,56 +77,7 @@ class TotalAssetsCard extends ConsumerWidget {
               ],
             ),
             SizedBox(height: 8.s),
-            total.when(
-              loading: () => Padding(
-                padding: EdgeInsets.symmetric(vertical: 4.s),
-                child: Row(
-                  // Row 默认撑满卡片宽度，不写就贴左——外层 Column 的 crossAxisAlignment
-                  // 对已占满宽度的 Row 不起作用，需在此显式居中。
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(width: 18.s, height: 18.s, child: const CircularProgressIndicator(strokeWidth: 2)),
-                    SizedBox(width: 12.s),
-                    Text(
-                      t.home.assetsScanning,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-                    ),
-                  ],
-                ),
-              ),
-              error: (_, _) => Text(
-                t.balance.unavailable,
-                style: theme.textTheme.headlineMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-              ),
-              data: (v) => Column(
-                children: [
-                  AmountText(
-                    v.value,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  // 部分链取数失败：数字仍然出，但必须标明它是不完整的——
-                  // 否则用户会把缩水后的金额当成真实资产。tooltip 里报出具体链名。
-                  if (v.isPartial)
-                    Tooltip(
-                      message: v.failedChainIds.map((id) => SupportedChains.byId(id).name).join('、'),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.error_outline, size: 14.s, color: theme.colorScheme.onPrimaryContainer),
-                          SizedBox(width: 4.s),
-                          Text(
-                            t.home.partialAssets,
-                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
+            _Total(total: total),
             // —— 功能按钮栏：发送 / 接收 / 历史 / 更多（仅有钱包时展示，逻辑待补） —— //
             if (wallet != null) ...[
               SizedBox(height: 16.s),
@@ -165,6 +116,64 @@ class TotalAssetsCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 卡片正中的总资产金额。
+///
+/// 刻意**不显示加载态**：转圈与「正在扫描」文案会让金额位每次刷新都跳一下，
+/// 且下拉刷新时卡片已经有上一次的数字，再盖一层进度条纯属倒退。
+/// 首次加载（还没有任何数字）显示 0，等结果落地直接替换。
+///
+/// 唯一的例外是 error 且一个数字都没有：那时显示不出金额，只能报「暂不可用」，
+/// 报成 0 会被当成真实资产。刷新失败但手上有旧数字时继续显示旧数字。
+class _Total extends StatelessWidget {
+  const _Total({required this.total});
+
+  final AsyncValue<WalletTotal> total;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = context.t;
+    final v = total.value; // riverpod 3：value 可空且不会因 error 抛出
+
+    if (v == null && total.hasError) {
+      return Text(
+        t.balance.unavailable,
+        style: theme.textTheme.headlineMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer),
+      );
+    }
+
+    final value = v ?? WalletTotal.empty;
+    return Column(
+      children: [
+        AmountText(
+          value.value,
+          style: theme.textTheme.headlineMedium?.copyWith(
+            color: theme.colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        // 部分链取数失败：数字仍然出，但必须标明它是不完整的——
+        // 否则用户会把缩水后的金额当成真实资产。tooltip 里报出具体链名。
+        if (value.isPartial)
+          Tooltip(
+            message: value.failedChainIds.map((id) => SupportedChains.byId(id).name).join('、'),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 14.s, color: theme.colorScheme.onPrimaryContainer),
+                SizedBox(width: 4.s),
+                Text(
+                  t.home.partialAssets,
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

@@ -6,12 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/data/datasource/remote/coingecko_api.dart';
-import 'package:wallet/data/repository/market_repository.dart';
 import 'package:wallet/domain/account_balance.dart';
 import 'package:wallet/domain/wallet.dart';
-import 'package:wallet/providers/market_repository_provider.dart';
+import 'package:wallet/providers/coingecko_api_provider.dart';
 import 'package:wallet/providers/modules/balance_provider.dart';
+import 'package:wallet/constants/currency_symbols.dart';
+import 'package:wallet/enums/prefs_key.dart';
 import 'package:wallet/providers/prefs_provider.dart';
+import 'package:wallet/providers/token_catalog_provider.dart';
 
 /// 测试用钱包：给 EVM 之外的链也铺上地址，好让跨链并发真的展开。
 const _walletId = 'w1';
@@ -51,17 +53,17 @@ class _FakeBalances {
 }
 
 /// 假行情：每种币单价固定 2.0。
-/// [walletTotalProvider] 仍会先等 [marketsProvider]，失败会整单抛错，所以这里必须成功。
-class _FakeMarketRepository implements MarketRepository {
-  const _FakeMarketRepository();
+/// 没有落盘缓存时 [walletTotalProvider] 会等这一次请求，失败会整单抛错，所以这里必须成功。
+class _FakeApi implements CoinGeckoApi {
+  const _FakeApi();
 
   @override
-  Future<Markets> getMarkets({required String currency, required Iterable<String> ids}) async => {
+  Future<Markets> fetchMarkets(Iterable<String> ids, {String vsCurrency = 'usd'}) async => {
     for (final id in ids) id: (price: 2.0, logoUrl: null),
   };
 
   @override
-  Future<bool> refreshMarkets({required String currency, required Iterable<String> ids}) async => true;
+  Future<ChainIcons> fetchChainIcons(Iterable<String> platformIds) async => const {};
 }
 
 Future<ProviderContainer> _container(_FakeBalances balances) async {
@@ -83,11 +85,31 @@ Future<ProviderContainer> _container(_FakeBalances balances) async {
   final container = ProviderContainer(
     overrides: [
       sharedPrefsProvider.overrideWithValue(prefs),
-      marketRepositoryProvider.overrideWithValue(const _FakeMarketRepository()),
+      coinGeckoApiProvider.overrideWithValue(const _FakeApi()),
       balanceProvider.overrideWith((ref, key) => balances.fetch(key)),
     ],
   );
   addTearDown(container.dispose);
+
+  // 预置一份未过期的行情缓存，模拟「有缓存的冷启动」：marketsProvider 首次读盘即命中，
+  // 不会在后台重取。否则那次重取回来时会改 state，把正在算的 walletTotal 从半途
+  // invalidate 掉——容器里没有常驻 listener，被丢弃那次的 .future 永远不会完成。
+  // marketsProvider 是惰性的，这里赶在任何人读它之前写盘。
+  final ids = container.read(tokenCatalogProvider).coinGeckoIds.toList();
+  await prefs.setString(
+    PrefsKey.markets.value,
+    jsonEncode({
+      'byCurrency': {
+        defaultCurrencyCode: {
+          'at': DateTime.now().millisecondsSinceEpoch,
+          'data': {
+            for (final id in ids) id: {'price': 2.0, 'logoUrl': null},
+          },
+          'ids': ids,
+        },
+      },
+    }),
+  );
   return container;
 }
 
@@ -182,11 +204,7 @@ void main() {
 
       // 让已发起的请求都跑到 await 闸门处。
       await Future<void>.delayed(Duration.zero);
-      expect(
-        balances.maxInFlight,
-        _chains.length,
-        reason: '应当所有链同时在飞；若为 1 说明退回了循环内 await 的串行写法',
-      );
+      expect(balances.maxInFlight, _chains.length, reason: '应当所有链同时在飞；若为 1 说明退回了循环内 await 的串行写法');
 
       for (final g in balances.gates.values) {
         g.complete();

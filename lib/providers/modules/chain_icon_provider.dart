@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../blockchain/chain_registry.dart';
 import '../../data/datasource/remote/coingecko_api.dart' show ChainIcons;
 import '../../enums/prefs_key.dart';
-import '../market_repository_provider.dart';
+import '../coingecko_api_provider.dart';
 import '../persistent_notifier.dart';
 
 export '../../data/datasource/remote/coingecko_api.dart' show ChainIcons;

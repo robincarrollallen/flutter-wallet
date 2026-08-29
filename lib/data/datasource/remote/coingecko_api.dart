@@ -11,8 +11,9 @@ typedef ChainIcons = Map<String, String>;
 
 /// CoinGecko 远程数据源：只负责发请求与解析响应，不做缓存、不做回退决策。
 ///
-/// **失败约定**：两个方法都吞掉异常并返回空 map，由上层 repository 据此回退旧缓存。
-/// 这个约定是 repository 缓存逻辑的前提，改动前先确认调用方。
+/// **失败约定**：两个方法都吞掉异常并返回空 map，由上层的 PersistentNotifier
+/// （MarketsNotifier / ChainIconsNotifier）据此保住旧缓存。
+/// 这个约定是那两处缓存逻辑的前提，改动前先确认调用方。
 class CoinGeckoApi {
   const CoinGeckoApi();
 

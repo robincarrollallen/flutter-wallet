@@ -35,7 +35,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final markets = ref.watch(marketsProvider).value ?? const {};
+    final markets = ref.watch(marketsProvider).markets;
     final chainIcons = ref.watch(chainIconsProvider).icons;
     final wallet = ref.watch(activeWalletProvider);
 

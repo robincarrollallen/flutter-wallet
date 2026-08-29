@@ -7,7 +7,7 @@ import 'rest_client.dart';
 
 /// 远程代币目录：只负责发请求与解析 JSON，不做缓存、不做回退决策。
 ///
-/// **失败约定**：吞掉异常并返回空列表，由 [TokenRepository] 据此回退旧缓存 / 打包目录。
+/// **失败约定**：吞掉异常并返回空列表，由上层的 RemoteTokensNotifier 据此保住旧缓存 / 打包目录。
 /// 与 [CoinGeckoApi] 相同——空即失败。
 ///
 /// 测试网合约没有公开的通用 token list。未配置 [catalogUrl] 时立刻返回空列表、不发请求，

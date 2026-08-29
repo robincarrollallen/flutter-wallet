@@ -23,7 +23,7 @@ class TokenTabView extends ConsumerWidget {
 
     // 复用余额页已缓存的行情结果，不产生额外请求；
     // 首帧未就绪时取空表，图标自然回退首字母，就绪后自动重建。
-    final markets = ref.watch(marketsProvider).value ?? const {};
+    final markets = ref.watch(marketsProvider).markets;
     // 代币行右下角的链徽标图标。
     final chainIcons = ref.watch(chainIconsProvider).icons;
 

@@ -15,7 +15,12 @@ enum PrefsKey {
   searchHistory('search.history'), // 搜索历史
   customTokens('token.custom'), // 用户自定义代币
   hiddenAssets('asset.hidden'), // 用户手动隐藏的资产（原生币 / 代币）
-  chainIcons('chain_icons_cache'); // 链图标缓存（含写入时刻与请求过的平台 id）。键名沿用旧 ChainIconsCache，老数据直接读得出
+  // 行情缓存（按币种分槽，含写入时刻与请求过的 coinGeckoId）。
+  // 旧版是每币种一个 markets_cache_xxx 键，新键放不下老数据，升级后重取一次即可。
+  markets('markets_cache'),
+  chainIcons('chain_icons_cache'), // 链图标缓存（含写入时刻与请求过的平台 id）。键名沿用旧 ChainIconsCache，老数据直接读得出
+  // 远程代币目录缓存（含写入时刻）。键名与 JSON 结构沿用旧 TokenCatalogCache，老数据直接读得出。
+  tokenCatalog('token_catalog_cache');
 
   const PrefsKey(this.value);
 

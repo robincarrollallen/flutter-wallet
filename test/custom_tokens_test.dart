@@ -84,7 +84,7 @@ void main() {
     test('远程占位 ∪ 自定义：BSC 上出现 FOO，ETH 仍有打包 USDC', () async {
       final c = await _container();
       c.read(customTokensProvider.notifier).add(_foo);
-      await c.read(remoteTokensProvider.future);
+      await c.read(remoteTokensProvider.notifier).ready;
 
       final catalog = c.read(tokenCatalogProvider);
       expect(catalog.tokensOf(SupportedChains.bscTestnet.id).single.symbol, 'FOO');
