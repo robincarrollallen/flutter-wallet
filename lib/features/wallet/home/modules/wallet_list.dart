@@ -24,7 +24,7 @@ class WalletList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final markets = ref.watch(marketsProvider).value ?? const {};
-    final chainIcons = ref.watch(chainIconsProvider).value ?? const {};
+    final chainIcons = ref.watch(chainIconsProvider).icons;
     final assets = ref.watch(visibleAssetsProvider(null));
 
     return RefreshIndicator(

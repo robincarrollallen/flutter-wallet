@@ -61,9 +61,6 @@ class _FakeMarketRepository implements MarketRepository {
   };
 
   @override
-  Future<ChainIcons> getChainIcons(Iterable<String> platformIds) async => const {};
-
-  @override
   Future<bool> refreshMarkets({required String currency, required Iterable<String> ids}) async => true;
 }
 

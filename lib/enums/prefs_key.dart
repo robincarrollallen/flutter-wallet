@@ -14,7 +14,8 @@ enum PrefsKey {
   recentAddresses('send.recentAddresses'), // 转账最近使用地址
   searchHistory('search.history'), // 搜索历史
   customTokens('token.custom'), // 用户自定义代币
-  hiddenAssets('asset.hidden'); // 用户手动隐藏的资产（原生币 / 代币）
+  hiddenAssets('asset.hidden'), // 用户手动隐藏的资产（原生币 / 代币）
+  chainIcons('chain_icons_cache'); // 链图标缓存（含写入时刻与请求过的平台 id）。键名沿用旧 ChainIconsCache，老数据直接读得出
 
   const PrefsKey(this.value);
 

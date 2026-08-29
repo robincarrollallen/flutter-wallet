@@ -25,7 +25,7 @@ class TokenTabView extends ConsumerWidget {
     // 首帧未就绪时取空表，图标自然回退首字母，就绪后自动重建。
     final markets = ref.watch(marketsProvider).value ?? const {};
     // 代币行右下角的链徽标图标。
-    final chainIcons = ref.watch(chainIconsProvider).value ?? const {};
+    final chainIcons = ref.watch(chainIconsProvider).icons;
 
     // 空词：展示热门链，点击即以其名称发起搜索。
     if (results.isEmptyQuery) {

@@ -44,8 +44,8 @@ class HomeScreen extends ConsumerWidget {
         return Transform(
           alignment: Alignment.topCenter, // 横向缩放以顶部中心为锚点
           transform: Matrix4.identity()
-            ..translate(0.0, topPadding * t) // 向下平移，最大 = 安全区高度
-            ..scale(1 - 0.08 * t, 1.0), // 仅 X 收窄，纵向不缩放
+            ..translateByDouble(0.0, topPadding * t, 0.0, 1.0) // 向下平移，最大 = 安全区高度
+            ..scaleByDouble(1 - 0.08 * t, 1.0, 1.0, 1.0), // 仅 X 收窄，纵向与 Z 不缩放
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16.s * t), // 0 → 16
             child: child,

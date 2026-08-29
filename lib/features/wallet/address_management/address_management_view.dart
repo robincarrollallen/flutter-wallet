@@ -21,7 +21,7 @@ class AddressManagementScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     // 在此一次性取表再逐行分发，避免每个 tile 各自 watch 造成 N 次重建。
     // 首帧未就绪时取空表，图标自然回退，就绪后整页重建。
-    final chainIcons = ref.watch(chainIconsProvider).value ?? const {};
+    final chainIcons = ref.watch(chainIconsProvider).icons;
     final markets = ref.watch(marketsProvider).value ?? const {};
 
     return Scaffold(

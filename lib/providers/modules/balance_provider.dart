@@ -84,7 +84,7 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String)>(
   final (chainId, address) = key;
   final chain = SupportedChains.byId(chainId);
 
-  // —— 同步段：只登记依赖、取 Future，一个 await 都不能有 —— //
+  /// 同步并发执行(异步调用方法不立即 await)
   final marketsFuture = ref.watch(marketsProvider.future);
   final baseFuture = const BalanceRepository(ChainBalanceApi()).getBalance(chain, address);
 

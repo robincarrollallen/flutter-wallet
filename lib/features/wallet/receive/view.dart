@@ -132,7 +132,7 @@ class _ReceiveHomePageState extends ConsumerState<_ReceiveHomePage> with SingleT
     final theme = Theme.of(context);
     final markets = ref.watch(marketsProvider).value ?? const {};
     // Tab 图标用「链图标」；列表行仍用各自的币/代币图标。
-    final chainIcons = ref.watch(chainIconsProvider).value ?? const {};
+    final chainIcons = ref.watch(chainIconsProvider).icons;
 
     return Material(
       color: Colors.transparent,

@@ -1,32 +1,23 @@
-import '../datasource/local/chain_icons_cache.dart';
 import '../datasource/local/markets_cache.dart';
 import '../datasource/remote/coingecko_api.dart';
 
-/// 行情与链图标的统一入口：对上只回答「给我数据」，
+/// 行情的统一入口：对上只回答「给我数据」，
 /// 走缓存还是走网络、失败了怎么办，都在这里决定。
 ///
-/// 行情与图标的取数流程完全一致，差别只有 TTL 与缓存键，
-/// 因此共用 [_readThrough]——这也是引入本层的直接动机。
+/// 链图标曾经也走这里，现已迁到 [ChainIconsNotifier]——它靠 PersistentNotifier
+/// 做到「先用落盘数据渲染、再后台刷新」，不需要本层的 await 式读透。
+/// [_readThrough] 因此暂时只剩行情一个调用方，泛型先保留，留给后续迁移。
 class MarketRepository {
-  const MarketRepository({
-    required CoinGeckoApi api,
-    required MarketsCache marketsCache,
-    required ChainIconsCache iconsCache,
-  }) : _api = api,
-       _marketsCache = marketsCache,
-       _iconsCache = iconsCache;
+  const MarketRepository({required CoinGeckoApi api, required MarketsCache marketsCache})
+    : _api = api,
+      _marketsCache = marketsCache;
 
   final CoinGeckoApi _api;
   final MarketsCache _marketsCache;
-  final ChainIconsCache _iconsCache;
 
   /// 行情缓存有效期。CoinGecko 免费档约 5~15 次/分钟，超限返回 429，
   /// 因此宁可让价格滞后 5 分钟，也不要把配额耗在来回切页上。
   static const _marketsTtl = Duration(minutes: 5);
-
-  /// 链图标缓存有效期。链 logo 基本不变，没有任何实时性要求，
-  /// 给足 7 天把这次请求摊薄到可忽略——它与行情共用 CoinGecko 的限流配额。
-  static const _iconsTtl = Duration(days: 7);
 
   /// 取行情：TTL 内直接返回落盘缓存，过期则重取，失败回退旧缓存。
   Future<Markets> getMarkets({required String currency, required Iterable<String> ids}) => _readThrough(
@@ -34,14 +25,6 @@ class MarketRepository {
     ttl: _marketsTtl,
     fetch: () => _api.fetchMarkets(ids, vsCurrency: currency),
     write: (fresh) => _marketsCache.write(currency, fresh),
-  );
-
-  /// 取链图标：同上，只是 TTL 长得多。
-  Future<ChainIcons> getChainIcons(Iterable<String> platformIds) => _readThrough(
-    read: _iconsCache.read,
-    ttl: _iconsTtl,
-    fetch: () => _api.fetchChainIcons(platformIds),
-    write: _iconsCache.write,
   );
 
   /// 下拉刷新专用：无视 TTL 强制重取，成功才覆盖缓存。
@@ -55,7 +38,7 @@ class MarketRepository {
     return true;
   }
 
-  /// 读透缓存的统一流程，行情与图标共用：
+  /// 读透缓存的统一流程：
   ///
   /// 1. 缓存未过期 → 直接返回，完全不发请求（冷启动也命中）
   /// 2. 过期或无缓存 → 发请求

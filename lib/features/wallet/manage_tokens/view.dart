@@ -40,7 +40,7 @@ class _ManageTokensScreenState extends ConsumerState<ManageTokensScreen> {
     final assets = ManageTokensLogic.filter(ref.watch(manageTokenListProvider), _query);
     final hidden = ref.watch(hiddenAssetsProvider);
     final markets = ref.watch(marketsProvider).value ?? const {};
-    final chainIcons = ref.watch(chainIconsProvider).value ?? const {};
+    final chainIcons = ref.watch(chainIconsProvider).icons;
 
     return Scaffold(
       appBar: AppBar(title: Text(t.manageTokens.title)),
