@@ -69,7 +69,7 @@ class RemoteTokensNotifier extends Notifier<RemoteTokensState> with PersistentNo
     // 打包目录当默认值：没有任何缓存时首帧也有一份完整目录，不必等网络。
     final restored = restore((tokens: BundledTokenCatalog.all, at: null)); // 同步读盘
 
-    _pending = _isExpired(restored.at) ? _fetch() : null; // 刻意不 await
+    _pending = _isExpired(restored.at) ? refresh() : null; // 刻意不 await
 
     return restored; // 立刻带着旧目录返回，UI 首帧即有完整代币列表
   }
@@ -77,8 +77,12 @@ class RemoteTokensNotifier extends Notifier<RemoteTokensState> with PersistentNo
   /// 过期（含从没抓到过远端结果，此时 [at] 为 null）就重取。
   bool _isExpired(DateTime? at) => at == null || DateTime.now().difference(at) >= ttl;
 
-  /// 后台取数。返回是否拿到了新目录。
-  Future<bool> _fetch() async {
+  /// 取数：无视 TTL 直接重取，返回是否拿到了新目录——失败时旧目录原封不动。
+  ///
+  /// [build] 里的后台补拉与下拉刷新是同一件事（目录没有 currency 之类的参数要分），
+  /// 所以只有这一个方法，不再套一层同名转发。
+  /// 不需要调用方再 invalidate：拿到新目录就直接赋值 state，watcher 自动重建。
+  Future<bool> refresh() async {
     final fresh = await ref.read(tokenCatalogApiProvider).fetchCatalog();
 
     // 空列表即失败（数据源约定）：保持旧目录与旧 at 不动，下次再试，
@@ -90,11 +94,6 @@ class RemoteTokensNotifier extends Notifier<RemoteTokensState> with PersistentNo
     state = (tokens: fresh, at: DateTime.now()); // listenSelf 监听到，自动落盘
     return true;
   }
-
-  /// 下拉刷新：无视 TTL 强制重取。返回是否取到了新目录——失败时旧目录原封不动。
-  ///
-  /// 不需要调用方再 invalidate：拿到新目录就直接赋值 state，watcher 自动重建。
-  Future<bool> refresh() => _fetch();
 
   /// 给「必须等目录落地」的调用方用：有请求在飞就等它，等完返回当前目录。
   ///
