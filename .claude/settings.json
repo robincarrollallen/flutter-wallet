@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r \".tool_input.file_path // .tool_response.filePath // empty\"); case \"$f\" in *lib/*.dart) d=\"${CLAUDE_PROJECT_DIR:-$(git -C \"$(dirname \"$f\")\" rev-parse --show-toplevel 2>/dev/null)}\"; [ -x \"$d/tool/check_layers.sh\" ] || exit 0; out=$(\"$d/tool/check_layers.sh\" \"$f\" 2>&1) || jq -n --arg r \"$out\" \"{decision:\\\"block\\\",reason:(\\\"分层约束校验失败，请修正后继续：\\n\\\"+\\$r)}\";; esac; exit 0",
+            "statusMessage": "校验分层约束",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}

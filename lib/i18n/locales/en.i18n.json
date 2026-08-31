@@ -1,0 +1,158 @@
+{
+  "appTitle": "My Wallet",
+  "tabs": {
+    "home": "Home",
+    "market": "Market",
+    "exchange": "Exchange",
+    "contract": "Contract",
+    "discover": "Discover"
+  },
+  "home": {
+    "noWalletTitle": "No wallet yet",
+    "noWalletSubtitle": "Create or import a wallet to get started",
+    "createWallet": "Create Wallet",
+    "totalAssets": "Total Assets",
+    "assetsScanning": "Scanning on-chain assets…",
+    "partialAssets": "Some chains failed to load",
+    "searchHint": "Search tokens, addresses or transactions",
+    "settings": "Settings",
+    "scan": "Scan",
+    "tokens": "Tokens",
+    "manageTokens": "Manage tokens"
+  },
+  "manageTokens": {
+    "title": "Manage tokens",
+    "searchHint": "Search tokens or chains",
+    "empty": "No matching assets"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "security": "Security",
+    "about": "About"
+  },
+  "currency": {
+    "title": "Currency",
+    "searchHint": "Search currency"
+  },
+  "currencyNames": {
+    "USD": "United States Dollar",
+    "EUR": "Euro",
+    "GBP": "British Pound",
+    "JPY": "Japanese Yen",
+    "CNY": "Chinese Yuan",
+    "HKD": "Hong Kong Dollar",
+    "TWD": "New Taiwan Dollar",
+    "KRW": "South Korean Won",
+    "AUD": "Australian Dollar",
+    "NZD": "New Zealand Dollar",
+    "CAD": "Canadian Dollar",
+    "SGD": "Singapore Dollar",
+    "PHP": "Philippine Peso",
+    "THB": "Thai Baht",
+    "VND": "Vietnamese Dong",
+    "INR": "Indian Rupee",
+    "IDR": "Indonesian Rupiah",
+    "MYR": "Malaysian Ringgit",
+    "BDT": "Bangladeshi Taka",
+    "PKR": "Pakistani Rupee",
+    "LKR": "Sri Lankan Rupee",
+    "MMK": "Myanmar Kyat",
+    "BRL": "Brazilian Real",
+    "MXN": "Mexican Peso",
+    "ARS": "Argentine Peso",
+    "CLP": "Chilean Peso",
+    "BMD": "Bermudian Dollar",
+    "VEF": "Venezuelan Bolívar",
+    "CHF": "Swiss Franc",
+    "SEK": "Swedish Krona",
+    "NOK": "Norwegian Krone",
+    "DKK": "Danish Krone",
+    "PLN": "Polish Zloty",
+    "CZK": "Czech Koruna",
+    "HUF": "Hungarian Forint",
+    "RUB": "Russian Ruble",
+    "UAH": "Ukrainian Hryvnia",
+    "GEL": "Georgian Lari",
+    "TRY": "Turkish Lira",
+    "ILS": "Israeli New Shekel",
+    "AED": "UAE Dirham",
+    "SAR": "Saudi Riyal",
+    "KWD": "Kuwaiti Dinar",
+    "BHD": "Bahraini Dinar",
+    "NGN": "Nigerian Naira",
+    "ZAR": "South African Rand"
+  },
+  "search": {
+    "title": "Search",
+    "hint": "Search tokens, addresses or transactions",
+    "empty": "Type a keyword to start searching",
+    "noResult": "No matching results",
+    "tabs": {
+      "token": "Token",
+      "contract": "Contract",
+      "dapp": "Dapp"
+    },
+    "history": "Search history",
+    "clearHistory": "Clear",
+    "hot": "Trending"
+  },
+  "scan": {
+    "title": "Scan",
+    "hint": "Place the QR code inside the frame to scan automatically"
+  },
+  "balance": {
+    "unavailable": "--"
+  },
+  "create": {
+    "generatingTitle": "Creating your wallet",
+    "generatingHint": "Generating the mnemonic and deriving the address — please stay on this page",
+    "successTitle": "Wallet created",
+    "successSubtitle": "Your brand-new wallet is ready to go",
+    "start": "Start using my new wallet",
+    "walletName": "My wallet",
+    "failed": "Creation failed, please try again",
+    "retry": "Retry"
+  },
+  "createWallet": {
+    "title": "Create Wallet",
+    "create": {
+      "title": "New mnemonic wallet",
+      "subtitle": "Generate a brand-new mnemonic phrase and create a wallet"
+    },
+    "import": {
+      "title": "Import existing wallet",
+      "subtitle": "Recover an existing wallet via mnemonic or private key"
+    },
+    "hardware": {
+      "title": "Connect hardware wallet",
+      "subtitle": "Connect Ledger, Trezor and other hardware devices"
+    }
+  },
+  "import": {
+    "selectTitle": "Import Wallet",
+    "software": "Mnemonic or private key",
+    "hardware": "Hardware wallet",
+    "mnemonic": {
+      "title": "Import mnemonic or private key",
+      "hint": "Enter your mnemonic (space-separated) or paste a private key",
+      "helper": "Mnemonic or private key is auto-detected; BIP39 suggestions appear above the keyboard while typing a mnemonic",
+      "warning": "Never enter your mnemonic in an untrusted environment — anyone who obtains it can control your assets.",
+      "submit": "Import",
+      "wordCount": "{n} words",
+      "walletName": "Imported wallet",
+      "deriveFailed": "Failed to derive address",
+      "errors": {
+        "empty": "Please enter your mnemonic",
+        "nonEnglish": "Mnemonic may only contain English words",
+        "wordCount": "Mnemonic must be 12 / 15 / 18 / 21 / 24 words, currently {count}",
+        "invalidWords": "Invalid words: {words}",
+        "checksum": "Mnemonic checksum failed, please check the order or spelling",
+        "invalidPrivateKey": "Invalid private key format. Please check it is a complete EVM / Solana / Sui private key"
+      }
+    }
+  },
+  "placeholder": {
+    "wip": "Feature under development"
+  }
+}
