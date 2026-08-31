@@ -22,7 +22,7 @@ class ChainIconsNotifier extends Notifier<ChainIconsState> with PersistentNotifi
   @override
   PrefsKey get persistKey => PrefsKey.chainIcons; // 定义持久化标识<persistKey>(重写)
 
-  /// 定义持久化内容(重写): 缓存时刻<at>，数据内容<data>，缓存对应ID合集<ids>
+  /// 定义持久化内容(重写): 缓存时刻 `at`，数据内容 `data`，缓存对应ID合集 `ids`
   @override
   Map<String, dynamic> toJson(ChainIconsState state) => {
     'at': state.at?.millisecondsSinceEpoch,
