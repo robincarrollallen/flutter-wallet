@@ -22,15 +22,17 @@ class MnemonicService {
   static DerivedWallet deriveWallet(String mnemonic) {
     final seed = _seedFromMnemonic(mnemonic); // 根据助记词推导出二进制种子
 
-    final addressByCoin = <Bip44Coins, String>{}; // 缓存地址容器
-    // 遍历所有支持的币种(distinctCoins已去重)，派生地址
-    for (final coin in SupportedChains.distinctCoins) {
-      final acct = _derive(seed, coin); // 根据种子和币种派生出账户
-      addressByCoin[coin] = acct.publicKey.toAddress; // 缓存地址
+    final addressByScheme = <DerivationScheme, String>{}; // 缓存地址容器
+    // 遍历所有支持的派生方案(distinctDerivations 已去重)，派生地址
+    for (final scheme in SupportedChains.distinctDerivations) {
+      final acct = _derive(seed, scheme); // 根据种子和派生方案派生出账户
+      addressByScheme[scheme] = acct.publicKey.toAddress; // 缓存地址
     }
 
-    // 映射成 chainId -> address（coin币种有相同值，所以使用chainId映射）
-    final addresses = <String, String>{for (final chain in SupportedChains.all) chain.id: addressByCoin[chain.coin]!};
+    // 映射成 chainId -> address（多条链可能共用同一派生方案，所以对外用 chainId 索引）
+    final addresses = <String, String>{
+      for (final chain in SupportedChains.all) chain.id: addressByScheme[chain.derivation]!,
+    };
 
     return DerivedWallet(addresses: addresses);
   }
@@ -43,7 +45,7 @@ class MnemonicService {
   /// - Aptos：`0x` + ed25519 十六进制。
   static String derivePrivateKey(String mnemonic, Chain chain) {
     final seed = _seedFromMnemonic(mnemonic); // 根据助记词推导出二进制种子词
-    final acct = _derive(seed, chain.coin); // 根据种子词 + 链原生币标识派生出BIP44 账户
+    final acct = _derive(seed, chain.derivation); // 根据种子词 + 链的派生方案派生出账户
     final raw = acct.privateKey.raw; // 原始私钥的字节数组
 
     return switch (chain.kind) {
@@ -61,13 +63,32 @@ class MnemonicService {
   /// 统一助记词 -> seed 二进制种子词推导入口，避免多处重复，后续支持 passphrase 时只改一处。
   static List<int> _seedFromMnemonic(String mnemonic) => Bip39SeedGenerator(Mnemonic.fromString(mnemonic)).generate();
 
-  /// 种子 + 链原生币标识 -> 该币种默认路径的 BIP44 账户，全部地址派生统一入口。
-  static Bip44 _derive(List<int> seed, Bip44Coins coin) => Bip44.fromSeed(seed, coin).deriveDefaultPath;
+  /// 种子 + 派生方案 -> 该方案默认路径的账户，全部地址派生统一入口。
+  /// BTC 按脚本类型分流到 BIP44/84/86，其余链一律走 BIP44 默认路径。
+  static Bip44Base<dynamic> _derive(List<int> seed, DerivationScheme scheme) => switch (scheme.btcScriptType) {
+    null || BtcScriptType.p2pkh => Bip44.fromSeed(seed, scheme.coin).deriveDefaultPath,
+    BtcScriptType.p2wpkh => Bip84.fromSeed(seed, _bip84Coin(scheme.coin)).deriveDefaultPath,
+    BtcScriptType.p2tr => Bip86.fromSeed(seed, _bip86Coin(scheme.coin)).deriveDefaultPath,
+  };
+
+  /// BIP44 币种 -> BIP84 币种（仅 BTC 主网/测试网两种，其余为配置错误）。
+  static Bip84Coins _bip84Coin(Bip44Coins coin) => switch (coin) {
+    Bip44Coins.bitcoin => Bip84Coins.bitcoin,
+    Bip44Coins.bitcoinTestnet => Bip84Coins.bitcoinTestnet,
+    _ => throw ArgumentError('BIP84 仅支持 Bitcoin，收到 $coin'),
+  };
+
+  /// BIP44 币种 -> BIP86 币种（同上，Taproot 目前也只对 BTC 开放）。
+  static Bip86Coins _bip86Coin(Bip44Coins coin) => switch (coin) {
+    Bip44Coins.bitcoin => Bip86Coins.bitcoin,
+    Bip44Coins.bitcoinTestnet => Bip86Coins.bitcoinTestnet,
+    _ => throw ArgumentError('BIP86 仅支持 Bitcoin，收到 $coin'),
+  };
 
   /// 助记词 -> 以太坊默认账户（EVM 快捷入口）。
-  static Bip44 _deriveDefault(String mnemonic) {
+  static Bip44Base<dynamic> _deriveDefault(String mnemonic) {
     final seed = _seedFromMnemonic(mnemonic); // 根据助记词推导出二进制种子
-    return _derive(seed, Bip44Coins.ethereum);
+    return _derive(seed, SupportedChains.ethereumSepolia.derivation);
   }
 }
 

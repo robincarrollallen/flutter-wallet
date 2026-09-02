@@ -83,10 +83,12 @@ class SendLogic {
     return _decodes(() => EthAddrDecoder().decodeAddr(addr));
   }
 
-  /// Bitcoin（项目为测试网）：bech32 tb1... 为主，宽松兼容 legacy（m/n/2 开头）。
+  /// Bitcoin（项目为测试网）：收款方地址类型不受本钱包自身脚本类型限制，三种都放行——
+  /// tb1q…（SegWit v0 / P2WPKH）、tb1p…（Taproot v1 / P2TR）、以及 legacy（m/n/2 开头）。
   static bool _isValidBitcoinTestnet(String addr) {
     if (addr.toLowerCase().startsWith('tb1')) {
-      return _decodes(() => SegwitBech32Decoder.decode('tb', addr));
+      return _decodes(() => P2WPKHAddrDecoder().decodeAddr(addr, hrp: 'tb')) ||
+          _decodes(() => P2TRAddrDecoder().decodeAddr(addr, hrp: 'tb'));
     }
     return RegExp(r'^[mn2][1-9A-HJ-NP-Za-km-z]{25,39}$').hasMatch(addr);
   }

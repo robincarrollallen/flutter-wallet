@@ -1,8 +1,10 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 
+import '../enums/btc_script_type.dart';
 import '../enums/chain_kind.dart';
 import '../enums/rpc_method.dart';
 
+export '../enums/btc_script_type.dart';
 export '../enums/chain_kind.dart';
 export '../enums/rpc_method.dart';
 
@@ -17,10 +19,15 @@ class Chain {
     required this.endpoint,
     required this.coinGeckoId,
     required this.decimals,
+    this.btcScriptType = BtcScriptType.p2wpkh,
     this.evmChainId,
     this.nativeBalanceRpcMethod,
     this.coinGeckoPlatformId,
-  });
+  }) : assert(
+         (kind == ChainKind.evm || kind == ChainKind.solana || kind == ChainKind.sui) ==
+             (nativeBalanceRpcMethod != null),
+         'JSON-RPC 链（evm/solana/sui）必须配置 nativeBalanceRpcMethod，REST 链必须留空',
+       );
 
   final String id; // 链的唯一标识符(用于查找链配置、保存用户选择、做数据关联, byId 就靠它)
   final String name; // 链的名称(UI 展示给用户看)
@@ -30,9 +37,29 @@ class Chain {
   final String endpoint; // 该链的节点/API 地址(实际网络请求入口, EVM/Solana 通常是 RPC，Bitcoin 是区块浏览器 API)
   final String coinGeckoId; // CoinGecko 里的币种 ID (拉取价格<通常是 USD 单价>, 做资产估值)
   final int decimals; // 原生币最小单位精度<如 ETH=18，BTC=8>(金额换算: 链上最小单位 <-> 人类可读金额)
+  final BtcScriptType btcScriptType; // BTC 脚本类型/派生路径方案(仅 ChainKind.bitcoin 有意义，其余链忽略)
   final int? evmChainId; // EVM 链的 chainId<数字>(EIP-155 签名必需, 非 EVM 链为空)
   final RpcMethod? nativeBalanceRpcMethod; // 原生币余额 RPC 方法（非 JSON-RPC 链为空）
   final String? coinGeckoPlatformId; // CoinGecko asset_platforms 的平台 id，用于取该链自己的图标(如 Base / Arbitrum 都有 ETH)
+
+  /// 该链的派生方案：地址派生只认它，链的其余配置（endpoint / 价格 id 等）都与派生无关。
+  DerivationScheme get derivation =>
+      DerivationScheme(coin: coin, btcScriptType: kind == ChainKind.bitcoin ? btcScriptType : null);
+}
+
+/// 一组「能唯一决定一个地址」的派生参数。多条链共用同一方案时只需派生一次（EVM 多链即如此）。
+class DerivationScheme {
+  const DerivationScheme({required this.coin, this.btcScriptType});
+
+  final Bip44Coins coin; // 币种，决定 coin_type 与地址编码所用的网络参数
+  final BtcScriptType? btcScriptType; // BTC 脚本类型，决定走 BIP44/84/86；非 BTC 链为空
+
+  @override
+  bool operator ==(Object other) =>
+      other is DerivationScheme && other.coin == coin && other.btcScriptType == btcScriptType;
+
+  @override
+  int get hashCode => Object.hash(coin, btcScriptType);
 }
 
 /// 全部受支持链（均为测试网）。
@@ -125,13 +152,14 @@ class SupportedChains {
 
   static const bitcoinTestnet = Chain(
     id: 'bitcoin-testnet',
-    name: 'Bitcoin Testnet',
+    name: 'Bitcoin Testnet4',
     symbol: 'BTC',
     kind: ChainKind.bitcoin,
     coin: Bip44Coins.bitcoinTestnet,
-    endpoint: 'https://blockstream.info/testnet/api',
+    endpoint: 'https://mempool.space/testnet4/api',
     coinGeckoId: 'bitcoin',
     decimals: 8,
+    btcScriptType: BtcScriptType.p2wpkh,
   );
 
   static const solanaDevnet = Chain(
@@ -201,11 +229,11 @@ class SupportedChains {
     aptosTestnet,
   ];
 
-  /// 派生地址时去重的币种（EVM 多链共用同一币种 -> 同一地址，只派生一次）。
-  static List<Bip44Coins> get distinctCoins {
-    final seen = <Bip44Coins>[];
-    for (final c in all) {
-      if (!seen.contains(c.coin)) seen.add(c.coin);
+  /// 派生地址时去重后的方案（EVM 多链共用同一方案 -> 同一地址，只派生一次）。
+  static List<DerivationScheme> get distinctDerivations {
+    final seen = <DerivationScheme>[];
+    for (final chain in all) {
+      if (!seen.contains(chain.derivation)) seen.add(chain.derivation);
     }
     return seen;
   }
