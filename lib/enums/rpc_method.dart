@@ -21,6 +21,7 @@ enum EvmRpcMethod {
   estimateGas,
   getCode,
   getTransactionReceipt,
+  call,
 }
 
 /// EvmRpcMethod 的链上方法名映射。
@@ -35,5 +36,6 @@ extension EvmRpcMethodX on EvmRpcMethod {
     EvmRpcMethod.estimateGas => 'eth_estimateGas',
     EvmRpcMethod.getCode => 'eth_getCode',
     EvmRpcMethod.getTransactionReceipt => 'eth_getTransactionReceipt',
+    EvmRpcMethod.call => 'eth_call',
   };
 }

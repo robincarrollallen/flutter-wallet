@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../blockchain/chain_registry.dart';
-import '../../blockchain/listed_asset.dart';
+import '../../blockchain/token.dart';
+import '../../blockchain/token_catalog.dart';
 import '../../data/datasource/remote/chain_balance_api.dart';
 import '../../data/repository/balance_repository.dart';
 import '../../domain/account_balance.dart';
@@ -36,6 +37,8 @@ Future<void> refreshHomeData(WidgetRef ref, {String? walletId}) async {
 
   // 余额没有 TTL，每次下拉都重查。整个 family 一起 invalidate，
   // 依赖它的 walletTotalProvider 会级联重算。
+  // 代币余额来自另一个聚合 family，balanceProvider 只是读它，不会连带失效，要单独点名。
+  ref.invalidate(chainTokenBalancesProvider);
   ref.invalidate(balanceProvider);
 
   // 等首页真正要显示的总资产算完，指示器才收起，避免转完了数字还在跳。
@@ -44,15 +47,44 @@ Future<void> refreshHomeData(WidgetRef ref, {String? walletId}) async {
   }
 }
 
-/// 按 (chainId, address) 查询某链余额，并附带实时单价。
-/// AsyncValue 自动提供 loading / error / data 三态。
+/// 某条链上某地址持有的**全部代币**余额，键为 [TokenCatalog.identityKey]。
+///
+/// 为什么按链聚合而不是一个代币一个 provider：代币余额是逐个合约 `balanceOf`，
+/// 一条链上十几个代币各发一次就是十几次握手，六条 EVM 链同时刷首页会明显卡顿。
+/// 这里合成一次批量 JSON-RPC，[balanceProvider] 再从结果里取自己那份——
+/// UI 仍是逐资产的独立 AsyncValue，请求却只有一个。
+///
+/// 取的是完整目录而非 [visibleAssetsProvider]：隐藏项只是不进列表和总额，
+/// 若哪天有页面要看隐藏代币的余额，不该因为它被隐藏就查不到；反正合并进同一批
+/// 请求，多带几个代币不多一次往返。未接入的代币标准在此就地滤掉——
+/// 混进去会让整批抛 [UnimplementedError]，把同链已支持的代币一起拖下水。
+final chainTokenBalancesProvider = FutureProvider.family<Map<String, AccountBalance>, (String, String)>((
+  ref,
+  key,
+) async {
+  final (chainId, address) = key;
+  final chain = SupportedChains.byId(chainId);
+  final tokens = [
+    for (final token in ref.watch(tokenCatalogProvider).tokensOf(chainId))
+      if (ChainBalanceApi.supportsTokenBalance(token.standard)) token,
+  ];
+  if (tokens.isEmpty) return const {};
+  return const BalanceRepository(ChainBalanceApi()).getTokenBalances(chain, tokens, address);
+}, retry: _noRetry);
+
+/// 按 (chainId, address, tokenIdentifier) 查询单个资产的余额，并附带实时单价。
+/// [tokenIdentifier] 为 null 表示该链原生币。AsyncValue 自动提供 loading / error / data 三态。
+///
+/// 键做成资产维度而不是链维度，是为了让原生币与代币共用同一条读取路径：
+/// UI 只认 [ListedAsset]，不必在每个调用点分「这是币还是代币」。
 ///
 /// 同步段写法（与 [walletTotalProvider] 一致）：ref.watch 必须跑在第一个 await
 /// 之前，否则余额一失败就登记不上对 [marketsProvider] 的依赖，行情刷新时这条链
 /// 不会重算。顺带让余额与行情两个请求并发，首屏不必串行等两个往返。
-final balanceProvider = FutureProvider.family<AccountBalance, (String, String)>((ref, key) async {
-  final (chainId, address) = key;
+final balanceProvider = FutureProvider.family<AccountBalance, (String, String, String?)>((ref, key) async {
+  final (chainId, address, tokenIdentifier) = key;
   final chain = SupportedChains.byId(chainId);
+  final token = tokenIdentifier == null ? null : _findToken(ref, chainId, tokenIdentifier);
 
   /// 同步并发执行(异步调用方法不立即 await)
   //
@@ -60,14 +92,16 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String)>(
   // 只有「一份缓存都没有」的冷启动才退回 await——见 [MarketsNotifier.ready]。
   final markets = ref.watch(marketsProvider).markets;
   final marketsFuture = markets.isNotEmpty ? null : (ref.read(marketsProvider.notifier).ready..ignore());
-  final baseFuture = const BalanceRepository(ChainBalanceApi()).getBalance(chain, address);
+  final baseFuture = token == null
+      ? const BalanceRepository(ChainBalanceApi()).getBalance(chain, address)
+      : _tokenBalance(ref, chain, token, address);
 
   // 先 await 裸 Future：两个 Future 谁都没有内部监听者，晾在一边先等对方时，
   // 中途失败就是一次「无人处理的异步错误」——ready 上的 ignore() 正是为此，
   // 它只消掉这个报告，await 时该抛还是会抛。
   // 这个顺序保留了原有的错误优先级——余额错误盖过行情错误。
   final base = await baseFuture;
-  final market = (marketsFuture == null ? markets : await marketsFuture)[chain.coinGeckoId];
+  final market = (marketsFuture == null ? markets : await marketsFuture)[token?.coinGeckoId ?? chain.coinGeckoId];
 
   return AccountBalance(
     address: address,
@@ -77,6 +111,27 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String)>(
     logoUrl: market?.logoUrl,
   );
 }, retry: _noRetry);
+
+/// 从目录里按 identifier 找回代币。目录里没有（自定义代币刚被删除等）就当原生币处理，
+/// 由调用方的 chain 兜底——总好过抛一个用户看不懂的错。
+Token? _findToken(Ref ref, String chainId, String identifier) {
+  final normalized = identifier.toLowerCase();
+  for (final token in ref.watch(tokenCatalogProvider).tokensOf(chainId)) {
+    if (token.identifier == identifier || token.identifier.toLowerCase() == normalized) return token;
+  }
+  return null;
+}
+
+/// 单个代币余额：从本链的批量结果里取。
+///
+/// 未接入的标准不在批量结果里（[chainTokenBalancesProvider] 已滤掉），
+/// 落到 `?? 零余额` 这条路，按 0 展示——与接入前的行为一致。
+/// 已支持的标准若地址真的没持仓，`balanceOf` 返回的也是 0，同样走这里，语义无歧义。
+Future<AccountBalance> _tokenBalance(Ref ref, Chain chain, Token token, String address) async {
+  final balances = await ref.watch(chainTokenBalancesProvider((chain.id, address)).future);
+  return balances[TokenCatalog.identityKey(token)] ??
+      AccountBalance(address: address, amount: '0', symbol: token.symbol);
+}
 
 /// 关掉 Riverpod 3.x 的自动重试。
 ///
@@ -102,9 +157,9 @@ Duration? _noRetry(int retryCount, Object error) => null;
 /// 容错只发生在汇总这一层，不会污染下游。
 ///
 /// **隐藏项不计入**：用户在管理代币页关掉的资产不进总额，口径与列表一致。
-/// 目前只有原生币有余额来源（代币余额尚未接入，恒为 0），所以这里等价于
-/// 跳过原生币被隐藏的链；代币余额接入后需在此一并过滤。
-/// 被跳过的链不算「失败」，不进 failedChainIds。
+/// 直接遍历 [visibleAssetsProvider]——它已经按 [hiddenAssetsProvider] 过滤过，
+/// 这里不必再判一遍；原生币与代币在这一层没有区别，都是一条 [ListedAsset]。
+/// 被跳过的资产不算「失败」，不进 failedChainIds。
 final walletTotalProvider = FutureProvider.family<WalletTotal, String>((ref, walletId) async {
   final wallets = ref.watch(walletListProvider);
   Wallet? wallet;
@@ -123,11 +178,11 @@ final walletTotalProvider = FutureProvider.family<WalletTotal, String>((ref, wal
   final marketsFuture = markets.isNotEmpty ? null : (ref.read(marketsProvider.notifier).ready..ignore());
 
   // —— 同步段：只登记依赖、取 Future，一个 await 都不能有 —— //
-  final hidden = ref.watch(hiddenAssetsProvider);
+  // 无地址的链（该钱包未派生出地址）整条跳过：查不了也不算失败。
   final pending = <(String, Future<AccountBalance>)>[
-    for (final chain in wallet.chainsWithAddress)
-      if (!hidden.contains(ListedAsset.nativeKey(chain)))
-        (chain.id, ref.watch(balanceProvider((chain.id, wallet.addressFor(chain)!)).future)),
+    for (final asset in ref.watch(visibleAssetsProvider(null)))
+      if (wallet.addressFor(asset.chain) case final address?)
+        (asset.chain.id, ref.watch(balanceProvider((asset.chain.id, address, asset.token?.identifier)).future)),
   ];
 
   await marketsFuture;
@@ -143,11 +198,14 @@ final walletTotalProvider = FutureProvider.family<WalletTotal, String>((ref, wal
   return aggregateWalletTotal(results);
 });
 
-/// 把逐链结果折成总额 + 失败清单。
+/// 把逐资产结果折成总额 + 失败清单。
 /// 抽成纯函数，测试不必起 ProviderContainer 就能覆盖聚合规则。
+///
+/// 失败清单仍按**链**去重：一条链上多个代币一起失败通常是同一次 RPC 故障，
+/// 逐个列出来只会把提示语堆成一长串重复的链名。
 WalletTotal aggregateWalletTotal(List<(String, AccountBalance?)> results) {
   var value = 0.0;
-  final failed = <String>[];
+  final failed = <String>{};
   for (final (chainId, balance) in results) {
     if (balance == null) {
       failed.add(chainId);
@@ -155,5 +213,5 @@ WalletTotal aggregateWalletTotal(List<(String, AccountBalance?)> results) {
       value += balance.fiatValue;
     }
   }
-  return WalletTotal(value: value, failedChainIds: failed);
+  return WalletTotal(value: value, failedChainIds: failed.toList(growable: false));
 }

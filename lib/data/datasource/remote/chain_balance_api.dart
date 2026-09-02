@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import '../../../blockchain/chain_registry.dart';
+import '../../../blockchain/token.dart';
+import '../../../core/utils/erc20_abi.dart';
 import '../../../core/utils/evm_hex.dart';
 import 'http_config.dart';
 import 'json_rpc.dart';
@@ -18,9 +20,72 @@ class ChainBalanceApi {
     return switch (chain.kind) {
       ChainKind.evm || ChainKind.solana || ChainKind.sui => await _rpcNativeBalance(chain, address),
       ChainKind.bitcoin => await _bitcoinBalance(chain, address),
-      // Tron / Aptos 原生币余额查询（代币查询另见 tokens，暂未接入）。
+      // Tron / Aptos 原生币余额查询（代币查询见 [fetchTokenBalances]）。
       ChainKind.tron => await _tronBalance(chain, address),
       ChainKind.aptos => await _aptosBalance(chain, address),
+    };
+  }
+
+  /// 该代币标准是否已接入余额查询。
+  ///
+  /// 调用方据此**提前过滤**，而不是先发请求再接 [UnimplementedError]——
+  /// 未接入的标准（SPL / TRC-20 / Sui / Aptos）目前仍按 0 展示，
+  /// 与接入前的行为一致，不给用户凭空多出一堆「取数失败」。
+  static bool supportsTokenBalance(TokenStandard standard) => standard == TokenStandard.erc20;
+
+  /// 查询单个代币余额（原始最小单位）。
+  ///
+  /// 只是 [fetchTokenBalances] 的单元素封装——分发逻辑保持一份实现。
+  Future<BigInt> fetchTokenBalance(Chain chain, Token token, String address) async {
+    final balances = await fetchTokenBalances(chain, [token], address);
+    return balances[token.identifier] ?? BigInt.zero;
+  }
+
+  /// 同链多代币批量查询，返回 `token.identifier -> 原始最小单位余额`。
+  ///
+  /// 合并成一次请求而非逐个查：一条链上十几个代币逐条发就是十几次握手，
+  /// 首页要同时刷六条 EVM 链，累加起来的等待非常可观。
+  ///
+  /// [tokens] 必须都属于 [chain] 且标准一致；混入未接入的标准会抛
+  /// [UnimplementedError]，请先用 [supportsTokenBalance] 过滤。
+  ///
+  /// 后续接入其余标准时的落点：
+  /// - SPL：`getTokenAccountsByOwner`（owner + mint 过滤），或对已知 ATA 用
+  ///   `getTokenAccountBalance`；Solana JSON-RPC 同样支持批量数组。
+  /// - TRC-20：`wallet/triggerconstantcontract`，函数签名 `balanceOf(address)`，
+  ///   REST 无批量，只能逐个发。
+  /// - Sui / Aptos：现成的原生币查询把币种写死了（`0x2::sui::SUI` /
+  ///   `0x1::aptos_coin::AptosCoin`），换成 `token.identifier` 即可，成本极低。
+  Future<Map<String, BigInt>> fetchTokenBalances(Chain chain, List<Token> tokens, String address) async {
+    if (tokens.isEmpty) return const {};
+
+    final unsupported = tokens.where((t) => !supportsTokenBalance(t.standard)).firstOrNull;
+    if (unsupported != null) {
+      throw UnimplementedError('${unsupported.standard.name} 代币余额查询暂未接入（${unsupported.symbol}）');
+    }
+
+    return _erc20Balances(chain, tokens, address);
+  }
+
+  /// ERC-20：一次批量 `eth_call`，每条都是对代币合约调 `balanceOf(owner)`。
+  ///
+  /// 无持仓地址返回的是编码好的 0，属业务真实的 0；而空返回（`0x`）由
+  /// [decodeUint256] 抛错——那说明目标地址上没有合约，不是「余额为 0」。
+  Future<Map<String, BigInt>> _erc20Balances(Chain chain, List<Token> tokens, String address) async {
+    final data = encodeBalanceOf(address); // 同一个 owner，calldata 全批复用
+    final results = await jsonRpcBatch(chain.endpoint, [
+      for (final token in tokens)
+        (
+          method: EvmRpcMethod.call.wireName,
+          params: [
+            {'to': token.identifier, 'data': data},
+            'latest',
+          ],
+        ),
+    ]);
+
+    return {
+      for (var i = 0; i < tokens.length; i++) tokens[i].identifier: decodeUint256(results[i] as String? ?? ''),
     };
   }
 

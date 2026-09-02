@@ -44,7 +44,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
     double? fiatValueOf(ListedAsset a) {
       final address = wallet?.addressFor(a.chain);
       if (address == null) return 0;
-      final balance = ref.watch(balanceProvider((a.chain.id, address)));
+      final balance = ref.watch(balanceProvider((a.chain.id, address, a.token?.identifier)));
       return balance.when(loading: () => null, error: (_, _) => 0.0, data: (b) => b.fiatValue);
     }
 

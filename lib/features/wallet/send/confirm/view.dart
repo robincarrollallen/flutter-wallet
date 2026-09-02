@@ -101,7 +101,9 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   String _sendableAmount(ListedAsset asset, String from) {
     if (!widget.isMaxAmount || from.isEmpty) return widget.amount;
     final fee = ref.watch(evmFeeProvider((asset.chain.id, from, widget.toAddress))).value;
-    final balance = ref.watch(balanceProvider((asset.chain.id, from))).value?.amount;
+    // 第三个键位固定传 null（原生币）：MAX 是「余额 − 手续费」，而手续费以原生币计价。
+    // 代币转账接入后这里要改成「代币余额不扣费、另判原生币够不够付 gas」。
+    final balance = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.amount;
     if (fee == null || balance == null) return widget.amount;
     try {
       final net = parseUnits(balance, asset.chain.decimals) - fee;
@@ -120,7 +122,8 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       error: (_, _) => '--',
       data: (fee) {
         final amount = formatUnits(fee, asset.chain.decimals);
-        final price = from.isEmpty ? 0.0 : ref.watch(balanceProvider((asset.chain.id, from))).value?.price ?? 0.0;
+        // 手续费按原生币折算，所以取的是原生币单价（第三个键位为 null），与 asset 是不是代币无关。
+        final price = from.isEmpty ? 0.0 : ref.watch(balanceProvider((asset.chain.id, from, null))).value?.price ?? 0.0;
         if (price <= 0) return '≈ $amount ${asset.chain.symbol}';
         final fiat = (double.tryParse(amount) ?? 0) * price;
         final symbol = ref.watch(currencySymbolProvider);

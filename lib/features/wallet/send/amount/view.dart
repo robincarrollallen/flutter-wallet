@@ -64,7 +64,7 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
     final wallet = ref.watch(activeWalletProvider);
     final address = wallet?.addressFor(asset.chain);
     // 进入本页前列表已拦截无地址场景，这里的 address 正常不为空；兜底按 0 处理。
-    final balanceAsync = address == null ? null : ref.watch(balanceProvider((asset.chain.id, address)));
+    final balanceAsync = address == null ? null : ref.watch(balanceProvider((asset.chain.id, address, asset.token?.identifier)));
     final balance = balanceAsync?.value?.amount ?? '0';
     // 法币折算：余额查询里已带实时单价。
     final price = balanceAsync?.value?.price ?? 0;

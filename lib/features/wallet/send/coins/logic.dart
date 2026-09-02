@@ -13,8 +13,10 @@ class SendLogic {
 
   /// 指定链的可发送资产；[chain] 为空表示全部链。
   ///
-  /// 目前只造原生币（`token` 留空）——代币转账尚未接入。等接入后这里改成
-  /// 从 TokenCatalog 展开即可，列表行与后续页面无需再动。
+  /// 目前只造原生币（`token` 留空）——**代币余额已接入，但代币转账尚未接入**
+  /// （见 EvmTransactionService，只会构造原生币转账）。把代币列进来用户能选、
+  /// 却发不出去，比看不到更糟。等转账接入后这里改成从 TokenCatalog 展开即可，
+  /// 列表行与后续页面读余额的路径已经是资产维度的，无需再动。
   static List<ListedAsset> assetsOf(Chain? chain) {
     final source = chain == null ? SupportedChains.all : [chain];
     return [for (final c in source) ListedAsset(chain: c)];

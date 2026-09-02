@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
+import 'package:wallet/blockchain/listed_asset.dart';
 import 'package:wallet/data/datasource/remote/coingecko_api.dart';
 import 'package:wallet/domain/account_balance.dart';
 import 'package:wallet/domain/wallet.dart';
@@ -38,8 +39,8 @@ class _FakeBalances {
   int _inFlight = 0;
   int maxInFlight = 0;
 
-  Future<AccountBalance> fetch((String, String) key) async {
-    final (chainId, address) = key;
+  Future<AccountBalance> fetch((String, String, String?) key) async {
+    final (chainId, address, _) = key;
     _inFlight++;
     maxInFlight = _inFlight > maxInFlight ? _inFlight : maxInFlight;
     try {
@@ -142,24 +143,39 @@ void main() {
   });
 
   group('walletTotalProvider', () {
-    test('全链成功：总额 = 各链 1 枚 × 单价 2', () async {
+    /// 参与汇总的是**资产**（原生币 + 目录里的代币），不再是链——断言用它而非
+    /// `_chains.length`，打包目录增删代币时测试不必跟着改数字。
+    List<ListedAsset> assetsOf(ProviderContainer c) => c.read(visibleAssetsProvider(null));
+
+    test('全资产成功：总额 = 各资产 1 枚 × 单价 2', () async {
       final balances = _FakeBalances();
       final c = await _container(balances);
       final total = await c.read(walletTotalProvider(_walletId).future);
 
       expect(total.isPartial, isFalse);
-      expect(total.value, _chains.length * 2.0);
+      expect(total.value, assetsOf(c).length * 2.0);
     });
 
-    test('单链失败不连坐：其余链照常计入，整体不抛错', () async {
+    test('代币也计入总额，不再恒为 0', () async {
+      final c = await _container(_FakeBalances());
+      final tokenCount = assetsOf(c).where((a) => a.token != null).length;
+      final total = await c.read(walletTotalProvider(_walletId).future);
+
+      expect(tokenCount, greaterThan(0), reason: '打包目录里应当有代币，否则这条断言测不到东西');
+      expect(total.value, greaterThan(_chains.length * 2.0), reason: '总额应当比「只有原生币」时更高');
+    });
+
+    test('单链失败不连坐：其余资产照常计入，整体不抛错', () async {
       final failed = _chains.first.id;
       final balances = _FakeBalances(failing: {failed});
       final c = await _container(balances);
+      final assets = assetsOf(c);
       final total = await c.read(walletTotalProvider(_walletId).future);
 
       expect(total.isPartial, isTrue);
+      // 同一条链上的多个资产一起失败，只报一次链名。
       expect(total.failedChainIds, [failed]);
-      expect(total.value, (_chains.length - 1) * 2.0);
+      expect(total.value, assets.where((a) => a.chain.id != failed).length * 2.0);
     });
 
     test('失败链 id 顺序与 SupportedChains.all 一致', () async {
@@ -190,26 +206,27 @@ void main() {
       expect(total.isPartial, isTrue);
     });
 
-    // 本次改动的核心。断言的是「多条链同时在飞」，不是「快了多少」——
+    // 断言的是「多个资产同时在飞」，不是「快了多少」——
     // 后者依赖机器状态会 flaky，前者能精确拦住退回串行的改动。
-    test('各链并发发起，而非一条等一条', () async {
+    test('各资产并发发起，而非一条等一条', () async {
       final balances = _FakeBalances();
-      // 全部闸门先关上：只要是串行的，第一条链就会卡住，后面根本不会开始。
+      // 全部闸门先关上：只要是串行的，第一个资产就会卡住，后面根本不会开始。
       for (final ch in _chains) {
         balances.gates[ch.id] = Completer<void>();
       }
 
       final c = await _container(balances);
+      final expected = assetsOf(c).length;
       final future = c.read(walletTotalProvider(_walletId).future);
 
       // 让已发起的请求都跑到 await 闸门处。
       await Future<void>.delayed(Duration.zero);
-      expect(balances.maxInFlight, _chains.length, reason: '应当所有链同时在飞；若为 1 说明退回了循环内 await 的串行写法');
+      expect(balances.maxInFlight, expected, reason: '应当所有资产同时在飞；若为 1 说明退回了循环内 await 的串行写法');
 
       for (final g in balances.gates.values) {
         g.complete();
       }
-      expect((await future).value, _chains.length * 2.0);
+      expect((await future).value, expected * 2.0);
     });
   });
 }

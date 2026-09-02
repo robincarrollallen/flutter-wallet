@@ -85,8 +85,8 @@ class AssetTile extends ConsumerWidget {
 
 /// 资产行右侧：当前钱包在该资产上的持仓「数量 + 折算价值」。
 ///
-/// 目前仅原生币接入了余额查询，代币余额尚未接入（见 wallet_service），
-/// 故代币与无地址场景一律按 0 展示，价值随行情单价折算。
+/// 原生币与代币走同一个 [balanceProvider]（键里带上代币 identifier），
+/// 无地址（该钱包未派生出这条链的地址）才按 0 展示。
 class _AssetAmount extends ConsumerWidget {
   const _AssetAmount({required this.asset});
 
@@ -97,18 +97,15 @@ class _AssetAmount extends ConsumerWidget {
     final wallet = ref.watch(currentWalletProvider);
     final address = wallet?.addressFor(asset.chain);
 
-    // 原生币且有地址：走实时余额查询。
-    if (asset.token == null && address != null) {
-      final balance = ref.watch(balanceProvider((asset.chain.id, address)));
-      return balance.when(
-        loading: () => SizedBox(width: 14.s, height: 14.s, child: const CircularProgressIndicator(strokeWidth: 2)),
-        error: (_, _) => _amount(context, '0', asset.symbol, 0),
-        data: (b) => _amount(context, b.amount, b.symbol, b.fiatValue),
-      );
-    }
+    // 无地址：没有可查的对象，按 0 展示。
+    if (address == null) return _amount(context, '0', asset.symbol, 0);
 
-    // 代币或无地址：暂无余额来源，按 0 展示。
-    return _amount(context, '0', asset.symbol, 0);
+    final balance = ref.watch(balanceProvider((asset.chain.id, address, asset.token?.identifier)));
+    return balance.when(
+      loading: () => SizedBox(width: 14.s, height: 14.s, child: const CircularProgressIndicator(strokeWidth: 2)),
+      error: (_, _) => _amount(context, '0', asset.symbol, 0),
+      data: (b) => _amount(context, b.amount, b.symbol, b.fiatValue),
+    );
   }
 
   /// 两行：上为「数量 + 符号」，下为折算法币价值。
