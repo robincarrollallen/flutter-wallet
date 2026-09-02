@@ -30,6 +30,39 @@ void main() {
     });
   });
 
+  group('encodeAddressArgument', () {
+    test('20 字节右对齐补零成 64 位十六进制，不带 0x', () {
+      final arg = encodeAddressArgument(List.filled(20, 0xab));
+
+      expect(arg.length, 64);
+      expect(arg.startsWith('0' * 24), isTrue, reason: '前 12 字节应当是补的零');
+      expect(arg.substring(24), 'ab' * 20);
+    });
+
+    test('小于 0x10 的字节保留前导零，不塌成单字符', () {
+      final arg = encodeAddressArgument([1, ...List.filled(19, 0)]);
+
+      expect(arg.length, 64);
+      expect(arg.substring(24), '01${'00' * 19}');
+    });
+
+    // TRC-20 复用这段编码，长度错了会查到一个陌生地址的 0。
+    test('长度不是 20 字节即抛错', () {
+      expect(() => encodeAddressArgument(List.filled(19, 0)), throwsArgumentError);
+      expect(() => encodeAddressArgument(List.filled(21, 0)), throwsArgumentError);
+      expect(() => encodeAddressArgument(const []), throwsArgumentError);
+    });
+
+    test('与 encodeBalanceOf 共用同一份编码', () {
+      const owner = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed';
+      final bytes = [
+        for (var i = 2; i < owner.length; i += 2) int.parse(owner.substring(i, i + 2), radix: 16),
+      ];
+
+      expect(encodeBalanceOf(owner), '0x70a08231${encodeAddressArgument(bytes)}');
+    });
+  });
+
   group('decodeUint256', () {
     test('解析 32 字节返回值', () {
       expect(decodeUint256('0x${'0' * 62}ff'), BigInt.from(255));

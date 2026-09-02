@@ -66,7 +66,7 @@ final chainTokenBalancesProvider = FutureProvider.family<Map<String, AccountBala
   final chain = SupportedChains.byId(chainId);
   final tokens = [
     for (final token in ref.watch(tokenCatalogProvider).tokensOf(chainId))
-      if (ChainBalanceApi.supportsTokenBalance(token.standard)) token,
+      if (ChainBalanceApi.supportsTokenBalance(chain, token.standard)) token,
   ];
   if (tokens.isEmpty) return const {};
   return const BalanceRepository(ChainBalanceApi()).getTokenBalances(chain, tokens, address);

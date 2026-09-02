@@ -23,6 +23,7 @@ class Chain {
     this.evmChainId,
     this.nativeBalanceRpcMethod,
     this.coinGeckoPlatformId,
+    this.supportsRpcBatch = true,
   }) : assert(
          (kind == ChainKind.evm || kind == ChainKind.solana || kind == ChainKind.sui) ==
              (nativeBalanceRpcMethod != null),
@@ -41,6 +42,13 @@ class Chain {
   final int? evmChainId; // EVM 链的 chainId<数字>(EIP-155 签名必需, 非 EVM 链为空)
   final RpcMethod? nativeBalanceRpcMethod; // 原生币余额 RPC 方法（非 JSON-RPC 链为空）
   final String? coinGeckoPlatformId; // CoinGecko asset_platforms 的平台 id，用于取该链自己的图标(如 Base / Arbitrum 都有 ETH)
+
+  /// 该链的节点是否接受批量 JSON-RPC（一个请求体里发多条调用）。
+  ///
+  /// 绝大多数节点都支持，所以默认为 true；个别公共节点会明确拒绝，
+  /// 这时多代币查询退回「并发发单条」——见 [ChainBalanceApi]。
+  /// 与协议无关，纯粹是节点实现的差异，所以挂在链（= 一个具体 endpoint）上而不是 kind 上。
+  final bool supportsRpcBatch;
 
   /// 该链的派生方案：地址派生只认它，链的其余配置（endpoint / 价格 id 等）都与派生无关。
   DerivationScheme get derivation =>
@@ -175,7 +183,7 @@ class SupportedChains {
     coinGeckoPlatformId: 'solana',
   );
 
-  // —— 以下三条非 EVM 链的原生币余额查询已接入（Tron/Sui/Aptos）；代币查询暂未接入。 ——
+  // —— 以下三条非 EVM 链的原生币与代币余额查询均已接入（Tron/Sui/Aptos）。 ——
 
   static const tronShasta = Chain(
     id: 'tron-shasta',
@@ -200,6 +208,10 @@ class SupportedChains {
     decimals: 9,
     nativeBalanceRpcMethod: RpcMethod.suiGetBalance,
     coinGeckoPlatformId: 'sui',
+    // 这个公共节点明确拒绝批量请求（-32005 Batched requests are not supported by this server），
+    // 而 Sui 官方 fullnode 的 JSON-RPC 已整体弃用（-32601，要求迁移到 gRPC/GraphQL），
+    // 换端点解决不了。多代币查询走并发单条。
+    supportsRpcBatch: false,
   );
 
   static const aptosTestnet = Chain(

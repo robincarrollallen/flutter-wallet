@@ -10,6 +10,19 @@ extension RpcMethodX on RpcMethod {
   };
 }
 
+/// 代币余额查询用到的 JSON-RPC 方法。
+///
+/// Sui 不在这里：`suix_getBalance` 本来就带 coinType 参数，原生币与代币是同一个方法，
+/// 直接复用 [RpcMethod.suiGetBalance]。
+enum TokenRpcMethod { splGetTokenAccountsByOwner }
+
+/// TokenRpcMethod 的链上方法名映射。
+extension TokenRpcMethodX on TokenRpcMethod {
+  String get wireName => switch (this) {
+    TokenRpcMethod.splGetTokenAccountsByOwner => 'getTokenAccountsByOwner',
+  };
+}
+
 /// EVM JSON-RPC 方法（用于交易发送与估费流程）。
 enum EvmRpcMethod {
   getTransactionCount,
