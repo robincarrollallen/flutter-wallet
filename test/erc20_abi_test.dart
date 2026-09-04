@@ -30,6 +30,48 @@ void main() {
     });
   });
 
+  group('encodeTransfer', () {
+    const to = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed';
+
+    test('选择器 + 收款地址 + 金额，各补零到 32 字节', () {
+      // 1 USDC（decimals 6）= 1000000 = 0xf4240
+      final data = encodeTransfer(to: to, amount: BigInt.from(1000000));
+
+      expect(data.length, 2 + 8 + 64 + 64, reason: '0x + 4 字节选择器 + 两个 32 字节参数');
+      expect(
+        data,
+        '0xa9059cbb'
+        '0000000000000000000000005aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
+        '00000000000000000000000000000000000000000000000000000000000f4240',
+      );
+    });
+
+    test('大小写与 0x 前缀不影响结果', () {
+      final amount = BigInt.from(42);
+      expect(encodeTransfer(to: to, amount: amount), encodeTransfer(to: to.toLowerCase(), amount: amount));
+      expect(encodeTransfer(to: to, amount: amount), encodeTransfer(to: to.substring(2), amount: amount));
+    });
+
+    test('超出 double 精度的大额不失真', () {
+      final amount = BigInt.parse('123456789012345678901234567890');
+      final data = encodeTransfer(to: to, amount: amount);
+      expect(decodeUint256('0x${data.substring(data.length - 64)}'), amount);
+    });
+
+    test('uint256 边界值可编码', () {
+      final max = (BigInt.one << 256) - BigInt.one;
+      expect(encodeTransfer(to: to, amount: max).endsWith('f' * 64), isTrue);
+      expect(encodeTransfer(to: to, amount: BigInt.zero).endsWith('0' * 64), isTrue);
+    });
+
+    // calldata 编错等于把钱打给一个陌生地址 / 转出一个陌生金额，必须报错。
+    test('地址非法或金额越界即抛错', () {
+      expect(() => encodeTransfer(to: '0x1234', amount: BigInt.one), throwsArgumentError);
+      expect(() => encodeTransfer(to: to, amount: -BigInt.one), throwsArgumentError);
+      expect(() => encodeTransfer(to: to, amount: BigInt.one << 256), throwsArgumentError);
+    });
+  });
+
   group('encodeAddressArgument', () {
     test('20 字节右对齐补零成 64 位十六进制，不带 0x', () {
       final arg = encodeAddressArgument(List.filled(20, 0xab));

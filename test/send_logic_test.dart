@@ -3,24 +3,41 @@ import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/units.dart';
 import 'package:wallet/features/wallet/send/coins/logic.dart';
 import 'package:wallet/blockchain/listed_asset.dart';
+import 'package:wallet/blockchain/bundled_token_catalog.dart';
+import 'package:wallet/blockchain/token_catalog.dart';
+
+final _catalog = TokenCatalog.merge(chains: SupportedChains.all, remote: BundledTokenCatalog.all);
+
+/// 打包目录里落在 EVM 链上的代币数——只有它们会进可发送列表。
+final _evmTokenCount = BundledTokenCatalog.all
+    .where((t) => SupportedChains.byId(t.chainId).kind == ChainKind.evm)
+    .length;
 
 void main() {
   group('SendLogic.assetsOf', () {
-    test('仅返回原生币（不含代币）', () {
-      final all = SendLogic.assetsOf(null);
-      expect(all.length, SupportedChains.all.length);
+    test('全部链原生币 + 仅 EVM 链的代币', () {
+      final all = SendLogic.assetsOf(null, _catalog);
+      expect(all.length, SupportedChains.all.length + _evmTokenCount);
+      // 代币转账只接入了 EVM，非 EVM 链的代币不该出现在可发送列表里。
+      expect(all.where((a) => a.token != null).every((a) => a.chain.kind == ChainKind.evm), isTrue);
     });
 
-    test('指定链时只返回该链原生币', () {
-      final assets = SendLogic.assetsOf(SupportedChains.ethereumSepolia);
-      expect(assets.length, 1);
-      expect(assets.single.symbol, 'ETH');
+    test('指定链时返回该链原生币 + 代币', () {
+      final assets = SendLogic.assetsOf(SupportedChains.ethereumSepolia, _catalog);
+      expect(assets, hasLength(2));
+      expect(assets.first.symbol, 'ETH');
+      expect(assets.last.symbol, 'USDC');
+    });
+
+    test('非 EVM 链只返回原生币', () {
+      final assets = SendLogic.assetsOf(SupportedChains.solanaDevnet, _catalog);
+      expect(assets.single.symbol, 'SOL');
     });
   });
 
   group('SendLogic.filter', () {
     test('按符号/名称过滤，忽略大小写', () {
-      final assets = SendLogic.assetsOf(null);
+      final assets = SendLogic.assetsOf(null, _catalog);
       expect(SendLogic.filter(assets, 'sol').single.symbol, 'SOL');
       expect(SendLogic.filter(assets, 'BITCOIN').single.symbol, 'BTC');
       expect(SendLogic.filter(assets, ''), assets);
@@ -28,7 +45,8 @@ void main() {
   });
 
   group('SendLogic.partition', () {
-    final assets = SendLogic.assetsOf(null);
+    // 只取原生币：本组测的是「按价值排序」，用 chain.id 当键才不会因同链多个资产而歧义。
+    final assets = SendLogic.assetsOf(null, _catalog).where((a) => a.token == null).toList();
 
     test('价值降序，零值进 rest 并保持原顺序', () {
       final values = {'ethereum-sepolia': 10.0, 'solana-devnet': 30.0, 'bsc-testnet': 20.0};

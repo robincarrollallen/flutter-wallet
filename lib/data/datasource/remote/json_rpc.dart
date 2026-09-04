@@ -9,6 +9,10 @@ int _nextJsonRpcRequestId = 0; // 自增请求初始 ID
 /// 批量调用中的单条请求。字段名与 JSON-RPC 报文一致，构造点读起来即报文本身。
 typedef JsonRpcRequest = ({String method, List<Object?> params});
 
+/// [jsonRpcCall] 的函数签名。调用方把它当参数收下，测试就能塞一份假节点进来，
+/// 不必为了验证请求编排而真的联网。
+typedef JsonRpcCaller = Future<Object?> Function(String url, String method, List<Object?> params);
+
 /// 通用 JSON-RPC 调用：统一使用自增请求 id，并在错误时抛出 Exception。
 Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) async {
   final requestId = ++_nextJsonRpcRequestId; // 自增请求 ID

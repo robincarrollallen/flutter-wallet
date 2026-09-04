@@ -64,7 +64,8 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
               to: widget.toAddress,
               amount: widget.amount,
               chainId: widget.asset.chain.id,
-              deductFeeFromAmount: widget.isMaxAmount,
+              tokenIdentifier: widget.asset.token?.identifier,
+              deductFeeFromAmount: _deductsFee,
               speed: _feeSpeed,
             ),
             wallet,
@@ -72,8 +73,9 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       if (!mounted) return; // 确保当前 Widget 仍然存在于页面树（未被销毁）
       // 记入「最近使用」，供下次发送时快速选择。
       ref.read(recentAddressesProvider.notifier).record(widget.asset.chain.id, widget.toAddress);
-      // 交易提交后余额可能变化，按惯例整体刷新。
+      // 交易提交后余额可能变化，按惯例整体刷新（代币转账还会动原生币——扣了 gas）。
       ref.invalidate(balanceProvider);
+      ref.invalidate(chainTokenBalancesProvider);
       // 结果页替换掉整个发送流程栈（仅保留首页），防止返回到确认页重复提交。
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(
@@ -106,16 +108,20 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   EvmFeeKey _feeKey(ListedAsset asset, String from) =>
       (chainId: asset.chain.id, from: from, to: widget.toAddress, tokenIdentifier: asset.token?.identifier);
 
+  /// 本次是否会从转出额里扣手续费：只有**原生币**的 MAX 才会。
+  ///
+  /// 代币的手续费付的是原生币，从代币里扣不出来——代币 MAX 就是代币余额本身，
+  /// 够不够付 gas 由 [_feeShortfall] 单独判。
+  bool get _deductsFee => widget.isMaxAmount && widget.asset.token == null;
+
   /// 全额转出（MAX）时的发送上限：可用余额 − 费用上限。
   /// 费用或余额尚未就绪、以及扣完不为正时回退用户输入值，由发送时的链上校验兜底。
-  /// 非 MAX 场景恒为用户输入的金额。
+  /// 非 MAX 场景（含代币 MAX）恒为用户输入的金额。
   String _sendableAmount(ListedAsset asset, String from) {
-    if (!widget.isMaxAmount || from.isEmpty) return widget.amount;
+    if (!_deductsFee || from.isEmpty) return widget.amount;
     // 只认新鲜报价：落盘的旧 baseFee 可能差出几倍，拿它算可发送额会误导用户。
-    final view = ref.watch(evmFeeProvider(_feeKey(asset, from)));
-    final fee = view.stale ? null : view.quotes?[_feeSpeed]?.maxFee;
+    final fee = _freshMaxFee(asset, from);
     // 第三个键位固定传 null（原生币）：MAX 是「余额 − 手续费」，而手续费以原生币计价。
-    // 代币转账接入后这里要改成「代币余额不扣费、另判原生币够不够付 gas」。
     final balance = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.amount;
     if (fee == null || balance == null) return widget.amount;
     try {
@@ -124,6 +130,31 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     } on FormatException {
       return widget.amount;
     }
+  }
+
+  /// 代币转账时校验原生币够不够付 gas；不足返回提示文案，否则返回 null。
+  ///
+  /// 原生币转账不用这条：它的「金额 + 费用」是同一本账，已由 [_sendableAmount]
+  /// 与链上校验覆盖。报价或余额未就绪时返回 null——估费只是前置提醒，
+  /// 不确定就放行，最终由 [EvmTransactionService] 在链上数据前把关。
+  String? _feeShortfall(ListedAsset asset, String from) {
+    if (asset.token == null || from.isEmpty) return null;
+    final fee = _freshMaxFee(asset, from);
+    final nativeBalance = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.amount;
+    if (fee == null || nativeBalance == null) return null;
+    try {
+      if (parseUnits(nativeBalance, asset.chain.decimals) >= fee) return null;
+    } on FormatException {
+      return null;
+    }
+    return '${asset.chain.symbol} 不足以支付网络费：需约 ${formatUnits(fee, asset.chain.decimals)} '
+        '${asset.chain.symbol}，可用 $nativeBalance';
+  }
+
+  /// 当前档位的费用上限；报价缺失或已过期时返回 null。
+  BigInt? _freshMaxFee(ListedAsset asset, String from) {
+    final view = ref.watch(evmFeeProvider(_feeKey(asset, from)));
+    return view.stale ? null : view.quotes?[_feeSpeed]?.maxFee;
   }
 
   /// 网络费选择器：展示所选档位的预计实付，点击可切换档位。
@@ -158,6 +189,8 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     final from = wallet?.addressFor(asset.chain) ?? '';
     // MAX 场景展示扣除网络费用后的发送上限，与实际上链金额保持一致。
     final sendable = _sendableAmount(asset, from);
+    // 代币转账：原生币不够付 gas 就别让用户白等一次链上报错。
+    final shortfall = _feeShortfall(asset, from);
 
     return Scaffold(
       body: SafeArea(
@@ -201,7 +234,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                       style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                     // —— 全额转出：说明金额已扣除网络费用 —— //
-                    if (widget.isMaxAmount) ...[
+                    if (_deductsFee) ...[
                       SizedBox(height: 4.s),
                       Text(
                         '全额转出：可用 ${widget.amount} ${asset.symbol}，已扣除预估网络费用',
@@ -229,11 +262,20 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                         ],
                       ),
                     ),
+                    // —— 原生币不足以付 gas：说明原因并禁用发送 —— //
+                    if (shortfall != null) ...[
+                      SizedBox(height: 16.s),
+                      Text(
+                        shortfall,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                      ),
+                    ],
                     SizedBox(height: 24.s),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        onPressed: _submitting ? null : _submit,
+                        onPressed: _submitting || shortfall != null ? null : _submit,
                         child: _submitting
                             ? SizedBox(
                                 width: 18.s,

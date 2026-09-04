@@ -32,6 +32,23 @@ class TokenCatalog {
     return [(chain, null), for (final tk in tokensOf(chain.id)) (chain, tk)];
   }
 
+  /// 按 (chainId, identifier) 查代币；查不到返回 null。
+  ///
+  /// 匹配口径与 [identityKey] 一致（ERC-20 / TRC-20 地址忽略大小写），
+  /// 因此调用方传大小写任意的合约地址都能命中。
+  /// 逐条按候选代币自己的标准归一化后比对，因此无需调用方预先知道目标的标准。
+  Token? findToken(String chainId, String identifier) {
+    for (final t in tokensOf(chainId)) {
+      if (_normalizedIdentifier(t) == _normalizedIdentifierOf(identifier, t.standard)) return t;
+    }
+    return null;
+  }
+
+  static String _normalizedIdentifierOf(String identifier, TokenStandard standard) => switch (standard) {
+    TokenStandard.erc20 || TokenStandard.trc20 => identifier.toLowerCase(),
+    _ => identifier,
+  };
+
   /// 行情批量拉取用：原生币 id ∪ 目录中全部代币 id（去重，插入序）。
   /// 自定义代币可以没有 CoinGecko id，空字符串不进这份清单。
   Iterable<String> get coinGeckoIds => {
@@ -77,8 +94,5 @@ class TokenCatalog {
   static String identityKey(Token t) => '${t.chainId}::${_normalizedIdentifier(t)}';
 
   /// ERC-20 / TRC-20 合约地址大小写不敏感；其余标准保持原样（Solana mint 区分大小写）。
-  static String _normalizedIdentifier(Token t) => switch (t.standard) {
-    TokenStandard.erc20 || TokenStandard.trc20 => t.identifier.toLowerCase(),
-    _ => t.identifier,
-  };
+  static String _normalizedIdentifier(Token t) => _normalizedIdentifierOf(t.identifier, t.standard);
 }

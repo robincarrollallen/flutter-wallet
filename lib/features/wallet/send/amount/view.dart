@@ -38,7 +38,7 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
 
   void _next(String balance) {
     final input = _controller.text.trim();
-    final error = SendLogic.validateAmount(input, balance, decimals: widget.asset.chain.decimals);
+    final error = SendLogic.validateAmount(input, balance, decimals: widget.asset.decimals);
     if (error != null) {
       setState(() => _error = error);
       return;

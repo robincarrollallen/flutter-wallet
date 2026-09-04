@@ -7,6 +7,7 @@ import '../../../../widgets/asset_tile.dart';
 import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/chain_icon_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
+import '../../../../providers/token_catalog_provider.dart';
 import '../../../../blockchain/chain_registry.dart';
 import '../../../../blockchain/listed_asset.dart';
 import 'logic.dart';
@@ -39,7 +40,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
     final chainIcons = ref.watch(chainIconsProvider).icons;
     final wallet = ref.watch(activeWalletProvider);
 
-    final assets = SendLogic.filter(SendLogic.assetsOf(null), _query);
+    final assets = SendLogic.filter(SendLogic.assetsOf(null, ref.watch(tokenCatalogProvider)), _query);
     // 法币价值：无地址按 0（进折叠区）；余额加载中为 null（留在可发送区尾部）。
     double? fiatValueOf(ListedAsset a) {
       final address = wallet?.addressFor(a.chain);

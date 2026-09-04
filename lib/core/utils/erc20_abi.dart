@@ -1,6 +1,6 @@
 import 'evm_hex.dart';
 
-/// EVM ABI 里 `balanceOf(address)` 这一个函数的编解码。
+/// EVM ABI 里 `balanceOf(address)` 与 `transfer(address,uint256)` 两个函数的编解码。
 ///
 /// **TRC-20 一并复用**：Tron 的合约调用就是 EVM ABI，只是它的 REST 接口把选择器
 /// （`function_selector`）与参数（`parameter`）拆成了两个字段传，所以补零那半截
@@ -8,6 +8,12 @@ import 'evm_hex.dart';
 
 /// ERC-20 `balanceOf(address)` 的函数选择器：keccak256 签名的前 4 字节。
 const _balanceOfSelector = '70a08231';
+
+/// ERC-20 `transfer(address,uint256)` 的函数选择器。
+const _transferSelector = 'a9059cbb';
+
+/// uint256 的取值上限（不含）：2^256。
+final _uint256Ceiling = BigInt.one << 256;
 
 /// 把 20 字节地址编成 32 字节的 ABI 参数：右对齐补零，返回**不带 `0x`** 的 64 位十六进制。
 ///
@@ -31,16 +37,33 @@ String encodeAddressArgument(List<int> address20Bytes) {
 /// [ownerAddress] 需为 20 字节的十六进制地址（带不带 0x 都可）；长度不符即抛
 /// [ArgumentError]。
 String encodeBalanceOf(String ownerAddress) {
-  final clean = _strip0x(ownerAddress);
-  if (clean.length != 40 || !_isHex(clean)) {
-    throw ArgumentError.value(ownerAddress, 'ownerAddress', '不是合法的 20 字节 EVM 地址');
-  }
-  return '0x$_balanceOfSelector${encodeAddressArgument(_hexToBytes(clean))}';
+  return '0x$_balanceOfSelector${_addressArg(ownerAddress, 'ownerAddress')}';
 }
 
-List<int> _hexToBytes(String hex) => [
-  for (var i = 0; i < hex.length; i += 2) int.parse(hex.substring(i, i + 2), radix: 16),
-];
+/// 编码 `transfer(address,uint256)` 的 calldata，供转账交易的 `data` 字段使用。
+///
+/// 两个参数都是定长类型，编码即「4 字节选择器 + 收款地址补零到 32 字节 +
+/// 金额补零到 32 字节」，无需动态偏移量。
+///
+/// [to] 需为 20 字节的十六进制地址（带不带 0x 都可）；[amount] 为代币最小单位
+/// （已按 `Token.decimals` 换算）。地址非法或金额越界即抛 [ArgumentError]——
+/// 转账 calldata 编错等于把钱打给一个陌生地址，绝不容忍静默修正。
+String encodeTransfer({required String to, required BigInt amount}) {
+  if (amount.isNegative || amount >= _uint256Ceiling) {
+    throw ArgumentError.value(amount, 'amount', '金额超出 uint256 范围');
+  }
+  final amountArg = amount.toRadixString(16).padLeft(64, '0');
+  return '0x$_transferSelector${_addressArg(to, 'to')}$amountArg';
+}
+
+/// 校验十六进制地址并编成 32 字节 ABI 参数；[name] 仅用于报错定位。
+String _addressArg(String address, String name) {
+  final clean = _strip0x(address);
+  if (clean.length != 40 || !_isHex(clean)) {
+    throw ArgumentError.value(address, name, '不是合法的 20 字节 EVM 地址');
+  }
+  return encodeAddressArgument(evmHexToBytes(clean));
+}
 
 /// 解析 `eth_call` 返回的 uint256。
 ///

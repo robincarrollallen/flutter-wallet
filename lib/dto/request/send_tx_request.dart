@@ -8,6 +8,7 @@ class SendTxRequest {
     required this.to,
     required this.amount,
     this.chainId,
+    this.tokenIdentifier,
     this.deductFeeFromAmount = false,
     this.speed = FeeSpeed.defaultSpeed,
   });
@@ -16,6 +17,10 @@ class SendTxRequest {
   final String to;
   final String amount;
   final String? chainId;
+
+  /// 要转的代币标识（EVM/Tron 合约地址、Solana mint、Sui/Aptos coin type）。
+  /// null 表示转该链的原生币。
+  final String? tokenIdentifier;
 
   /// 是否为「全额转出（MAX）」：仅该场景允许链上重估费用后从转出额中扣费。
   /// 手输金额恒为 false——余额不足必须报错而非静默改小金额。
@@ -30,6 +35,7 @@ class SendTxRequest {
       'to': to,
       'amount': amount,
       if (chainId != null) 'chainId': chainId,
+      if (tokenIdentifier != null) 'tokenIdentifier': tokenIdentifier,
       'deductFeeFromAmount': deductFeeFromAmount,
       'speed': speed.name,
     };

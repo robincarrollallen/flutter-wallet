@@ -3,6 +3,7 @@ import '../../../../blockchain/chain_registry.dart';
 import '../../../../blockchain/units.dart';
 
 import '../../../../blockchain/listed_asset.dart';
+import '../../../../blockchain/token_catalog.dart';
 
 /// 发送弹窗的纯逻辑：资产列表构建/过滤与地址、金额校验，不依赖 UI/状态框架。
 class SendLogic {
@@ -11,16 +12,20 @@ class SendLogic {
   /// 顶部 Tab 顺序即首页链顺序。
   static List<Chain> get chains => SupportedChains.all;
 
-  /// 指定链的可发送资产；[chain] 为空表示全部链。
+  /// 指定链的可发送资产（原生币 + 该链代币）；[chain] 为空表示全部链。
+  /// 代币来自 [catalog]。
   ///
-  /// 目前只造原生币（`token` 留空）——**代币余额已接入，但代币转账尚未接入**
-  /// （见 EvmTransactionService，只会构造原生币转账）。把代币列进来用户能选、
-  /// 却发不出去，比看不到更糟。等转账接入后这里改成从 TokenCatalog 展开即可，
-  /// 列表行与后续页面读余额的路径已经是资产维度的，无需再动。
-  static List<ListedAsset> assetsOf(Chain? chain) {
-    final source = chain == null ? SupportedChains.all : [chain];
-    return [for (final c in source) ListedAsset(chain: c)];
-  }
+  /// **只列出 EVM 链的代币**：代币转账目前只有 EVM 一条实现
+  /// （见 `services/transfer/`）。把发不出去的代币列进来，用户点进去才被拦下，
+  /// 比看不到更糟。等某条链的 [ChainTransferService] 实现补齐，
+  /// 把它的 [ChainKind] 加进 [_tokenTransferKinds] 即可放行。
+  static List<ListedAsset> assetsOf(Chain? chain, TokenCatalog catalog) => [
+    for (final asset in ListedAsset.fromCatalog(catalog, chain: chain))
+      if (asset.token == null || _tokenTransferKinds.contains(asset.chain.kind)) asset,
+  ];
+
+  /// 已接入代币转账的链类型。
+  static const _tokenTransferKinds = {ChainKind.evm};
 
   /// 按关键词过滤（匹配符号 / 名称，忽略大小写）。
   static List<ListedAsset> filter(List<ListedAsset> assets, String query) {

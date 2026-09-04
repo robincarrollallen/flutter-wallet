@@ -18,6 +18,10 @@ class ListedAsset {
   /// 展示用名称：代币取代币名，原生币取链名。
   String get name => token?.name ?? chain.name;
 
+  /// 金额换算精度：代币各有各的精度，**不要**拿 [Chain.decimals] 顶替
+  /// （如 USDC 是 6，而 ETH 是 18，用错会差 10^12 倍）。
+  int get decimals => token?.decimals ?? chain.decimals;
+
   /// 查行情图标用的 CoinGecko id。
   String get coinGeckoId => token?.coinGeckoId ?? chain.coinGeckoId;
 

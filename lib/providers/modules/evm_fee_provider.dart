@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../blockchain/chain_registry.dart';
+import '../../core/utils/erc20_abi.dart';
 import '../../domain/evm_fee.dart';
 import '../../enums/fee_speed.dart';
 import '../../enums/prefs_key.dart';
@@ -76,11 +77,7 @@ class EvmGasBasisNotifier extends Notifier<EvmFeeCache> with PersistentNotifier<
     const service = EvmTransactionService();
     try {
       final basis = await service.fetchGasBasis(chain.endpoint);
-      // 代币转账的 gasLimit 要按 transfer 的 calldata 估，转账本身也还没接入。
-      // 在那之前宁可不写缓存、让报价显示 `--`，也不能拿原生币的 21000 顶替。
-      final gasLimit = key.tokenIdentifier != null
-          ? null
-          : await service.resolveNativeGasLimit(chain, from: key.from, to: key.to);
+      final gasLimit = await _resolveGasLimit(service, chain, key);
       if (!ref.mounted) return;
       final gasLimits = {...state.gasLimits};
       if (gasLimit != null && key.to.isNotEmpty) {
@@ -95,6 +92,24 @@ class EvmGasBasisNotifier extends Notifier<EvmFeeCache> with PersistentNotifier<
     } catch (_) {
       // 网络抖动：保持旧缓存，等下一次轮询。
     }
+  }
+
+  /// 本次报价该用哪个 gasLimit：原生币按收款方类型（EOA 21000 / 合约实估），
+  /// 代币按 `transfer` 的 calldata 实估。
+  ///
+  /// 报价页拿不到用户要转的具体金额，估算统一按 **1 个最小单位**——同一收款方下
+  /// 决定用量的是接收方余额槽是否从 0 变非 0，与转多少无关，因此这个估值有代表性；
+  /// 实际发送时 [EvmTransactionService.sendToken] 会按真实金额重估一次。
+  Future<BigInt?> _resolveGasLimit(EvmTransactionService service, Chain chain, EvmFeeKey key) async {
+    final token = key.tokenIdentifier;
+    if (token == null) return service.resolveNativeGasLimit(chain, from: key.from, to: key.to);
+    if (key.from.isEmpty || key.to.isEmpty) return null;
+    return service.resolveTokenGasLimit(
+      chain,
+      from: key.from,
+      contract: token,
+      data: encodeTransfer(to: key.to, amount: BigInt.one),
+    );
   }
 }
 
