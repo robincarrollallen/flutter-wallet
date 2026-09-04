@@ -283,6 +283,9 @@ class Translations$balance$en {
 
 	/// en: '--'
 	String get unavailable => '--';
+
+	/// en: 'Pending'
+	String get pending => 'Pending';
 }
 
 // Path: create
@@ -584,6 +587,7 @@ extension on Translations {
 			'scan.title' => 'Scan',
 			'scan.hint' => 'Place the QR code inside the frame to scan automatically',
 			'balance.unavailable' => '--',
+			'balance.pending' => 'Pending',
 			'create.generatingTitle' => 'Creating your wallet',
 			'create.generatingHint' => 'Generating the mnemonic and deriving the address — please stay on this page',
 			'create.successTitle' => 'Wallet created',

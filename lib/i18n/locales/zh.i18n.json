@@ -102,7 +102,8 @@
     "hint": "将二维码放入框内即可自动扫描"
   },
   "balance": {
-    "unavailable": "--"
+    "unavailable": "--",
+    "pending": "待确认"
   },
   "create": {
     "generatingTitle": "正在创建你的专属钱包",

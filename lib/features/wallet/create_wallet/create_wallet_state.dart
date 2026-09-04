@@ -9,13 +9,13 @@ import '../../../providers/modules/wallet_provider.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../enums/create_phase.dart';
 
-/// 创建钱包页面状态（不可变）。
+/// 创建钱包页面状态 (不可变)
 class CreateWalletState {
   const CreateWalletState({this.phase = CreatePhase.generating, this.walletId});
 
+  /// 创建钱包阶段状态 [生成中 / 成功 / 失败]
   final CreatePhase phase;
-
-  /// 创建成功后新钱包的 id。
+  /// 创建成功后新钱包的 id
   final String? walletId;
 
   CreateWalletState copyWith({CreatePhase? phase, String? walletId}) {
@@ -23,7 +23,7 @@ class CreateWalletState {
   }
 }
 
-/// 页面私有状态：离开页面自动销毁。
+/// 页面私有状态 (离开页面自动销毁)
 final createWalletProvider = NotifierProvider.autoDispose<CreateWalletNotifier, CreateWalletState>(
   CreateWalletNotifier.new,
 );

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../blockchain/listed_asset.dart';
 import '../core/format/amount_formatter.dart';
 import '../core/responsive/screen_adapter.dart';
+import '../domain/account_balance.dart';
+import '../i18n/translations.g.dart';
 import '../providers/modules/balance_provider.dart';
 import '../providers/modules/chain_icon_provider.dart';
 import '../providers/modules/currency_provider.dart';
@@ -104,12 +106,21 @@ class _AssetAmount extends ConsumerWidget {
     return balance.when(
       loading: () => SizedBox(width: 14.s, height: 14.s, child: const CircularProgressIndicator(strokeWidth: 2)),
       error: (_, _) => _amount(context, '0', asset.symbol, 0),
-      data: (b) => _amount(context, b.amount, b.symbol, b.fiatValue),
+      data: (b) => _amount(context, b.amount, b.symbol, b.fiatValue, utxo: b.utxo),
     );
   }
 
   /// 两行：上为「数量 + 符号」，下为折算法币价值。
-  Widget _amount(BuildContext context, String amount, String symbol, double fiatValue) {
+  ///
+  /// BTC 有待确认金额时再补第三行。刻意做成条件渲染而不是常驻占位：常态下
+  /// BTC 那一行的高度与其他链完全一致，列表不会因为一个永远空着的位置而参差。
+  Widget _amount(
+    BuildContext context,
+    String amount,
+    String symbol,
+    double fiatValue, {
+    UtxoBreakdown? utxo,
+  }) {
     final theme = Theme.of(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -117,6 +128,13 @@ class _AssetAmount extends ConsumerWidget {
       children: [
         AmountText.raw('$amount $symbol', style: theme.textTheme.bodyMedium),
         AmountText(fiatValue, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        // 用 AmountText.raw 而不是裸 Text：待确认的钱同样是持仓，
+        // 必须跟着「隐藏余额」开关一起被掩码，否则一开隐藏就从这里漏出去。
+        if (utxo != null && utxo.hasPending)
+          AmountText.raw(
+            '${t.balance.pending} +${utxo.pending}',
+            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.tertiary),
+          ),
       ],
     );
   }

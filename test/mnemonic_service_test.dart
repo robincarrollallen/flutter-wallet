@@ -36,16 +36,6 @@ void main() {
     });
   });
 
-  group('MnemonicService.deriveEthAddress', () {
-    test('派生出标准 BIP44 以太坊首地址', () {
-      expect(MnemonicService.deriveEthAddress(validMnemonic), '0x9858EfFD232B4033E47d90003D41EC34EcaEda94');
-    });
-
-    test('同一助记词派生结果稳定', () {
-      expect(MnemonicService.deriveEthAddress(validMnemonic), MnemonicService.deriveEthAddress(validMnemonic));
-    });
-  });
-
   group('MnemonicService.deriveWallet 多链', () {
     test('新增链（Tron/Sui/Aptos）均派生出非空且稳定的地址', () {
       final a = MnemonicService.deriveWallet(validMnemonic);

@@ -1,2 +1,11 @@
-/// 创建钱包的阶段：生成中 / 成功 / 失败。
-enum CreatePhase { generating, success, failed }
+/// 创建钱包阶段状态
+enum CreatePhase {
+  /// 生成中
+  generating,
+
+  /// 成功
+  success,
+
+  /// 失败
+  failed
+}

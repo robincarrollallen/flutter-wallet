@@ -9,6 +9,7 @@ import '../../domain/account_balance.dart';
 import '../../domain/wallet.dart';
 import '../../domain/wallet_total.dart';
 import '../token_catalog_provider.dart';
+import 'broadcast_history_provider.dart';
 import 'markets_provider.dart';
 import 'wallet_provider.dart';
 
@@ -84,9 +85,18 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String, S
   // 只有「一份缓存都没有」的冷启动才退回 await——见 [MarketsNotifier.ready]。
   final markets = ref.watch(marketsProvider).markets;
   final marketsFuture = markets.isNotEmpty ? null : (ref.read(marketsProvider.notifier).ready..ignore());
-  final baseFuture = token == null
-      ? const BalanceRepository(ChainBalanceApi()).getBalance(chain, address)
-      : _tokenBalance(ref, chain, token, address);
+  // 自广播记录同样要在 await 之前读：它是同步 Notifier，这里取到的就是当前值。
+  final ownTxids = token == null && chain.kind == ChainKind.bitcoin
+      ? ref.watch(broadcastHistoryProvider).keys.toSet()
+      : const <String>{};
+  final baseFuture = switch (token) {
+    // BTC 走 UTXO 路径：余额是集合的投影，还要带回三口径明细。
+    // 地址传成单元素列表——数据层按集合设计，以后加找零链这里改一行就够。
+    null when chain.kind == ChainKind.bitcoin =>
+      const BalanceRepository(ChainBalanceApi()).getBitcoinBalance(chain, [address], ownTxids),
+    null => const BalanceRepository(ChainBalanceApi()).getBalance(chain, address),
+    _ => _tokenBalance(ref, chain, token, address),
+  };
 
   // 先 await 裸 Future：两个 Future 谁都没有内部监听者，晾在一边先等对方时，
   // 中途失败就是一次「无人处理的异步错误」——ready 上的 ignore() 正是为此，
@@ -101,6 +111,9 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String, S
     symbol: base.symbol,
     price: market?.price ?? 0,
     logoUrl: market?.logoUrl,
+    // 这里是手工重建对象（没有 copyWith），漏掉哪个字段都不会报错，只会静默丢失——
+    // BTC 的三口径明细就是从这里传下去的。
+    utxo: base.utxo,
   );
 }, retry: _noRetry);
 

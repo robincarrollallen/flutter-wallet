@@ -208,6 +208,7 @@ class _Translations$balance$zh extends Translations$balance$en {
 
 	// Translations
 	@override String get unavailable => '--';
+	@override String get pending => '待确认';
 }
 
 // Path: create
@@ -434,6 +435,7 @@ extension on TranslationsZh {
 			'scan.title' => '扫一扫',
 			'scan.hint' => '将二维码放入框内即可自动扫描',
 			'balance.unavailable' => '--',
+			'balance.pending' => '待确认',
 			'create.generatingTitle' => '正在创建你的专属钱包',
 			'create.generatingHint' => '正在生成助记词并派生地址，请勿离开页面',
 			'create.successTitle' => '钱包创建成功',

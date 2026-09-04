@@ -21,7 +21,10 @@ class ChainBalanceApi {
   Future<BigInt> fetchNativeBalance(Chain chain, String address) async {
     return switch (chain.kind) {
       ChainKind.evm || ChainKind.solana || ChainKind.sui => await _rpcNativeBalance(chain, address),
-      ChainKind.bitcoin => await _bitcoinBalance(chain, address),
+      // 比特币的余额是 UTXO 集合的投影，不是一个能在这里返回的标量——见 [BitcoinUtxoApi]
+      // 与 [BalanceRepository.getBitcoinBalance]。留一条死分支比抛异常危险：两条并行的
+      // BTC 余额路径，后来者不知道该信哪个。
+      ChainKind.bitcoin => throw UnsupportedError('BTC 余额走 UTXO 路径，见 BitcoinUtxoApi'),
       // Tron / Aptos 原生币余额查询（代币查询见 [fetchTokenBalances]）。
       ChainKind.tron => await _tronBalance(chain, address),
       ChainKind.aptos => await _aptosAssetBalance(chain, address, _aptosNativeCoinType),
@@ -255,16 +258,6 @@ class ChainBalanceApi {
   BigInt _parseSuiTotalBalance(Object? result) {
     final total = (result as Map?)?['totalBalance'] as String?;
     return total == null ? BigInt.zero : BigInt.parse(total);
-  }
-
-  /// Bitcoin：浏览器 API 返回已收到/已花费的聪，差值即余额。
-  Future<BigInt> _bitcoinBalance(Chain chain, String address) async {
-    final uri = Uri.parse('${chain.endpoint}/address/$address');
-    final json = await getJson(uri);
-    final stats = json['chain_stats'] as Map<String, dynamic>? ?? const {};
-    final funded = (stats['funded_txo_sum'] as num?)?.toInt() ?? 0;
-    final spent = (stats['spent_txo_sum'] as num?)?.toInt() ?? 0;
-    return BigInt.from(funded - spent);
   }
 
   /// Tron：REST POST wallet/getaccount，返回 balance（单位 sun，1e6）。

@@ -30,24 +30,31 @@ class Chain {
          'JSON-RPC 链（evm/solana/sui）必须配置 nativeBalanceRpcMethod，REST 链必须留空',
        );
 
-  final String id; // 链的唯一标识符(用于查找链配置、保存用户选择、做数据关联, byId 就靠它)
-  final String name; // 链的名称(UI 展示给用户看)
-  final String symbol; // 原生币符号，例如 ETH / BTC / SOL(余额、资产列表、转账页面等地方显示币种简称)
-  final ChainKind kind; // 链的类型(决定“用哪套逻辑”去派生地址、查余额、调用接口和签名)
-  final Bip44Coins coin; // BIP44 币种枚举(决定助记词派生路径；同一助记词在不同链会因为这个值派生出不同地址, EVM 多链共用 ethereum)
-  final String endpoint; // 该链的节点/API 地址(实际网络请求入口, EVM/Solana 通常是 RPC，Bitcoin 是区块浏览器 API)
-  final String coinGeckoId; // CoinGecko 里的币种 ID (拉取价格<通常是 USD 单价>, 做资产估值)
-  final int decimals; // 原生币最小单位精度<如 ETH=18，BTC=8>(金额换算: 链上最小单位 <-> 人类可读金额)
-  final BtcScriptType btcScriptType; // BTC 脚本类型/派生路径方案(仅 ChainKind.bitcoin 有意义，其余链忽略)
-  final int? evmChainId; // EVM 链的 chainId<数字>(EIP-155 签名必需, 非 EVM 链为空)
-  final RpcMethod? nativeBalanceRpcMethod; // 原生币余额 RPC 方法（非 JSON-RPC 链为空）
-  final String? coinGeckoPlatformId; // CoinGecko asset_platforms 的平台 id，用于取该链自己的图标(如 Base / Arbitrum 都有 ETH)
-
-  /// 该链的节点是否接受批量 JSON-RPC（一个请求体里发多条调用）。
-  ///
-  /// 绝大多数节点都支持，所以默认为 true；个别公共节点会明确拒绝，
-  /// 这时多代币查询退回「并发发单条」——见 [ChainBalanceApi]。
-  /// 与协议无关，纯粹是节点实现的差异，所以挂在链（= 一个具体 endpoint）上而不是 kind 上。
+  /// 链的唯一标识符(用于查找链配置、保存用户选择、做数据关联, byId 就靠它)
+  final String id;
+  /// 链的名称(UI 展示给用户看)
+  final String name;
+  /// 原生币符号，例如 ETH / BTC / SOL(余额、资产列表、转账页面等地方显示币种简称)
+  final String symbol;
+  /// 链的类型(决定“用哪套逻辑”去派生地址、查余额、调用接口和签名)
+  final ChainKind kind;
+  /// BIP44 币种枚举(决定助记词派生路径；同一助记词在不同链会因为这个值派生出不同地址, EVM 多链共用 ethereum)
+  final Bip44Coins coin;
+  /// 该链的节点/API 地址(实际网络请求入口, EVM/Solana 通常是 RPC，Bitcoin 是区块浏览器 API)
+  final String endpoint;
+  /// CoinGecko 里的币种 ID (拉取价格<通常是 USD 单价>, 做资产估值)
+  final String coinGeckoId;
+  /// 原生币最小单位精度<如 ETH=18，BTC=8>(金额换算: 链上最小单位 <-> 人类可读金额)
+  final int decimals;
+  /// BTC 脚本类型/派生路径方案(仅 ChainKind.bitcoin 有意义，其余链忽略)
+  final BtcScriptType btcScriptType;
+  /// EVM 链的 chainId<数字>(EIP-155 签名必需, 非 EVM 链为空)
+  final int? evmChainId;
+  /// 原生币余额 RPC 方法（非 JSON-RPC 链为空）
+  final RpcMethod? nativeBalanceRpcMethod;
+  /// CoinGecko asset_platforms 的平台 id，用于取该链自己的图标(如 Base / Arbitrum 都有 ETH)
+  final String? coinGeckoPlatformId;
+  /// 该链的节点是否接受批量 JSON-RPC（一个请求体里发多条调用)「Sui 公共节点明确拒绝批量请求」
   final bool supportsRpcBatch;
 
   /// 该链的派生方案：地址派生只认它，链的其余配置（endpoint / 价格 id 等）都与派生无关。
@@ -59,15 +66,19 @@ class Chain {
 class DerivationScheme {
   const DerivationScheme({required this.coin, this.btcScriptType});
 
-  final Bip44Coins coin; // 币种，决定 coin_type 与地址编码所用的网络参数
-  final BtcScriptType? btcScriptType; // BTC 脚本类型，决定走 BIP44/84/86；非 BTC 链为空
+  /// 币种，决定 coin_type 与地址编码所用的网络参数
+  final Bip44Coins coin;
+  /// BTC 脚本类型，决定走 BIP44/84/86；非 BTC 链为空
+  final BtcScriptType? btcScriptType;
 
+  /// 重写 == 判断方法, 把「两个实例」改成「两个字段相同就算同一个方案」
   @override
   bool operator ==(Object other) =>
       other is DerivationScheme && other.coin == coin && other.btcScriptType == btcScriptType;
 
+  /// 重写 hashCode 方法, 让这个相等性能在 Map / Set / contains 里正确工作
   @override
-  int get hashCode => Object.hash(coin, btcScriptType);
+    int get hashCode => Object.hash(coin, btcScriptType);
 }
 
 /// 全部受支持链（均为测试网）。
@@ -241,7 +252,7 @@ class SupportedChains {
     aptosTestnet,
   ];
 
-  /// 派生地址时去重后的方案（EVM 多链共用同一方案 -> 同一地址，只派生一次）。
+  /// 派生地址列表时去重后的方案[(coin: Bip44Coins, btcScriptType: BtcScriptType)](EVM 多链共用同一方案 -> 同一地址, 只派生一次)
   static List<DerivationScheme> get distinctDerivations {
     final seen = <DerivationScheme>[];
     for (final chain in all) {
