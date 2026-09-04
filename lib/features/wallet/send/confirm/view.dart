@@ -5,7 +5,10 @@ import '../../../../blockchain/units.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
 import '../../../../widgets/asset_icon.dart';
+import '../../../../widgets/network_fee_selector.dart';
+import '../../../../enums/fee_speed.dart';
 import '../../../../providers/modules/balance_provider.dart';
+import '../../../../providers/modules/evm_fee_provider.dart';
 import '../../../../services/wallet_service.dart';
 import '../../../../providers/modules/currency_provider.dart';
 import '../../../../providers/modules/recent_address_provider.dart';
@@ -43,6 +46,9 @@ class SendConfirmPage extends ConsumerStatefulWidget {
 class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   bool _submitting = false;
 
+  /// 当前选择的网络费档位，默认「普通」。
+  FeeSpeed _feeSpeed = FeeSpeed.defaultSpeed;
+
   Future<void> _submit() async {
     final wallet = ref.read(activeWalletProvider);
     final from = wallet?.addressFor(widget.asset.chain);
@@ -59,6 +65,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
               amount: widget.amount,
               chainId: widget.asset.chain.id,
               deductFeeFromAmount: widget.isMaxAmount,
+              speed: _feeSpeed,
             ),
             wallet,
           );
@@ -95,12 +102,18 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     }
   }
 
+  /// 本次转账的报价查询键：带资产维度——原生币与代币的 gasLimit 不是一个量级。
+  EvmFeeKey _feeKey(ListedAsset asset, String from) =>
+      (chainId: asset.chain.id, from: from, to: widget.toAddress, tokenIdentifier: asset.token?.identifier);
+
   /// 全额转出（MAX）时的发送上限：可用余额 − 费用上限。
   /// 费用或余额尚未就绪、以及扣完不为正时回退用户输入值，由发送时的链上校验兜底。
   /// 非 MAX 场景恒为用户输入的金额。
   String _sendableAmount(ListedAsset asset, String from) {
     if (!widget.isMaxAmount || from.isEmpty) return widget.amount;
-    final fee = ref.watch(evmFeeProvider((asset.chain.id, from, widget.toAddress))).value;
+    // 只认新鲜报价：落盘的旧 baseFee 可能差出几倍，拿它算可发送额会误导用户。
+    final view = ref.watch(evmFeeProvider(_feeKey(asset, from)));
+    final fee = view.stale ? null : view.quotes?[_feeSpeed]?.maxFee;
     // 第三个键位固定传 null（原生币）：MAX 是「余额 − 手续费」，而手续费以原生币计价。
     // 代币转账接入后这里要改成「代币余额不扣费、另判原生币够不够付 gas」。
     final balance = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.amount;
@@ -113,22 +126,22 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     }
   }
 
-  /// 费用行文案：按费率上限 × gasLimit 估算并附法币折算；
-  /// 查询失败回退 `--`——估费只是展示，不阻塞发送，最终由节点把关。
-  String _feeText(ListedAsset asset, String from) {
-    final feeAsync = ref.watch(evmFeeProvider((asset.chain.id, from, widget.toAddress)));
-    return feeAsync.when(
-      loading: () => '查询中…',
-      error: (_, _) => '--',
-      data: (fee) {
-        final amount = formatUnits(fee, asset.chain.decimals);
-        // 手续费按原生币折算，所以取的是原生币单价（第三个键位为 null），与 asset 是不是代币无关。
-        final price = from.isEmpty ? 0.0 : ref.watch(balanceProvider((asset.chain.id, from, null))).value?.price ?? 0.0;
-        if (price <= 0) return '≈ $amount ${asset.chain.symbol}';
-        final fiat = (double.tryParse(amount) ?? 0) * price;
-        final symbol = ref.watch(currencySymbolProvider);
-        return '≈ $amount ${asset.chain.symbol}（$symbol${fiat.toStringAsFixed(2)}）';
-      },
+  /// 网络费选择器：展示所选档位的预计实付，点击可切换档位。
+  /// 查询失败该行回退 `--`——估费只是展示，不阻塞发送，最终由节点把关。
+  Widget _feeSelector(ListedAsset asset, String from) {
+    // 手续费按原生币折算，所以取的是原生币单价（第三个键位为 null），与 asset 是不是代币无关。
+    final price = from.isEmpty ? 0.0 : ref.watch(balanceProvider((asset.chain.id, from, null))).value?.price ?? 0.0;
+    final view = ref.watch(evmFeeProvider(_feeKey(asset, from)));
+    return NetworkFeeSelector(
+      quotes: view.quotes,
+      stale: view.stale,
+      speed: _feeSpeed,
+      onSpeedChanged: (speed) => setState(() => _feeSpeed = speed),
+      decimals: asset.chain.decimals,
+      symbol: asset.chain.symbol,
+      fiatPrice: price,
+      currencySymbol: ref.watch(currencySymbolProvider),
+      enabled: !_submitting,
     );
   }
 
@@ -212,7 +225,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                           SizedBox(height: 12.s),
                           _DetailRow(label: '网络', value: asset.chain.name),
                           SizedBox(height: 12.s),
-                          _DetailRow(label: '网络费用（预估）', value: _feeText(asset, from)),
+                          _feeSelector(asset, from),
                         ],
                       ),
                     ),

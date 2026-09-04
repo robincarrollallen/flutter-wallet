@@ -8,19 +8,11 @@ import '../../data/repository/balance_repository.dart';
 import '../../domain/account_balance.dart';
 import '../../domain/wallet.dart';
 import '../../domain/wallet_total.dart';
-import '../../services/evm_transaction_service.dart';
 import '../token_catalog_provider.dart';
 import 'markets_provider.dart';
 import 'wallet_provider.dart';
 
 export 'markets_provider.dart';
-
-/// (chainId, from, to) -> EVM 原生转账的预估费用上限（wei）。
-/// autoDispose：仅发送流程使用，进确认页才查、离开即弃，不常驻缓存。
-final evmFeeProvider = FutureProvider.autoDispose.family<BigInt, (String, String, String)>((ref, key) {
-  final (chainId, from, to) = key;
-  return const EvmTransactionService().estimateNativeFee(SupportedChains.byId(chainId), from: from, to: to);
-});
 
 /// 下拉刷新：强制重取行情与余额。返回的 Future 完成即代表刷新结束，
 /// 直接交给 RefreshIndicator.onRefresh 驱动指示器的转动与收起。

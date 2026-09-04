@@ -3,7 +3,9 @@ import '../blockchain/units.dart';
 import '../blockchain/chain_registry.dart';
 import '../core/utils/evm_hex.dart';
 import '../data/datasource/remote/json_rpc.dart';
+import '../domain/evm_fee.dart';
 import '../enums/evm_send_status.dart';
+import '../enums/fee_speed.dart';
 
 /// EVM 原生币转账：取 nonce / 估费 / 估 gas → 构造交易 → 本地签名 → 广播 → 轮询 receipt。
 /// 仅处理原生币（ERC20 暂未接入）。EOA→EOA 通常为 21000；合约收款走 eth_estimateGas。
@@ -20,6 +22,9 @@ class EvmTransactionService {
   /// 等待 receipt 的默认超时与轮询间隔。
   static const Duration _receiptTimeout = Duration(seconds: 90);
   static const Duration _receiptPollInterval = Duration(seconds: 2);
+
+  /// eth_feeHistory 回看的区块数：太短受单块抖动影响，太长跟不上拥堵变化。
+  static const int _feeHistoryBlocks = 10;
 
   /// 发送原生币转账，返回 (交易哈希, 实际发送金额, 上链状态)。
   ///
@@ -40,6 +45,7 @@ class EvmTransactionService {
     required String to,
     required String amount,
     bool deductFeeFromAmount = false,
+    FeeSpeed speed = FeeSpeed.defaultSpeed,
   }) async {
     final chainId = chain.evmChainId;
     if (chainId == null) {
@@ -55,20 +61,15 @@ class EvmTransactionService {
     var value = parseUnits(amount, chain.decimals);
 
     // pending：与 nonce 同口径，避免未确认转出仍被算作可用余额。
-    final nonceHex = await jsonRpcCall(
-      chain.endpoint,
-      EvmRpcMethod.getTransactionCount.wireName,
-      [from.address, 'pending'],
-    ) as String;
-    final fee = await _estimateFee(chain.endpoint);
+    final nonceHex =
+        await jsonRpcCall(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending'])
+            as String;
+    final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed);
     var gasLimit = await _resolveGasLimit(chain.endpoint, from.address, to, value, chain.symbol);
-    var feeCap = _feeCap(fee, gasLimit);
+    var feeCap = fee.capGasPrice * gasLimit;
 
-    final balanceHex = await jsonRpcCall(
-      chain.endpoint,
-      EvmRpcMethod.getBalance.wireName,
-      [from.address, 'pending'],
-    ) as String;
+    final balanceHex =
+        await jsonRpcCall(chain.endpoint, EvmRpcMethod.getBalance.wireName, [from.address, 'pending']) as String;
     final balance = parseEvmHexQuantity(balanceHex);
     if (value + feeCap > balance) {
       if (!deductFeeFromAmount) {
@@ -83,7 +84,7 @@ class EvmTransactionService {
       if (value <= BigInt.zero) throw Exception('余额不足以支付网络费用');
       // MAX 扣费后金额变了，合约收款可能需重新估 gas，再按新 feeCap 收敛一次。
       gasLimit = await _resolveGasLimit(chain.endpoint, from.address, to, value, chain.symbol);
-      feeCap = _feeCap(fee, gasLimit);
+      feeCap = fee.capGasPrice * gasLimit;
       if (value + feeCap > balance) {
         value = balance - feeCap;
         if (value <= BigInt.zero) throw Exception('余额不足以支付网络费用');
@@ -106,23 +107,10 @@ class EvmTransactionService {
     final signature = signer.sign(unsigned.serialized);
     final raw = unsigned.copyWith(signature: signature).signedSerialized();
 
-    final hash = await jsonRpcCall(
-      chain.endpoint,
-      EvmRpcMethod.sendRawTransaction.wireName,
-      ['0x${_toHex(raw)}'],
-    ) as String;
+    final hash =
+        await jsonRpcCall(chain.endpoint, EvmRpcMethod.sendRawTransaction.wireName, ['0x${_toHex(raw)}']) as String;
     final status = await waitForReceipt(chain.endpoint, hash);
     return (hash: hash, sentAmount: formatUnits(value, chain.decimals), status: status);
-  }
-
-  /// 预估一笔原生转账的费用上限（wei）：费率上限 × gasLimit。
-  /// 提供 [from]/[to] 时按收款方估 gas；否则按 EOA 21000。
-  Future<BigInt> estimateNativeFee(Chain chain, {String? from, String? to}) async {
-    final fee = await _estimateFee(chain.endpoint);
-    final gasLimit = (from != null && to != null && from.isNotEmpty && to.isNotEmpty)
-        ? await _resolveGasLimit(chain.endpoint, from, to, BigInt.zero, chain.symbol)
-        : _nativeEoaGasLimit;
-    return _feeCap(fee, gasLimit);
   }
 
   /// 轮询 [eth_getTransactionReceipt]，直到确认/失败或超时（返回 pending）。
@@ -134,11 +122,7 @@ class EvmTransactionService {
   }) async {
     final deadline = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(deadline)) {
-      final receipt = await jsonRpcCall(
-        endpoint,
-        EvmRpcMethod.getTransactionReceipt.wireName,
-        [txHash],
-      );
+      final receipt = await jsonRpcCall(endpoint, EvmRpcMethod.getTransactionReceipt.wireName, [txHash]);
       if (receipt is Map) {
         final statusHex = receipt['status'] as String?;
         if (statusHex == null) return EvmSendStatus.confirmed; // 极老节点无 status，有回执即视为上链
@@ -150,28 +134,15 @@ class EvmTransactionService {
     return EvmSendStatus.pending;
   }
 
-  BigInt _feeCap(_EvmGasFee fee, BigInt gasLimit) =>
-      (fee.eip1559 ? fee.maxFeePerGas : fee.gasPrice)! * gasLimit;
-
   /// EOA→EOA 用 21000；合约收款走 eth_estimateGas（失败则明确报错）。
-  Future<BigInt> _resolveGasLimit(
-    String endpoint,
-    String from,
-    String to,
-    BigInt value,
-    String symbol,
-  ) async {
+  Future<BigInt> _resolveGasLimit(String endpoint, String from, String to, BigInt value, String symbol) async {
     final code = await jsonRpcCall(endpoint, EvmRpcMethod.getCode.wireName, [to, 'latest']) as String;
     final normalized = code.toLowerCase();
     final isEoa = normalized == '0x' || normalized == '0x0';
     if (isEoa) return _nativeEoaGasLimit;
 
     Future<BigInt> estimate(BigInt v) async {
-      final params = <String, Object?>{
-        'from': from,
-        'to': to,
-        'value': '0x${v.toRadixString(16)}',
-      };
+      final params = <String, Object?>{'from': from, 'to': to, 'value': '0x${v.toRadixString(16)}'};
       final gasHex = await jsonRpcCall(endpoint, EvmRpcMethod.estimateGas.wireName, [params]) as String;
       final estimated = parseEvmHexQuantity(gasHex);
       final buffered = (estimated * BigInt.from(_gasBufferNum)) ~/ BigInt.from(_gasBufferDen);
@@ -190,36 +161,56 @@ class EvmTransactionService {
     }
   }
 
-  /// 估算费率：有 baseFee 则走 EIP-1559；仅当区块无 baseFee 时回退 legacy。
+  /// 抓取全网费率基准：有 baseFee 则走 EIP-1559（附各档小费），否则回退 legacy。
   /// 网络/解析错误上抛，避免瞬时抖动把交易类型静默改成 legacy。
-  Future<_EvmGasFee> _estimateFee(String endpoint) async {
+  Future<EvmGasBasis> fetchGasBasis(String endpoint) async {
     final block = await jsonRpcCall(endpoint, EvmRpcMethod.getBlockByNumber.wireName, ['latest', false]) as Map;
     final baseFeeHex = block['baseFeePerGas'] as String?;
     if (baseFeeHex == null) {
       final priceHex = await jsonRpcCall(endpoint, EvmRpcMethod.gasPrice.wireName, []) as String;
-      return _EvmGasFee.legacy(parseEvmHexQuantity(priceHex));
+      return EvmGasBasis.legacy(parseEvmHexQuantity(priceHex), fetchedAt: DateTime.now());
     }
+    return EvmGasBasis.eip1559(
+      baseFee: parseEvmHexQuantity(baseFeeHex),
+      tipByPercentile: await _fetchTips(endpoint),
+      fetchedAt: DateTime.now(),
+    );
+  }
 
-    final baseFee = parseEvmHexQuantity(baseFeeHex);
-    final tipHex = await jsonRpcCall(endpoint, EvmRpcMethod.maxPriorityFeePerGas.wireName, []) as String;
-    final tip = parseEvmHexQuantity(tipHex);
-    // baseFee 翻倍留余量，防止打包前 baseFee 上涨导致交易卡住。
-    return _EvmGasFee.eip1559(maxFeePerGas: baseFee * BigInt.two + tip, maxPriorityFeePerGas: tip);
+  /// 一笔原生转账的 gasLimit：提供 [from]/[to] 时按收款方估，否则按 EOA 21000。
+  Future<BigInt> resolveNativeGasLimit(Chain chain, {String? from, String? to}) {
+    if (from == null || to == null || from.isEmpty || to.isEmpty) return Future.value(_nativeEoaGasLimit);
+    return _resolveGasLimit(chain.endpoint, from, to, BigInt.zero, chain.symbol);
+  }
+
+  /// 各档小费：取最近 [_feeHistoryBlocks] 个区块 reward 各分位的均值。
+  /// 节点不支持 eth_feeHistory（或返回残缺）时回退 eth_maxPriorityFeePerGas，
+  /// 以它作为「普通」档，另两档按档位倍率上下浮动——降级后档位仍有区分度。
+  Future<Map<int, BigInt>> _fetchTips(String endpoint) async {
+    final percentiles = FeeSpeed.values.map((speed) => speed.rewardPercentile).toList();
+    try {
+      final history =
+          await jsonRpcCall(endpoint, EvmRpcMethod.feeHistory.wireName, [
+                '0x${_feeHistoryBlocks.toRadixString(16)}',
+                'latest',
+                percentiles,
+              ])
+              as Map;
+      // reward: 每个区块一行，行内按 percentiles 顺序给出对应分位的小费。
+      final rewards = (history['reward'] as List).cast<List<Object?>>();
+      if (rewards.isEmpty) throw const FormatException('reward 为空');
+      return {
+        for (var column = 0; column < percentiles.length; column++)
+          percentiles[column]:
+              rewards.map((row) => parseEvmHexQuantity(row[column] as String)).reduce((sum, tip) => sum + tip) ~/
+              BigInt.from(rewards.length),
+      };
+    } catch (_) {
+      final tipHex = await jsonRpcCall(endpoint, EvmRpcMethod.maxPriorityFeePerGas.wireName, []) as String;
+      final tip = parseEvmHexQuantity(tipHex);
+      return {for (final speed in FeeSpeed.values) speed.rewardPercentile: scaleFee(tip, speed.legacyMultiplier)};
+    }
   }
 
   String _toHex(List<int> bytes) => bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-}
-
-/// 费率估算结果：EIP-1559 或 legacy 二选一。
-class _EvmGasFee {
-  const _EvmGasFee.eip1559({required BigInt this.maxFeePerGas, required BigInt this.maxPriorityFeePerGas})
-    : eip1559 = true,
-      gasPrice = null;
-
-  const _EvmGasFee.legacy(BigInt this.gasPrice) : eip1559 = false, maxFeePerGas = null, maxPriorityFeePerGas = null;
-
-  final bool eip1559;
-  final BigInt? maxFeePerGas;
-  final BigInt? maxPriorityFeePerGas;
-  final BigInt? gasPrice;
 }

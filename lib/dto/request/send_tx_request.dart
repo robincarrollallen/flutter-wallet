@@ -1,3 +1,5 @@
+import '../../enums/fee_speed.dart';
+
 /// 【请求数据】发起转账时提交给后端 / 节点的请求体。
 /// 仅用于序列化为 API 入参，不在 UI 中长期持有。
 class SendTxRequest {
@@ -7,6 +9,7 @@ class SendTxRequest {
     required this.amount,
     this.chainId,
     this.deductFeeFromAmount = false,
+    this.speed = FeeSpeed.defaultSpeed,
   });
 
   final String from;
@@ -18,6 +21,9 @@ class SendTxRequest {
   /// 手输金额恒为 false——余额不足必须报错而非静默改小金额。
   final bool deductFeeFromAmount;
 
+  /// 用户选择的网络费档位，决定出价高低（进而决定打包快慢）。
+  final FeeSpeed speed;
+
   Map<String, dynamic> toJson() {
     return {
       'from': from,
@@ -25,6 +31,7 @@ class SendTxRequest {
       'amount': amount,
       if (chainId != null) 'chainId': chainId,
       'deductFeeFromAmount': deductFeeFromAmount,
+      'speed': speed.name,
     };
   }
 }

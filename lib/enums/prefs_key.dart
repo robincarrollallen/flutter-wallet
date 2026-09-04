@@ -20,7 +20,10 @@ enum PrefsKey {
   markets('markets_cache'),
   chainIcons('chain_icons_cache'), // 链图标缓存（含写入时刻与请求过的平台 id）。键名沿用旧 ChainIconsCache，老数据直接读得出
   // 远程代币目录缓存（含写入时刻）。键名与 JSON 结构沿用旧 TokenCatalogCache，老数据直接读得出。
-  tokenCatalog('token_catalog_cache');
+  tokenCatalog('token_catalog_cache'),
+  // EVM 费率基准缓存（每链一份 baseFee + 各档小费 + 抓取时刻，另存收款方 gasLimit）。
+  // 只为省掉进页面的首帧 loading；过期与否由读端判定，展示时会标注「更新中」。
+  evmGasBasis('evm_gas_basis_cache');
 
   const PrefsKey(this.value);
 

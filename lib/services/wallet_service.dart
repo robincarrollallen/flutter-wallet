@@ -44,6 +44,7 @@ class WalletService {
           to: request.to,
           amount: request.amount,
           deductFeeFromAmount: request.deductFeeFromAmount,
+          speed: request.speed,
         );
       case ChainKind.bitcoin:
       case ChainKind.solana:
