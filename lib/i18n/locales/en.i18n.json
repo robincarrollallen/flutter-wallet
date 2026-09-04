@@ -143,6 +143,7 @@
       "wordCount": "{n} words",
       "walletName": "Imported wallet",
       "deriveFailed": "Failed to derive address",
+      "saveFailed": "Failed to save wallet, please try again",
       "errors": {
         "empty": "Please enter your mnemonic",
         "nonEnglish": "Mnemonic may only contain English words",

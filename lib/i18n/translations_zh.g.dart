@@ -324,6 +324,7 @@ class _Translations$import$mnemonic$zh extends Translations$import$mnemonic$en {
 	@override String wordCount({required Object n}) => '${n} 个单词';
 	@override String get walletName => '导入钱包';
 	@override String get deriveFailed => '地址派生失败';
+	@override String get saveFailed => '钱包保存失败，请重试';
 	@override late final _Translations$import$mnemonic$errors$zh errors = _Translations$import$mnemonic$errors$zh._(_root);
 }
 
@@ -462,6 +463,7 @@ extension on TranslationsZh {
 			'import.mnemonic.wordCount' => ({required Object n}) => '${n} 个单词',
 			'import.mnemonic.walletName' => '导入钱包',
 			'import.mnemonic.deriveFailed' => '地址派生失败',
+			'import.mnemonic.saveFailed' => '钱包保存失败，请重试',
 			'import.mnemonic.errors.empty' => '请输入助记词',
 			'import.mnemonic.errors.nonEnglish' => '助记词只能包含英文单词',
 			'import.mnemonic.errors.wordCount' => ({required Object count}) => '助记词应为 12 / 15 / 18 / 21 / 24 个单词，当前 ${count} 个',

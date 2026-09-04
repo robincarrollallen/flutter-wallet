@@ -143,6 +143,7 @@
       "wordCount": "{n} 个单词",
       "walletName": "导入钱包",
       "deriveFailed": "地址派生失败",
+      "saveFailed": "钱包保存失败，请重试",
       "errors": {
         "empty": "请输入助记词",
         "nonEnglish": "助记词只能包含英文单词",

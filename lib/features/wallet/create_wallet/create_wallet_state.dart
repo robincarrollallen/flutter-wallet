@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/wallet.dart';
 import '../../../domain/wallet_id.dart';
 import '../../../services/mnemonic_service.dart';
-import '../../../data/datasource/local/secure_wallet_storage.dart';
+import '../../../services/wallet_commit_service.dart';
 import '../../../providers/modules/wallet_provider.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../enums/create_phase.dart';
@@ -59,15 +59,15 @@ class CreateWalletNotifier extends Notifier<CreateWalletState> {
         createdAt: DateTime.now(),
       );
 
-      // 助记词写入安全存储（Keychain / Keystore），不进入状态；
+      // 助记词 + 元数据 + 选中态一次性原子提交：要么全部生效，要么什么都不留。
+      // 助记词进安全存储（Keychain / Keystore），不进入状态；
       // 私钥不预存，签名/导出时由助记词按需现场派生。
-      await ref.read(secureWalletStorageProvider).saveSecrets(walletId: wallet.id, mnemonic: mnemonic);
+      await ref.read(walletCommitServiceProvider).commit(wallet: wallet, mnemonic: mnemonic);
 
-      ref.read(walletListProvider.notifier).add(wallet);
-      ref.read(currentWalletIdProvider.notifier).select(wallet.id);
-
+      // 只有落盘确认成功才置为 success——否则用户会在备份页抄下一份重启就消失的助记词。
       state = state.copyWith(phase: CreatePhase.success, walletId: wallet.id);
     } catch (_) {
+      // commit 内部已完成回滚，这里只需反映 UI 状态。
       state = state.copyWith(phase: CreatePhase.failed);
     }
   }

@@ -70,6 +70,10 @@ dev_dependencies:
   slang_build_runner: ^4.16.0 # slang 代码生成
   build_runner: ^2.4.13 # 一键生成项目中所有插件所需的代码
 
+  # 单测里用内存实现替换掉安全存储的平台层（钱包提交/孤儿对账测试）。
+  flutter_secure_storage_platform_interface: ^2.0.1
+  plugin_platform_interface: ^2.1.8
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your

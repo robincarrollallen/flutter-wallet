@@ -25,6 +25,8 @@ String _errorText(Translations t, MnemonicError error) {
       return m.invalidPrivateKey;
     case MnemonicErrorKind.deriveFailed:
       return t.import.mnemonic.deriveFailed;
+    case MnemonicErrorKind.saveFailed:
+      return t.import.mnemonic.saveFailed;
   }
 }
 

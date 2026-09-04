@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/wallet.dart';
 import '../../../domain/wallet_id.dart';
-import '../../../providers/modules/wallet_provider.dart';
 import '../../../services/mnemonic_service.dart';
 import '../../../services/private_key_service.dart';
-import '../../../data/datasource/local/secure_wallet_storage.dart';
+import '../../../services/wallet_commit_service.dart';
 import '../../../i18n/translations.g.dart';
 import 'import_mnemonic_logic.dart';
 import '../../../enums/secret_type.dart';
@@ -90,18 +89,21 @@ class ImportMnemonicNotifier extends Notifier<ImportMnemonicState> {
       backupMethods: const {BackupMethod.manual}, // 导入钱包视为用户已掌握密钥。
     );
 
-    // 敏感数据写入安全存储（Keychain / Keystore），不进入状态。
+    // 敏感数据 + 元数据 + 选中态原子提交，失败则完整回滚、不留半成品钱包。
+    // 敏感数据进安全存储（Keychain / Keystore），不进入状态。
     // 私钥导入：只存私钥；助记词导入：只存助记词（私钥按需现场派生，不预存）。
-    await ref
-        .read(secureWalletStorageProvider)
-        .saveSecrets(
-          walletId: wallet.id,
-          mnemonic: isPrivateKey ? null : normalized,
-          privateKey: isPrivateKey ? derived.primaryPrivateKey : null,
-        );
-
-    ref.read(walletListProvider.notifier).add(wallet);
-    ref.read(currentWalletIdProvider.notifier).select(wallet.id);
+    try {
+      await ref
+          .read(walletCommitServiceProvider)
+          .commit(
+            wallet: wallet,
+            mnemonic: isPrivateKey ? null : normalized,
+            privateKey: isPrivateKey ? derived.primaryPrivateKey : null,
+          );
+    } on WalletCommitException {
+      state = state.copyWith(submitting: false, error: const MnemonicError(MnemonicErrorKind.saveFailed));
+      return false;
+    }
 
     state = state.copyWith(submitting: false);
     return true;

@@ -464,6 +464,9 @@ class Translations$import$mnemonic$en {
 	/// en: 'Failed to derive address'
 	String get deriveFailed => 'Failed to derive address';
 
+	/// en: 'Failed to save wallet, please try again'
+	String get saveFailed => 'Failed to save wallet, please try again';
+
 	late final Translations$import$mnemonic$errors$en errors = Translations$import$mnemonic$errors$en.internal(_root);
 }
 
@@ -614,6 +617,7 @@ extension on Translations {
 			'import.mnemonic.wordCount' => ({required Object n}) => '${n} words',
 			'import.mnemonic.walletName' => 'Imported wallet',
 			'import.mnemonic.deriveFailed' => 'Failed to derive address',
+			'import.mnemonic.saveFailed' => 'Failed to save wallet, please try again',
 			'import.mnemonic.errors.empty' => 'Please enter your mnemonic',
 			'import.mnemonic.errors.nonEnglish' => 'Mnemonic may only contain English words',
 			'import.mnemonic.errors.wordCount' => ({required Object count}) => 'Mnemonic must be 12 / 15 / 18 / 21 / 24 words, currently ${count}',
