@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../blockchain/units.dart';
+import '../../../../core/format/token_amount_formatter.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
 import '../../../../widgets/asset_icon.dart';
@@ -147,7 +148,8 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     } on FormatException {
       return null;
     }
-    return '${asset.chain.symbol} 不足以支付网络费：需约 ${formatUnits(fee, asset.chain.decimals)} '
+    // 「需约」是网络费，截断展示；「可用」是余额，与确认页金额一样给全精度。
+    return '${asset.chain.symbol} 不足以支付网络费：需约 ${formatTokenAmount(formatUnits(fee, asset.chain.decimals))} '
         '${asset.chain.symbol}，可用 $nativeBalance';
   }
 
@@ -225,6 +227,8 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                     ),
                     SizedBox(height: 12.s),
                     Text(
+                      // 刻意不走 formatTokenAmount：这是即将上链的金额，
+                      // 用户必须能核对到最后一位，截断会藏掉真正要发出去的数。
                       '$sendable ${asset.symbol}',
                       style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                     ),

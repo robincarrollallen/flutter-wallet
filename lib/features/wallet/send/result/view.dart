@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/format/token_amount_formatter.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
 import '../../../../blockchain/listed_asset.dart';
@@ -68,7 +69,7 @@ class SendResultPage extends StatelessWidget {
                 ),
                 SizedBox(height: 4.s),
                 Text(
-                  '$amount ${asset.symbol} · ${asset.chain.name}',
+                  '${formatTokenAmount(amount)} ${asset.symbol} · ${asset.chain.name}',
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 SizedBox(height: 24.s),

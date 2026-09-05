@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../blockchain/units.dart';
+import '../core/format/token_amount_formatter.dart';
 import '../core/responsive/screen_adapter.dart';
 import '../domain/evm_fee.dart';
 import '../enums/fee_speed.dart';
@@ -51,10 +52,12 @@ class NetworkFeeSelector extends StatelessWidget {
 
   /// 金额文案：`0.00021 ETH（$0.52）`，价格缺失时省略法币部分。
   String _format(BigInt fee) {
-    final amount = formatUnits(fee, decimals);
-    if (fiatPrice <= 0) return '$amount $symbol';
-    final fiat = (double.tryParse(amount) ?? 0) * fiatPrice;
-    return '$amount $symbol（$currencySymbol${fiat.toStringAsFixed(2)}）';
+    final exact = formatUnits(fee, decimals);
+    // 法币折算用精确值算，只有展示的币本位数字被截短。
+    final shown = formatTokenAmount(exact);
+    if (fiatPrice <= 0) return '$shown $symbol';
+    final fiat = (double.tryParse(exact) ?? 0) * fiatPrice;
+    return '$shown $symbol（$currencySymbol${fiat.toStringAsFixed(2)}）';
   }
 
   /// 某档位的预计实付文案。没有数据时给占位。
@@ -66,6 +69,7 @@ class NetworkFeeSelector extends StatelessWidget {
   Future<void> _pickSpeed(BuildContext context) async {
     final picked = await showModalBottomSheet<FeeSpeed>(
       context: context,
+      showDragHandle: true, // 与创建钱包等弹窗保持一致：顶部给一条可拖拽下滑关闭的标识。
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.s)),
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
@@ -75,7 +79,8 @@ class NetworkFeeSelector extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: EdgeInsets.fromLTRB(16.s, 16.s, 16.s, 8.s),
+                // 顶部留 0：拖拽标识自带上下留白，再加 16 会把标题推得离手柄太远。
+                padding: EdgeInsets.fromLTRB(16.s, 0, 16.s, 8.s),
                 child: Text(label, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
               ),
               for (final option in FeeSpeed.values)

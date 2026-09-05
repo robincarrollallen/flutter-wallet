@@ -142,6 +142,9 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
                                     ),
                                   ),
                                   error: (_, _) => Text('可用余额：0 ${asset.symbol}', style: theme.textTheme.bodyMedium),
+                                  // 刻意不走 formatTokenAmount：这里是用户决定转多少的依据，
+                                  // 截断会让人对着一个比实际略小的数做判断。列表页求整齐，
+                                  // 这一处求准确。
                                   data: (b) => Text('可用余额：${b.amount} ${b.symbol}', style: theme.textTheme.bodyMedium),
                                 ),
                         ),
