@@ -218,18 +218,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 /// 而不是在 builder 里强转崩溃。
 String? _requireArgs<T>(BuildContext context, GoRouterState state) => state.extra is T ? null : AppRoute.root;
 
-/// 无钱包门禁：没有任何钱包时只允许停留在引导页与创建 / 导入流程。
+/// 无钱包门禁：没有任何钱包时把用户送回引导页。
 ///
-/// 创建 / 导入流程必须豁免——流程进行到一半 `hasWallet` 就会翻转为 true，
-/// 若不豁免，用户会在看到成功页之前被 redirect 直接弹走。
+/// **只做「无钱包 → 引导页」这一个方向**，刻意不做反向的「有钱包 → 首页」。
+///
+/// 反向规则看似对称，实则会踩到 go_router 的一个语义：`context.push` 压入的是
+/// ImperativeRouteMatch，`RouteMatchList.push` 不会更新列表的 `uri`。所以创建钱包页
+/// 虽然显示在最上层，本函数拿到的 `matchedLocation` 仍是底下那层的 `/onboarding`，
+/// 豁免前缀根本匹配不上。钱包创建成功让 `hasWallet` 翻转、`refreshListenable` 触发
+/// 重定向时，反向规则就会把整个栈换成 `/`，用户根本看不到礼花成功页。
+///
+/// 反向规则也是多余的：创建 / 导入成功后各自会显式 `context.go(AppRoute.root)`，
+/// 不需要门禁替它们跳转。
 String? _walletGateRedirect(Ref ref, GoRouterState state) {
+  if (ref.read(hasWalletProvider)) return null;
+
+  // 创建 / 导入流程若是以 `go` 进入（location 真的变了），这里要放行——
+  // 流程跑到一半 `hasWallet` 尚未翻转，不能把用户从流程里弹出去。
   const exemptPrefixes = [AppRoute.createWallet, AppRoute.importWallet, AppRoute.placeholder];
   final location = state.matchedLocation;
   if (exemptPrefixes.any(location.startsWith)) return null;
 
-  final hasWallet = ref.read(hasWalletProvider);
-  if (!hasWallet) return location == AppRoute.onboarding ? null : AppRoute.onboarding;
-  return location == AppRoute.onboarding ? AppRoute.root : null;
+  return location == AppRoute.onboarding ? null : AppRoute.onboarding;
 }
 
 /// 把 [hasWalletProvider] 的变化桥接成 [Listenable]，供 go_router 触发重定向。
