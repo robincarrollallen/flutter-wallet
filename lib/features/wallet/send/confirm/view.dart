@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../blockchain/units.dart';
 import '../../../../core/format/token_amount_formatter.dart';
@@ -16,7 +17,8 @@ import '../../../../providers/modules/recent_address_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
 import '../../../../dto/request/send_tx_request.dart';
 import '../../../../blockchain/listed_asset.dart';
-import '../result/view.dart';
+import '../../../../router/route_args.dart';
+import '../../../../router/routes.dart';
 
 /// 确认发送子页：汇总资产 / 发送方 / 收款方 / 金额，确认后提交交易。
 class SendConfirmPage extends ConsumerStatefulWidget {
@@ -77,19 +79,18 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       // 交易提交后余额可能变化，按惯例整体刷新（代币转账还会动原生币——扣了 gas）。
       ref.invalidate(balanceProvider);
       ref.invalidate(chainTokenBalancesProvider);
-      // 结果页替换掉整个发送流程栈（仅保留首页），防止返回到确认页重复提交。
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(
-          builder: (_) => SendResultPage(
-            asset: widget.asset,
-            toAddress: widget.toAddress,
-            // MAX 场景下链上重估费用后金额可能再被扣减，结果页按链上实际值展示。
-            amount: result.sentAmount,
-            txHash: result.hash,
-            status: result.status,
-          ),
+      // 用结果页替换掉确认页，防止返回到确认页重复提交；
+      // 结果页自身禁用返回手势，「完成」按钮直接 go 回首页，不会退回中间步骤。
+      context.pushReplacement(
+        AppRoute.sendResult,
+        extra: SendResultArgs(
+          asset: widget.asset,
+          toAddress: widget.toAddress,
+          // MAX 场景下链上重估费用后金额可能再被扣减，结果页按链上实际值展示。
+          amount: result.sentAmount,
+          txHash: result.hash,
+          status: result.status,
         ),
-        (route) => route.isFirst,
       );
     } catch (e) {
       if (!mounted) return;

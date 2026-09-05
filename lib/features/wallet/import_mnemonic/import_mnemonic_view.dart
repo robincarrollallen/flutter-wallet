@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../i18n/translations.g.dart';
+import '../../../router/routes.dart';
 import 'import_mnemonic_logic.dart';
 import 'import_mnemonic_state.dart';
 import '../../../enums/secret_type.dart';
@@ -70,7 +72,7 @@ class _ImportMnemonicViewState extends ConsumerState<ImportMnemonicView> {
       final ok = await notifier.submit();
       if (ok && context.mounted) {
         // 导入成功后清空导入相关路由（助记词页 + 选择页），回到首页。
-        Navigator.popUntil(context, (route) => route.isFirst);
+        context.go(AppRoute.root);
       }
     }
 

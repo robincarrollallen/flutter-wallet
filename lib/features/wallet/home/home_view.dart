@@ -1,33 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../providers/modules/wallet_panel_progress_provider.dart';
-import '../../search/search_view.dart';
+import '../../../router/routes.dart';
 import '../../search/modules/pill/view.dart';
-import '../../scan/scan_view.dart';
-import '../../settings/settings_panel.dart';
 import 'modules/wallet_list.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-
-  /// 搜索页用淡入淡出路由：背景（首页）淡出，Hero 让搜索栏单独移动 / 放大到输入框。
-  void _openSearch(BuildContext context) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 400),
-        reverseTransitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (_, _, _) => const SearchScreen(),
-        transitionsBuilder: (_, anim, _, child) => FadeTransition(opacity: anim, child: child),
-      ),
-    );
-  }
-
-  void _openScan(BuildContext context) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ScanScreen()));
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,11 +51,11 @@ class HomeScreen extends ConsumerWidget {
         leading: IconButton(
           icon: const Icon(Icons.settings_outlined),
           tooltip: t.home.settings,
-          onPressed: () => Navigator.of(context, rootNavigator: true).push(SettingsPanel.route()),
+          onPressed: () => context.push(AppRoute.settings),
         ),
         // 中间：搜索栏，点击后 Hero 变形放大到搜索页输入框，其余淡出。
         title: GestureDetector(
-          onTap: () => _openSearch(context),
+          onTap: () => context.push(AppRoute.search),
           child: SearchPillHero(
             child: Text(
               t.home.searchHint,
@@ -90,7 +73,7 @@ class HomeScreen extends ConsumerWidget {
             child: IconButton(
               icon: const Icon(Icons.qr_code_scanner),
               tooltip: t.home.scan,
-              onPressed: () => _openScan(context),
+              onPressed: () => context.push(AppRoute.scan),
             ),
           ),
         ],

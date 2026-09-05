@@ -5,31 +5,16 @@ import '../../../core/responsive/screen_adapter.dart';
 import '../../../providers/modules/wallet_panel_progress_provider.dart';
 import 'pages/wallet_list/view.dart';
 import '../../../core/navigation/panel_routes.dart';
+import '../../../router/routes.dart';
 import 'logic.dart';
 import 'state.dart';
 
 /// 钱包管理页：列出全部钱包，点击切换当前钱包。
-/// 通过 [WalletManagementScreen.route] 以「从底部向上切入」的转场打开。
+///
+/// 由 [AppRoute.walletPanel] 以「从底部向上切入」的透明覆盖路由打开
+/// （转场定义在 app_router）；面板内部的子页仍走自己的嵌套 Navigator。
 class WalletManagementScreen extends ConsumerStatefulWidget {
   const WalletManagementScreen({super.key});
-
-  /// 从底部向上滑入的页面路由（类似 iOS modal 转场）。
-  static Route<void> route() {
-    return PageRouteBuilder<void>(
-      opaque: false, // 透明路由：下层首页保持渲染，可被看到
-      barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 300),
-      reverseTransitionDuration: const Duration(milliseconds: 250),
-      pageBuilder: (_, _, _) => const WalletManagementScreen(),
-      transitionsBuilder: (context, animation, _, child) {
-        final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
-        return SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(curved),
-          child: child,
-        );
-      },
-    );
-  }
 
   @override
   ConsumerState<WalletManagementScreen> createState() => _WalletManagementScreenState();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
@@ -9,7 +10,8 @@ import '../../../../providers/modules/wallet_provider.dart';
 import '../../../../domain/wallet_avatar.dart';
 import '../coins/logic.dart';
 import '../../../../blockchain/listed_asset.dart';
-import '../amount/view.dart';
+import '../../../../router/route_args.dart';
+import '../../../../router/routes.dart';
 
 /// 收款地址页：发送流程第二步，普通路由进入。
 /// 结构：多行地址输入框（带清除）→ 扫码/粘贴按钮行 →
@@ -63,14 +65,13 @@ class _SendRecipientPageState extends ConsumerState<SendRecipientPage> {
       setState(() => _error = error);
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => SendAmountPage(
-          asset: widget.asset,
-          toAddress: address,
-          tokenLogoUrl: widget.tokenLogoUrl,
-          chainLogoUrl: widget.chainLogoUrl,
-        ),
+    context.push(
+      AppRoute.sendAmount,
+      extra: SendAmountArgs(
+        asset: widget.asset,
+        toAddress: address,
+        tokenLogoUrl: widget.tokenLogoUrl,
+        chainLogoUrl: widget.chainLogoUrl,
       ),
     );
   }

@@ -2,40 +2,19 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/responsive/screen_adapter.dart';
 import '../../i18n/translations.g.dart';
 import '../../providers/modules/currency_provider.dart';
-import 'appearance_view.dart';
-import 'currency/view.dart';
-import 'theme_colors_view.dart';
+import '../../router/routes.dart';
 
 /// 设置面板：从屏幕顶部下滑进入的全屏毛玻璃覆盖层。
 ///
-/// 通过根 Navigator 推入（[route]），渲染在 [RootShell] 的悬浮导航栏之上，
+/// 由 [AppRoute.settings] 以透明覆盖路由推入，渲染在 [RootShell] 的悬浮导航栏之上，
 /// 背景用 [BackdropFilter] 毛玻璃透出下方模糊内容。
 class SettingsPanel extends StatelessWidget {
   const SettingsPanel({super.key});
-
-  /// 从顶部下滑进入的覆盖路由。用 rootNavigator 推入以盖住底部导航栏。
-  static Route<void> route() {
-    return PageRouteBuilder<void>(
-      opaque: false,
-      barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 300),
-      reverseTransitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (_, _, _) => const SettingsPanel(),
-      transitionsBuilder: (_, animation, _, child) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, -1),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-          child: child,
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +35,7 @@ class SettingsPanel extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(8.s, 8.s, 8.s, 0),
                 child: Row(
                   children: [
-                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop()),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => context.pop()),
                     SizedBox(width: 4.s),
                     Text(t.settings.title, style: theme.textTheme.titleLarge),
                   ],
@@ -71,9 +50,7 @@ class SettingsPanel extends StatelessWidget {
                     _SettingsTile(
                       icon: Icons.brightness_6_outlined,
                       title: '主题 / 模式',
-                      onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppearanceScreen()));
-                      },
+                      onTap: () => context.push(AppRoute.settingsAppearance),
                     ),
                     // 币种：全应用金额折算所用的法币，行尾显示当前选择。
                     // 只用 Consumer 包这一行——整个面板是毛玻璃覆盖层，
@@ -83,9 +60,7 @@ class SettingsPanel extends StatelessWidget {
                         icon: Icons.attach_money,
                         title: t.currency.title,
                         trailingText: ref.watch(currencyProvider),
-                        onTap: () {
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CurrencyScreen()));
-                        },
+                        onTap: () => context.push(AppRoute.settingsCurrency),
                       ),
                     ),
                     _SettingsTile(icon: Icons.shield_outlined, title: t.settings.security),
@@ -94,9 +69,7 @@ class SettingsPanel extends StatelessWidget {
                     _SettingsTile(
                       icon: Icons.palette_outlined,
                       title: '主题颜色（调试）',
-                      onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ThemeColorsScreen()));
-                      },
+                      onTap: () => context.push(AppRoute.settingsThemeColors),
                     ),
                   ],
                 ),

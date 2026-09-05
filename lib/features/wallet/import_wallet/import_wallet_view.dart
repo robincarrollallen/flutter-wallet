@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../i18n/translations.g.dart';
-import '../../../widgets/placeholder_screen.dart';
-import '../import_mnemonic/import_mnemonic_view.dart';
+import '../../../router/route_args.dart';
+import '../../../router/routes.dart';
 import 'import_wallet_logic.dart';
 import 'import_wallet_state.dart';
 import '../../../enums/import_kind.dart';
@@ -20,11 +21,12 @@ class ImportWalletScreen extends ConsumerWidget {
 
   /// 点击入口的跳转目标：软件钱包进入助记词导入，硬件钱包暂为占位页。
   void _open(BuildContext context, Translations t, ImportKind kind) {
-    final Widget target = switch (kind) {
-      ImportKind.software => const ImportMnemonicView(),
-      ImportKind.hardware => PlaceholderScreen(title: t.createWallet.hardware.title),
-    };
-    Navigator.push(context, MaterialPageRoute(builder: (_) => target));
+    switch (kind) {
+      case ImportKind.software:
+        context.push(AppRoute.importMnemonic);
+      case ImportKind.hardware:
+        context.push(AppRoute.placeholder, extra: PlaceholderArgs(title: t.createWallet.hardware.title));
+    }
   }
 
   @override

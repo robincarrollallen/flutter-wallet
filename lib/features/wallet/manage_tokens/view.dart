@@ -17,8 +17,6 @@ import 'state.dart';
 class ManageTokensScreen extends ConsumerStatefulWidget {
   const ManageTokensScreen({super.key});
 
-  static Route<void> route() => MaterialPageRoute(builder: (_) => const ManageTokensScreen());
-
   @override
   ConsumerState<ManageTokensScreen> createState() => _ManageTokensScreenState();
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
@@ -10,8 +11,9 @@ import '../../../../providers/modules/wallet_provider.dart';
 import '../../../../providers/token_catalog_provider.dart';
 import '../../../../blockchain/chain_registry.dart';
 import '../../../../blockchain/listed_asset.dart';
+import '../../../../router/route_args.dart';
+import '../../../../router/routes.dart';
 import 'logic.dart';
-import '../recipient/view.dart';
 
 /// 发送页面：普通全屏页面。根页为按余额法币价值降序的持仓列表
 /// （零余额/无地址的链不展示），点击资产后以普通路由依次进入
@@ -58,7 +60,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
             // —— 0. 顶部标题栏：关闭按钮 + 标题 —— //
             Row(
               children: [
-                IconButton(icon: const Icon(Icons.close), tooltip: '关闭', onPressed: () => Navigator.of(context).pop()),
+                IconButton(icon: const Icon(Icons.close), tooltip: '关闭', onPressed: () => context.pop()),
                 Expanded(
                   child: Text('发送', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                 ),
@@ -147,10 +149,9 @@ class _SendScreenState extends ConsumerState<SendScreen> {
       AppToast.show(context, '${asset.chain.name} 转账暂未支持');
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => SendRecipientPage(asset: asset, tokenLogoUrl: tokenLogoUrl, chainLogoUrl: chainLogoUrl),
-      ),
+    context.push(
+      AppRoute.sendRecipient,
+      extra: SendRecipientArgs(asset: asset, tokenLogoUrl: tokenLogoUrl, chainLogoUrl: chainLogoUrl),
     );
   }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../i18n/translations.g.dart';
+import '../../../router/routes.dart';
 import '../../../widgets/confetti_overlay.dart';
 import 'create_wallet_state.dart';
 import '../../../enums/create_phase.dart';
@@ -30,7 +32,7 @@ class _CreateWalletViewState extends ConsumerState<CreateWalletView> {
   /// 回到首页：清空创建流程相关路由，回到根（首页）。
   /// 首页会据钱包列表自动扫描资产并展示总资产价值。
   void _goHome() {
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    context.go(AppRoute.root);
   }
 
   @override

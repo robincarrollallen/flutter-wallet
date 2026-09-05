@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/amount_text.dart';
@@ -7,7 +8,8 @@ import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
 import '../coins/logic.dart';
 import '../../../../blockchain/listed_asset.dart';
-import '../confirm/view.dart';
+import '../../../../router/route_args.dart';
+import '../../../../router/routes.dart';
 
 /// 金额输入子页：展示可用余额，支持 MAX 一键填入与法币折算。
 class SendAmountPage extends ConsumerStatefulWidget {
@@ -43,16 +45,15 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
       setState(() => _error = error);
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => SendConfirmPage(
-          asset: widget.asset,
-          toAddress: widget.toAddress,
-          amount: input,
-          isMaxAmount: _isMax,
-          tokenLogoUrl: widget.tokenLogoUrl,
-          chainLogoUrl: widget.chainLogoUrl,
-        ),
+    context.push(
+      AppRoute.sendConfirm,
+      extra: SendConfirmArgs(
+        asset: widget.asset,
+        toAddress: widget.toAddress,
+        amount: input,
+        isMaxAmount: _isMax,
+        tokenLogoUrl: widget.tokenLogoUrl,
+        chainLogoUrl: widget.chainLogoUrl,
       ),
     );
   }

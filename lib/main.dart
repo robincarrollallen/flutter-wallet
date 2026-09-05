@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'features/shell/view.dart';
+import 'router/app_router.dart';
 import 'providers/modules/locale_provider.dart';
 import 'providers/modules/theme_provider.dart';
 import 'core/responsive/screen_adapter.dart';
@@ -47,7 +47,8 @@ class MyApp extends ConsumerWidget {
     ref.watch(localeProvider); // 确保启动时恢复已保存的语言（其 build 会同步给 slang）。
     final appearance = ref.watch(appearanceProvider);
 
-    return MaterialApp(
+    return MaterialApp.router(
+      routerConfig: ref.watch(appRouterProvider),
       title: t.appTitle,
       locale: TranslationProvider.of(context).flutterLocale,
       supportedLocales: AppLocaleUtils.supportedLocales,
@@ -65,7 +66,6 @@ class MyApp extends ConsumerWidget {
         ScreenAdapter.init(context);
         return child!;
       },
-      home: const RootShell(),
     );
   }
 }

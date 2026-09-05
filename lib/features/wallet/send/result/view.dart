@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/format/token_amount_formatter.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
 import '../../../../blockchain/listed_asset.dart';
 import '../../../../enums/evm_send_status.dart';
+import '../../../../router/routes.dart';
 
 /// 发送结果页：展示上链状态与交易哈希，支持复制；「完成」回到首页。
 class SendResultPage extends StatelessWidget {
@@ -48,7 +50,7 @@ class SendResultPage extends StatelessWidget {
       ),
     };
 
-    // 结果页是流程终点：禁用返回手势（确认页已被移出栈，无处可退）。
+    // 结果页是流程终点：禁用返回手势，避免退回金额/地址等中间步骤。
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -109,8 +111,8 @@ class SendResultPage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    // 确认页已把发送流程移出栈，这里 pop 即回到首页。
-                    onPressed: () => Navigator.of(context).pop(),
+                    // 一次性丢弃整个发送流程栈，直接回到首页。
+                    onPressed: () => context.go(AppRoute.root),
                     child: const Text('完成'),
                   ),
                 ),

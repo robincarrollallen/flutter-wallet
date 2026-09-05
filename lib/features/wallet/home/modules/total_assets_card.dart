@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/amount_text.dart';
@@ -11,10 +12,9 @@ import '../../../../blockchain/chain_registry.dart';
 import '../../../../domain/wallet.dart';
 import '../../../../domain/wallet_avatar.dart';
 import '../../../../domain/wallet_total.dart';
-import '../../address_management/address_management_view.dart';
+import '../../../../router/route_args.dart';
+import '../../../../router/routes.dart';
 import '../../receive/view.dart';
-import '../../send/coins/view.dart';
-import '../../wallet_management/view.dart';
 
 /// 顶部「总资产」卡片：展示当前选中钱包按币种折算后的跨链法币总价值。
 /// 顶部一行展示当前钱包名称（点击进入钱包管理）与地址入口（进入地址管理）。
@@ -47,9 +47,8 @@ class TotalAssetsCard extends ConsumerWidget {
                   IconButton(
                     icon: Icon(Icons.copy_rounded, size: 20.s, color: theme.colorScheme.onPrimaryContainer),
                     tooltip: '地址管理',
-                    onPressed: () => Navigator.of(
-                      context,
-                    ).push(MaterialPageRoute(builder: (_) => AddressManagementScreen(wallet: wallet))),
+                    onPressed: () =>
+                        context.push(AppRoute.addressManagement, extra: AddressManagementArgs(wallet: wallet)),
                   ),
                 ],
               ),
@@ -87,21 +86,7 @@ class TotalAssetsCard extends ConsumerWidget {
                   _ActionButton(
                     icon: Icons.arrow_upward_rounded,
                     label: '发送',
-                    onTap: () => Navigator.of(context).push(
-                      PageRouteBuilder(
-                        fullscreenDialog: true,
-                        pageBuilder: (_, _, _) => const SendScreen(),
-                        transitionsBuilder: (_, animation, _, child) => SlideTransition(
-                          position: animation.drive(
-                            Tween(
-                              begin: const Offset(0, 1),
-                              end: Offset.zero,
-                            ).chain(CurveTween(curve: Curves.easeOutCubic)),
-                          ),
-                          child: child,
-                        ),
-                      ),
-                    ),
+                    onTap: () => context.push(AppRoute.send),
                   ),
                   _ActionButton(
                     icon: Icons.arrow_downward_rounded,
@@ -234,7 +219,7 @@ class _WalletNamePill extends StatelessWidget {
       borderRadius: BorderRadius.circular(20.s),
       child: InkWell(
         borderRadius: BorderRadius.circular(20.s),
-        onTap: () => Navigator.of(context).push(WalletManagementScreen.route()),
+        onTap: () => context.push(AppRoute.walletPanel),
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 10.s, vertical: 6.s),
           child: Row(

@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/responsive/screen_adapter.dart';
-import '../../providers/modules/wallet_provider.dart';
 import '../contract/view.dart';
 import '../discover/view.dart';
 import '../exchange/view.dart';
 import '../market/view.dart';
 import '../wallet/home/home_view.dart';
-import '../wallet/onboarding/onboarding_view.dart';
 import 'state.dart';
 import 'widgets/glass_nav_bar.dart';
 
@@ -27,12 +25,8 @@ class RootShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 还没有钱包时：只展示引导页，不显示底部导航栏。
-    // 引导页与导航栏同级，创建/导入钱包后 hasWalletProvider 变 true，自动切到 shell。
-    if (!ref.watch(hasWalletProvider)) {
-      return const OnboardingScreen();
-    }
-
+    // 无钱包时的引导页已上移到路由层（app_router 的钱包门禁 redirect），
+    // 本页只在已有钱包时被渲染。
     final index = ref.watch(tabIndexProvider);
     return Scaffold(
       body: Stack(

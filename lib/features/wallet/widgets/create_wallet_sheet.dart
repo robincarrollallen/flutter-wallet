@@ -1,27 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
-import '../import_wallet/import_wallet_view.dart';
-import '../create_wallet/create_wallet_view.dart';
-import '../../../widgets/placeholder_screen.dart';
+import '../../../router/route_args.dart';
+import '../../../router/routes.dart';
 import '../../../i18n/translations.g.dart';
 
 class CreateWalletSheet extends StatelessWidget {
   const CreateWalletSheet({super.key});
 
-  void _openFlow(BuildContext context, String title) {
+  /// 关掉弹窗后跳到目标流程。
+  ///
+  /// router 必须在 pop 之前取好：pop 之后本 sheet 的 context 已从树上摘除，
+  /// 再用它查 GoRouter 会失败。
+  void _closeSheetAndGo(BuildContext context, String route, {Object? extra}) {
+    final router = GoRouter.of(context);
     Navigator.pop(context);
-    Navigator.push(context, MaterialPageRoute(builder: (context) => PlaceholderScreen(title: title)));
-  }
-
-  void _openImport(BuildContext context) {
-    Navigator.pop(context);
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const ImportWalletScreen()));
-  }
-
-  void _openCreate(BuildContext context) {
-    Navigator.pop(context);
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateWalletView()));
+    router.push(route, extra: extra);
   }
 
   @override
@@ -43,19 +38,23 @@ class CreateWalletSheet extends StatelessWidget {
             leading: const Icon(Icons.add_circle_outline),
             title: Text(t.createWallet.create.title),
             subtitle: Text(t.createWallet.create.subtitle),
-            onTap: () => _openCreate(context),
+            onTap: () => _closeSheetAndGo(context, AppRoute.createWallet),
           ),
           ListTile(
             leading: const Icon(Icons.download_outlined),
             title: Text(t.createWallet.import.title),
             subtitle: Text(t.createWallet.import.subtitle),
-            onTap: () => _openImport(context),
+            onTap: () => _closeSheetAndGo(context, AppRoute.importWallet),
           ),
           ListTile(
             leading: const Icon(Icons.usb_outlined),
             title: Text(t.createWallet.hardware.title),
             subtitle: Text(t.createWallet.hardware.subtitle),
-            onTap: () => _openFlow(context, t.createWallet.hardware.title),
+            onTap: () => _closeSheetAndGo(
+              context,
+              AppRoute.placeholder,
+              extra: PlaceholderArgs(title: t.createWallet.hardware.title),
+            ),
           ),
           SizedBox(height: 8.s),
         ],
