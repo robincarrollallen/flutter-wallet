@@ -31,5 +31,17 @@ linter:
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 
+# 只分析 Dart 源码：构建产物与各平台原生工程目录不参与静态检查。
+# （Flutter 3.47 的 pub get 会自动补这段，这里保留并归位到文件末尾。）
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
