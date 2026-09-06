@@ -79,6 +79,16 @@ void main() {
       expect(evm.received, isNull);
     });
 
+    test('Tron 原生币分发到 tron 实现，且带上该链配置', () async {
+      final tron = _RecordingTransfer(ChainKind.tron);
+      await _service(tron).sendTransaction(_request(chainId: SupportedChains.tronShasta.id), _wallet);
+
+      expect(tron.received!.isNative, isTrue);
+      expect(tron.received!.chain.id, SupportedChains.tronShasta.id);
+      // TRX 是 6 位精度，不是 18——金额换算全靠它。
+      expect(tron.received!.chain.decimals, 6);
+    });
+
     test('未注册实现的链类型报「暂未支持」', () async {
       final evm = _RecordingTransfer(ChainKind.evm);
       await expectLater(

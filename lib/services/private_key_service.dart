@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:blockchain_utils/blockchain_utils.dart';
 import '../blockchain/chain_registry.dart';
 
@@ -41,6 +43,32 @@ class PrivateKeyService {
       PrivateKeyKind.solanaBase58 => _deriveSolana(s),
       PrivateKeyKind.suiBech32 => _deriveSui(s),
       PrivateKeyKind.unknown => throw ArgumentError('无法识别的私钥，无法派生'),
+    };
+  }
+
+  /// 把**已存的**导入私钥串解回原始 32 字节，供签名直接使用。
+  ///
+  /// 私钥导入的钱包没有助记词，签名只能取回存下来的那一串——而它保存的是用户
+  /// 当初输入的原始格式（EVM hex / Solana base58 / Sui bech32），
+  /// 因此这里是 [derive] 的逆向：只解码，不派生地址。
+  ///
+  /// 无法识别的格式抛 [ArgumentError]，绝不猜——猜错就是拿一把错的私钥去签名。
+  ///
+  /// 返回**可写副本**，调用方用完应 `wipeKey` 清零（同 [MnemonicService.derivePrivateKeyBytes]）。
+  static List<int> decodeToBytes(String stored) => Uint8List.fromList(_decodeToBytes(stored));
+
+  static List<int> _decodeToBytes(String stored) {
+    final s = normalize(stored);
+    return switch (detect(s)) {
+      PrivateKeyKind.evmHex => BytesUtils.fromHexString(_strip0x(s)),
+      // 64 字节形态是「私钥 + 公钥」，签名只要前 32 字节的私钥本身。
+      PrivateKeyKind.solanaBase58 => () {
+        final bytes = Base58Decoder.decode(s);
+        return bytes.length == 64 ? bytes.sublist(0, 32) : bytes;
+      }(),
+      // 记录是位置式的，$2 即 32 字节私钥（$1 是曲线方案标志，签名时由调用方另判）。
+      PrivateKeyKind.suiBech32 => _decodeSui(s).$2,
+      PrivateKeyKind.unknown => throw ArgumentError('无法识别的私钥格式，无法用于签名'),
     };
   }
 

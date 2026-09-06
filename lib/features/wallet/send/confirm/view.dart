@@ -239,7 +239,10 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                       style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                     // —— 全额转出：说明金额已扣除网络费用 —— //
-                    if (_deductsFee) ...[
+                    // 条件按「真的扣掉了」判，而不是「本次允许扣」：报价未就绪，
+                    // 以及 Tron 这类没有 gas 报价模型的链，sendable 会原样等于输入值，
+                    // 此时再说「已扣除网络费用」就是假话。
+                    if (_deductsFee && sendable != widget.amount) ...[
                       SizedBox(height: 4.s),
                       Text(
                         '全额转出：可用 ${widget.amount} ${asset.symbol}，已扣除预估网络费用',

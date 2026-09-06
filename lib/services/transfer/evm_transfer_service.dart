@@ -20,29 +20,33 @@ class EvmTransferService implements ChainTransferService {
 
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
-    // 私钥明文仅在本次调用内使用，不写入字段或日志。
-    final privateKey = await _keyService.resolveEvmSigningKey(wallet);
-    final token = request.token;
-    if (token == null) {
-      return _transactions.sendNative(
+    // 私钥明文仅在本次调用内使用，不写入字段或日志，用完立刻清零（异常路径也清）。
+    final privateKey = await _keyService.resolveSigningKeyBytes(wallet, request.chain);
+    try {
+      final token = request.token;
+      if (token == null) {
+        return await _transactions.sendNative(
+          chain: request.chain,
+          privateKey: privateKey,
+          fromAddress: request.from,
+          to: request.to,
+          amount: request.amount,
+          deductFeeFromAmount: request.deductFeeFromAmount,
+          speed: request.speed,
+        );
+      }
+      // 代币转账没有 deductFeeFromAmount：手续费付原生币，从代币里扣不出来。
+      return await _transactions.sendToken(
         chain: request.chain,
-        privateKeyHex: privateKey,
+        token: token,
+        privateKey: privateKey,
         fromAddress: request.from,
         to: request.to,
         amount: request.amount,
-        deductFeeFromAmount: request.deductFeeFromAmount,
         speed: request.speed,
       );
+    } finally {
+      wipeKey(privateKey);
     }
-    // 代币转账没有 deductFeeFromAmount：手续费付原生币，从代币里扣不出来。
-    return _transactions.sendToken(
-      chain: request.chain,
-      token: token,
-      privateKeyHex: privateKey,
-      fromAddress: request.from,
-      to: request.to,
-      amount: request.amount,
-      speed: request.speed,
-    );
   }
 }

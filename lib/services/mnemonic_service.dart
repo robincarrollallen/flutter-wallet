@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:blockchain_utils/blockchain_utils.dart';
 import '../blockchain/chain_registry.dart';
 
@@ -32,6 +34,22 @@ class MnemonicService {
 
     return DerivedWallet(addresses: addresses);
   }
+
+  /// 助记词 → 某链私钥的**原始 32 字节**，供签名直接使用。
+  ///
+  /// 与 [derivePrivateKey] 走同一条派生（同一个 [_derive]），区别只在**不编码**：
+  /// 那个方法是给「用户查看 / 导入别的钱包」用的可移植字符串，签名不该绕这一趟——
+  /// Sui 的 bech32 首字节是曲线方案标志、BTC 的 WIF 夹着网络字节，
+  /// 每多一次编解码就多一处能签错的地方；而且 Dart 的 String 不可变、无法清零，
+  /// 私钥明文会一直留在内存里等 GC，字节数组则可以用完覆写。
+  ///
+  /// 各链一律返回 32 字节：Solana 的导出串虽是 64 字节（私钥 + 公钥），
+  /// 但签名只需要前 32 字节的私钥本身，也就是这里的 [Bip44Base.privateKey] `.raw`。
+  /// 返回的是**可写副本**，调用方用完应 [wipeKey] 清零。两个原因缺一不可：
+  /// blockchain_utils 各曲线的 `.raw` 实现不一致——secp256k1 返回新数组，
+  /// 而 ed25519 直接把内部列表交出来，就地清零会把密钥对象本身弄坏。
+  static List<int> derivePrivateKeyBytes(String mnemonic, Chain chain) =>
+      Uint8List.fromList(_derive(_seedFromMnemonic(mnemonic), chain.derivation).privateKey.raw);
 
   /// 助记词 → 某链私钥<按 [Chain.kind] 分别编码>(EVM 的 0x hex 可直接用于交易签名): 签名与导出场景共用
   /// - EVM / Tron：`0x` + secp256k1 十六进制；
@@ -101,3 +119,8 @@ DerivedWallet deriveWalletInBackground(String mnemonic) => MnemonicService.deriv
 /// 入参为 (助记词, chainId)：不把 [Chain] 整份塞进 isolate，到对端再 [SupportedChains.byId] 还原。
 String derivePrivateKeyInBackground((String, String) args) =>
     MnemonicService.derivePrivateKey(args.$1, SupportedChains.byId(args.$2));
+
+/// 由助记词派生某条链的**原始 32 字节**私钥<仅签名用>（compute 顶层入口）
+/// 入参同上：(助记词, chainId)。
+List<int> derivePrivateKeyBytesInBackground((String, String) args) =>
+    MnemonicService.derivePrivateKeyBytes(args.$1, SupportedChains.byId(args.$2));

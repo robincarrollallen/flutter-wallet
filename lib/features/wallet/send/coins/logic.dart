@@ -27,6 +27,17 @@ class SendLogic {
   /// 已接入代币转账的链类型。
   static const _tokenTransferKinds = {ChainKind.evm};
 
+  /// 已接入**原生币**转账的链类型，与 `walletServiceProvider` 里注册的
+  /// [ChainTransferService] 一一对应。接入新链时两处一起改。
+  static const _nativeTransferKinds = {ChainKind.evm, ChainKind.tron};
+
+  /// 该资产当前能否发起转账。发送入口据此拦截，避免用户点进流程才被拦下。
+  ///
+  /// 代币比原生币多一层限制：一条链可能原生币能转、代币还不能（Tron 即如此）。
+  static bool canTransfer(ListedAsset asset) => asset.token == null
+      ? _nativeTransferKinds.contains(asset.chain.kind)
+      : _tokenTransferKinds.contains(asset.chain.kind);
+
   /// 按关键词过滤（匹配符号 / 名称，忽略大小写）。
   static List<ListedAsset> filter(List<ListedAsset> assets, String query) {
     final q = query.trim().toLowerCase();

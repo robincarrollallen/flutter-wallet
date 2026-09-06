@@ -7,6 +7,7 @@ import '../domain/wallet.dart';
 import '../providers/token_catalog_provider.dart';
 import 'transfer/chain_transfer_service.dart';
 import 'transfer/evm_transfer_service.dart';
+import 'transfer/tron_transfer_service.dart';
 import 'wallet_key_service.dart';
 
 /// 转账编排：校验请求 → 解析链与代币 → 按 [ChainKind] 查表分发给各链实现。
@@ -72,7 +73,10 @@ class WalletService {
 final walletServiceProvider = Provider<WalletService>((ref) {
   final keyService = ref.watch(walletKeyServiceProvider);
   return WalletService(
-    transferServices: {ChainKind.evm: EvmTransferService(keyService)},
+    transferServices: {
+      ChainKind.evm: EvmTransferService(keyService),
+      ChainKind.tron: TronTransferService(keyService),
+    },
     catalog: ref.watch(tokenCatalogProvider),
   );
 });

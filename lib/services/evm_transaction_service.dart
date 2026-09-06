@@ -36,7 +36,7 @@ class EvmTransactionService {
 
   /// 发送原生币转账，返回 (交易哈希, 实际发送金额, 上链状态)。
   ///
-  /// [privateKeyHex] 为 0x 前缀的 secp256k1 私钥，仅在本次调用内使用。
+  /// [privateKey] 为原始 32 字节 secp256k1 私钥，仅在本次调用内使用。
   /// [fromAddress] 为 UI/钱包展示的发送方地址，必须与私钥派生地址一致（忽略大小写）。
   /// [amount] 为用户输入的十进制金额字符串，按 [Chain.decimals] 转 wei。
   ///
@@ -48,7 +48,7 @@ class EvmTransactionService {
   /// **绝不能**静默改小金额后广播。
   Future<({String hash, String sentAmount, EvmSendStatus status})> sendNative({
     required Chain chain,
-    required String privateKeyHex,
+    required List<int> privateKey,
     required String fromAddress,
     required String to,
     required String amount,
@@ -60,7 +60,7 @@ class EvmTransactionService {
       throw StateError('链 ${chain.id} 缺少 evmChainId 配置');
     }
 
-    final signer = ETHPrivateKey(privateKeyHex);
+    final signer = ETHPrivateKey.fromBytes(privateKey);
     final from = signer.publicKey().toAddress();
     if (from.address.toLowerCase() != fromAddress.trim().toLowerCase()) {
       throw Exception('签名地址与钱包地址不一致');
@@ -125,7 +125,7 @@ class EvmTransactionService {
   Future<({String hash, String sentAmount, EvmSendStatus status})> sendToken({
     required Chain chain,
     required Token token,
-    required String privateKeyHex,
+    required List<int> privateKey,
     required String fromAddress,
     required String to,
     required String amount,
@@ -139,7 +139,7 @@ class EvmTransactionService {
       throw UnsupportedError('${token.symbol} 不是 ERC-20 代币，无法在 ${chain.name} 上转账');
     }
 
-    final signer = ETHPrivateKey(privateKeyHex);
+    final signer = ETHPrivateKey.fromBytes(privateKey);
     final from = signer.publicKey().toAddress();
     if (from.address.toLowerCase() != fromAddress.trim().toLowerCase()) {
       throw Exception('签名地址与钱包地址不一致');

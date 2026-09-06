@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/ethereum/ethereum.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
@@ -7,7 +8,8 @@ import 'package:wallet/enums/evm_send_status.dart';
 import 'package:wallet/services/evm_transaction_service.dart';
 
 /// 测试用私钥；地址由它现场派生，不写死。
-const _privateKey = '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318';
+const _privateKeyHex = '4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318';
+final _privateKey = BytesUtils.fromHexString(_privateKeyHex);
 const _recipient = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed';
 const _chain = SupportedChains.ethereumSepolia;
 
@@ -64,13 +66,13 @@ class _FakeNode {
   }
 }
 
-String get _from => ETHPrivateKey(_privateKey).publicKey().toAddress().address;
+String get _from => ETHPrivateKey.fromBytes(_privateKey).publicKey().toAddress().address;
 
 Future<({String hash, String sentAmount, EvmSendStatus status})> _send(_FakeNode node, {String amount = '0.5'}) {
   return EvmTransactionService(call: node.call).sendToken(
     chain: _chain,
     token: _usdc,
-    privateKeyHex: _privateKey,
+    privateKey: _privateKey,
     fromAddress: _from,
     to: _recipient,
     amount: amount,
@@ -130,7 +132,7 @@ void main() {
         EvmTransactionService(call: node.call).sendToken(
           chain: _chain,
           token: _usdc,
-          privateKeyHex: _privateKey,
+          privateKey: _privateKey,
           fromAddress: _recipient, // 与私钥不对应
           to: _recipient,
           amount: '0.5',
@@ -154,7 +156,7 @@ void main() {
         EvmTransactionService(call: node.call).sendToken(
           chain: _chain,
           token: spl,
-          privateKeyHex: _privateKey,
+          privateKey: _privateKey,
           fromAddress: _from,
           to: _recipient,
           amount: '0.5',

@@ -9,7 +9,6 @@ import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/chain_icon_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
 import '../../../../providers/token_catalog_provider.dart';
-import '../../../../blockchain/chain_registry.dart';
 import '../../../../blockchain/listed_asset.dart';
 import '../../../../router/route_args.dart';
 import '../../../../router/routes.dart';
@@ -144,9 +143,9 @@ class _SendScreenState extends ConsumerState<SendScreen> {
       AppToast.show(context, '当前钱包暂无 ${asset.chain.name} 地址');
       return;
     }
-    // 转账目前仅接入 EVM 链，其余链在入口拦截。
-    if (asset.chain.kind != ChainKind.evm) {
-      AppToast.show(context, '${asset.chain.name} 转账暂未支持');
+    // 尚未接入转账实现的链在入口拦截，别让用户走完三步才被拦下。
+    if (!SendLogic.canTransfer(asset)) {
+      AppToast.show(context, '${asset.symbol}（${asset.chain.name}）转账暂未支持');
       return;
     }
     context.push(
