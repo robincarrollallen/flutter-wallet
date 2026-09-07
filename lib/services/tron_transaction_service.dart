@@ -149,8 +149,14 @@ class TronTransactionService {
     // 5. 签名前逐字段回解校验——这是本方法的安全支点，别删。
     _verifyMatches(unsigned, owner: owner, to: recipient, amount: value);
 
-    // 6. 本地签名并广播。txID 是 rawData 的 sha256，签的就是它。
-    final signature = signer.sign(BytesUtils.fromHexString(unsigned.rawData.txID));
+    // 6. 本地签名并广播。
+    //
+    // 传**未哈希的 rawData 字节**，不要传 txID：`TronPrivateKey.sign` 底层是
+    // `TronSigner.signConst`，而它默认 `hashMessage: true`，会自己做一次 sha256。
+    // txID 本身已经是 rawData 的 sha256，再传它等于 sha256(sha256(rawData))——
+    // 签名在密码学上依然有效，但恢复出的是另一个地址，节点报
+    // 「is signed by T... but it is not contained of permission」而拒收。
+    final signature = signer.sign(unsigned.rawData.toBuffer());
     final signed = Transaction(rawData: unsigned.rawData, signature: [signature]);
     final broadcast = await provider.request(
       TronRequestBroadcastHex(transaction: BytesUtils.toHexString(signed.toBuffer())),

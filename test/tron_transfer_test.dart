@@ -232,6 +232,27 @@ void main() {
       expect(signed.signature.single, isNotEmpty);
     });
 
+    // 「签了名」不等于「签对了」。曾经把 rawData.txID（本身已是 sha256）交给
+    // TronPrivateKey.sign，而它底层默认还会再 sha256 一次——双重哈希后签名在
+    // 密码学上依然有效、长度也正常，但恢复出的是**另一个地址**，节点报
+    // 「is signed by T... but it is not contained of permission」而拒收。
+    //
+    // 只断言「签名非空」放过了这个 bug，必须真的把公钥恢复出来比地址。
+    test('签名恢复出的地址与发送方一致', () async {
+      final node = _FakeTronService();
+      await _send(node);
+
+      final signed = Transaction.deserialize(BytesUtils.fromHexString(node.broadcastPayload!));
+
+      // 注意两处 hashMessage 的语义**不一样**：签名器的 hashMessage 是「做一次
+      // sha256」，而验签器的是「加 personal-sign 前缀再 keccak256」。交易签名走的
+      // 是前者，所以这里要自己 sha256（即 txID）并把验签器的开关关掉。
+      final digest = QuickCrypto.sha256Hash(signed.rawData.toBuffer());
+      final recovered = TronVerifier.getPublicKey(digest, signed.signature.single, hashMessage: false);
+      final address = TronPublicKey.fromBytes(recovered.point.toBytes(EncodeType.comprossed)).toAddress();
+
+      expect(address, _owner);
+    });
 
     // 下面两条是本实现的安全支点：createtransaction 由节点构造，
     // 若不校验就签，一个被劫持的节点即可改掉收款方或金额。
