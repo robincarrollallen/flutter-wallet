@@ -38,7 +38,7 @@ void main() {
   // 若签名时误用 EVM 私钥，签出的地址与钱包展示的 Tron 地址对不上，转账会被拦下。
   test('Tron 私钥派生出的地址与钱包里的 Tron 地址一致，且与 EVM 私钥不同', () {
     final wallet = MnemonicService.deriveWallet(vector);
-    final tron = SupportedChains.tronShasta;
+    final tron = SupportedChains.tronNile;
 
     final tronKey = MnemonicService.derivePrivateKey(vector, tron);
     final evmKey = MnemonicService.derivePrivateKey(vector, SupportedChains.ethereumSepolia);
@@ -75,7 +75,7 @@ void main() {
   // wipeKey 吞异常，清不掉也不会报错——所以必须单独验证缓冲区确实可写，
   // 否则清零会静默变成空操作，而我们还以为清过了。
   test('派生出的私钥缓冲区可写，且清零不影响后续派生', () {
-    for (final chain in [SupportedChains.ethereumSepolia, SupportedChains.solanaDevnet, SupportedChains.tronShasta]) {
+    for (final chain in [SupportedChains.ethereumSepolia, SupportedChains.solanaDevnet, SupportedChains.tronNile]) {
       final bytes = MnemonicService.derivePrivateKeyBytes(vector, chain);
       wipeKey(bytes);
       expect(bytes.every((b) => b == 0), isTrue, reason: '${chain.id} 未被清零');

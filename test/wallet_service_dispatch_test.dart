@@ -81,10 +81,10 @@ void main() {
 
     test('Tron 原生币分发到 tron 实现，且带上该链配置', () async {
       final tron = _RecordingTransfer(ChainKind.tron);
-      await _service(tron).sendTransaction(_request(chainId: SupportedChains.tronShasta.id), _wallet);
+      await _service(tron).sendTransaction(_request(chainId: SupportedChains.tronNile.id), _wallet);
 
       expect(tron.received!.isNative, isTrue);
-      expect(tron.received!.chain.id, SupportedChains.tronShasta.id);
+      expect(tron.received!.chain.id, SupportedChains.tronNile.id);
       // TRX 是 6 位精度，不是 18——金额换算全靠它。
       expect(tron.received!.chain.decimals, 6);
     });

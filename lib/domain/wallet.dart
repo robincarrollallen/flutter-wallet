@@ -91,11 +91,35 @@ class Wallet {
     name: json['name'] as String,
     address: json['address'] as String,
     source: WalletSource.values.asNameMap()[json['source']] ?? WalletSource.mnemonic,
-    addresses: (json['addresses'] as Map?)?.map((k, v) => MapEntry(k as String, v as String)) ?? const {},
+    addresses: _addressesFromJson(json),
     createdAt: json['createdAt'] is String ? DateTime.tryParse(json['createdAt'] as String) : null,
     icon: json['icon'] as String? ?? 'account_balance_wallet',
     backupMethods: _backupMethodsFromJson(json),
   );
+
+  /// 已废弃的 chainId → 现用 chainId。
+  ///
+  /// 地址按 chainId 存盘，而 [addressFor] 只按 [Chain.id] 查、加载时不会重新派生，
+  /// 所以换测试网若只改 id，老钱包的该链地址会直接消失（首页与发送列表都不再显示）。
+  ///
+  /// 值不用重算：Tron 地址只由 `Bip44Coins.tron` 派生，与网络无关，
+  /// 同一个 T... 地址在 Shasta / Nile / 主网通用，搬键即可。
+  static const _renamedChainIds = {'tron-shasta': 'tron-nile'};
+
+  /// 还原地址表，并把历史 chainId 迁移到现用 id。
+  ///
+  /// 只在新键**尚不存在**时才搬，避免把已经派生好的新数据覆盖掉。
+  static Map<String, String> _addressesFromJson(Map<String, dynamic> json) {
+    final raw = (json['addresses'] as Map?)?.map((k, v) => MapEntry(k as String, v as String));
+    if (raw == null || raw.isEmpty) return const {};
+
+    final migrated = <String, String>{...raw};
+    for (final entry in _renamedChainIds.entries) {
+      final legacy = migrated.remove(entry.key);
+      if (legacy != null) migrated.putIfAbsent(entry.value, () => legacy);
+    }
+    return migrated;
+  }
 
   /// 解析备份方式集合；兼容旧字段 `backUp`(int 1)→ {manual}。
   static Set<BackupMethod> _backupMethodsFromJson(Map<String, dynamic> json) {

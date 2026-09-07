@@ -109,7 +109,7 @@ void main() {
     });
 
     test('Tron：合法 T 开头 base58check 地址', () {
-      expect(SendLogic.validateAddress(SupportedChains.tronShasta, 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'), isNull);
+      expect(SendLogic.validateAddress(SupportedChains.tronNile, 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'), isNull);
     });
 
     test('Bitcoin testnet：合法 tb1 bech32 地址', () {

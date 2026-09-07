@@ -12,7 +12,7 @@ import 'package:wallet/services/tron_transaction_service.dart';
 /// 测试用私钥；地址由它现场派生，不写死。
 const _privateKeyHex = '4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318';
 final _privateKey = BytesUtils.fromHexString(_privateKeyHex);
-const _chain = SupportedChains.tronShasta;
+const _chain = SupportedChains.tronNile;
 
 /// 收款方与「被篡改的收款方」同样由私钥派生——写死 base58 字面量很容易
 /// 拼出校验和不合法的地址，TronAddress 会直接拒绝。

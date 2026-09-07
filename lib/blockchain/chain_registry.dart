@@ -196,13 +196,20 @@ class SupportedChains {
 
   // —— 以下三条非 EVM 链的原生币与代币余额查询均已接入（Tron/Sui/Aptos）。 ——
 
-  static const tronShasta = Chain(
-    id: 'tron-shasta',
-    name: 'Tron Shasta',
+  /// 选 Nile 而不是 Shasta：TRC-20 生态的测试网设施基本只在 Nile 上——官方 USDT
+  /// 测试币、能量租赁服务商的测试 API、GasFree 的测试环境（chainId 0xcd8690dc）
+  /// 都是 Nile-only。Shasta 的水龙头也时常被打满。
+  ///
+  /// 换网不影响地址：Tron 地址只由 [Bip44Coins.tron] 派生，与网络无关，
+  /// 同一个 T... 地址在 Shasta / Nile / 主网都成立。老数据的键迁移见
+  /// `Wallet.fromJson`。
+  static const tronNile = Chain(
+    id: 'tron-nile',
+    name: 'Tron Nile',
     symbol: 'TRX',
     kind: ChainKind.tron,
     coin: Bip44Coins.tron,
-    endpoint: 'https://api.shasta.trongrid.io',
+    endpoint: 'https://nile.trongrid.io',
     coinGeckoId: 'tron',
     decimals: 6,
     coinGeckoPlatformId: 'tron',
@@ -247,7 +254,7 @@ class SupportedChains {
     plasmaTestnet,
     bitcoinTestnet,
     solanaDevnet,
-    tronShasta,
+    tronNile,
     suiTestnet,
     aptosTestnet,
   ];
