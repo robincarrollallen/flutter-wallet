@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/data/datasource/remote/chain_balance_api.dart';
+import 'package:wallet/domain/tron_fee.dart';
 import 'package:wallet/enums/evm_send_status.dart';
 import 'package:wallet/services/tron_transaction_service.dart';
 
@@ -31,9 +32,17 @@ class _FakeTronService with TronServiceProvider {
     this.tamperAmount,
     this.broadcastOk = true,
     this.receiptSuccess = true,
+    this.freeBandwidth = 600,
+    this.recipientActivated = true,
   });
 
   final String balance;
+
+  /// 账户当日剩余免费带宽。默认 600（够一笔转账），设为 0 可模拟「要烧 TRX」。
+  final int freeBandwidth;
+
+  /// 收款方账户是否已上链。false 时 `wallet/getaccount` 返回空对象。
+  final bool recipientActivated;
   final TronAddress? tamperTo;
   final BigInt? tamperAmount;
   final bool broadcastOk;
@@ -53,6 +62,17 @@ class _FakeTronService with TronServiceProvider {
       'wallet/createtransaction' => _createTransaction(body),
       'wallet/broadcasthex' => _broadcast(body),
       'wallet/gettransactionbyid' => _receipt(),
+      // —— 费用估算用到的三个接口 —— //
+      'wallet/getaccountresource' => {'freeNetLimit': freeBandwidth, 'freeNetUsed': 0},
+      // 收款方是否已激活：非空且带 address 即视为已激活。
+      'wallet/getaccount' => recipientActivated ? {'address': body['address']} : <String, dynamic>{},
+      'wallet/getchainparameters' => {
+        'chainParameter': [
+          {'key': 'getTransactionFee', 'value': 1000},
+          {'key': 'getCreateAccountFee', 'value': 100000},
+          {'key': 'getCreateNewAccountFeeInSystemContract', 'value': 1000000},
+        ],
+      },
       _ => throw StateError('未预期的 Tron 接口：${params.path}'),
     };
 
@@ -137,6 +157,35 @@ Future<({String hash, String sentAmount, EvmSendStatus status})> _send(
 );
 
 void main() {
+  group('TronTransactionService.estimateNativeFee', () {
+    Future<TronFeeEstimate> estimate(_FakeTronService node) => _service(node).estimateNativeFee(
+      chain: _chain,
+      from: _owner.toAddress(),
+      to: _recipient.toAddress(),
+      amount: '1.5',
+    );
+
+    test('带宽充足且收款方已激活时免费', () async {
+      final fee = await estimate(_FakeTronService(freeBandwidth: 600));
+      expect(fee.isFree, isTrue);
+      expect(fee.activatesRecipient, isFalse);
+      expect(fee.bandwidthAvailable, BigInt.from(600));
+    });
+
+    test('带宽为 0 时按字节烧 TRX', () async {
+      final fee = await estimate(_FakeTronService(freeBandwidth: 0));
+      expect(fee.isFree, isFalse);
+      expect(fee.feeSun, BigInt.from(fee.bandwidthNeeded * 1000));
+    });
+
+    // 未激活的账户 wallet/getaccount 返回 {}，绝不能被当成「已激活且余额 0」。
+    test('收款方未激活时识别出激活费', () async {
+      final fee = await estimate(_FakeTronService(recipientActivated: false));
+      expect(fee.activatesRecipient, isTrue);
+      expect(fee.feeSun, BigInt.from(1000000));
+    });
+  });
+
   group('TronTransactionService.sendNative', () {
     test('按 6 位精度把金额换算成 sun 并发给节点', () async {
       final node = _FakeTronService();
@@ -206,6 +255,31 @@ void main() {
         _send(node),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('签名无效'))),
       );
+    });
+
+    // 余额刚好等于金额时，带宽够就该放行、带宽不够就该拦下——这正是「余额校验
+    // 计入网络费」的意义：不然这笔会广播出去再在链上失败。
+    test('余额刚好等于金额：带宽够则放行', () async {
+      final node = _FakeTronService(balance: '1500000', freeBandwidth: 600);
+      final result = await _send(node, amount: '1.5');
+      expect(result.status, EvmSendStatus.confirmed);
+    });
+
+    test('余额刚好等于金额：带宽不足则报错并提示含网络费', () async {
+      final node = _FakeTronService(balance: '1500000', freeBandwidth: 0);
+      await expectLater(
+        _send(node, amount: '1.5'),
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('含网络费用'))),
+      );
+      expect(node.calls, isNot(contains('wallet/broadcasthex')));
+    });
+
+    // 向未激活账户转账要多付 1 TRX 创建费，余额校验必须算上。
+    test('收款方未激活时把 1 TRX 创建费计入余额校验', () async {
+      // 余额 1.5 TRX，转 1.5 TRX：带宽够，但激活费 1 TRX 让总额超出。
+      final node = _FakeTronService(balance: '1500000', recipientActivated: false);
+      await expectLater(_send(node, amount: '1.5'), throwsA(isA<Exception>()));
+      expect(node.calls, isNot(contains('wallet/broadcasthex')));
     });
 
     test('回执显示执行失败时状态为 failed', () async {

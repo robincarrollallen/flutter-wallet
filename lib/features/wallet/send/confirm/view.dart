@@ -11,11 +11,13 @@ import '../../../../widgets/network_fee_selector.dart';
 import '../../../../enums/fee_speed.dart';
 import '../../../../providers/modules/balance_provider.dart';
 import '../../../../providers/modules/evm_fee_provider.dart';
+import '../../../../providers/modules/tron_fee_provider.dart';
 import '../../../../services/wallet_service.dart';
 import '../../../../providers/modules/currency_provider.dart';
 import '../../../../providers/modules/recent_address_provider.dart';
 import '../../../../providers/modules/wallet_provider.dart';
 import '../../../../dto/request/send_tx_request.dart';
+import '../../../../blockchain/chain_registry.dart';
 import '../../../../blockchain/listed_asset.dart';
 import '../../../../router/route_args.dart';
 import '../../../../router/routes.dart';
@@ -160,6 +162,59 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     return view.stale ? null : view.quotes?[_feeSpeed]?.maxFee;
   }
 
+  /// 网络费一行，按链的费用模型分流。
+  ///
+  /// **只有 EVM 有「gasPrice × gasLimit + 三档」这套模型**，所以只有它显示可切换的
+  /// 档位选择器。给 Tron 套三档会是三重误导：三档都是 `--`（[evmFeeProvider] 对非 EVM
+  /// 直接 return，压根不查）、档位解释「小费 / 区块中位小费 / 优先被打包」全是
+  /// EIP-1559 概念，而 Tron 按带宽计费、**加价也不会更快**，且 `TronTransferService`
+  /// 根本忽略 speed。所以 Tron 走自己的单值行 [_tronFeeRow]。
+  Widget _feeRow(ListedAsset asset, String from) => switch (asset.chain.kind) {
+    ChainKind.evm => _feeSelector(asset, from),
+    ChainKind.tron => _tronFeeRow(asset, from),
+    _ => const _DetailRow(label: '网络费', value: '由网络决定'),
+  };
+
+  /// Tron 的费用行：单一数值，不可切换（这条链没有档位可选）。
+  ///
+  /// 带宽够就是真的免费，所以「免费」要说得明确，并把剩余带宽一并给出——
+  /// 否则用户无从判断下一笔还免不免费。查询中/失败一律回退 `--`：
+  /// 估费只是展示，不阻塞发送，最终由链上把关。
+  Widget _tronFeeRow(ListedAsset asset, String from) {
+    if (from.isEmpty) return const _DetailRow(label: '网络费', value: '--');
+    final estimate = ref.watch(tronFeeProvider(_tronFeeKey(asset, from))).value;
+    if (estimate == null) return const _DetailRow(label: '网络费', value: '--');
+
+    if (estimate.isFree) {
+      return _DetailRow(
+        label: '网络费',
+        value: '免费（剩余带宽 ${estimate.bandwidthAvailable}，本次需 ${estimate.bandwidthNeeded}）',
+      );
+    }
+
+    final price = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.price ?? 0.0;
+    final fee = formatUnits(estimate.feeSun, asset.chain.decimals);
+    final fiat = price <= 0
+        ? ''
+        : '（${ref.watch(currencySymbolProvider)}${(double.parse(fee) * price).toStringAsFixed(2)}）';
+    return _DetailRow(label: '网络费', value: '≈ ${formatTokenAmount(fee)} ${asset.chain.symbol}$fiat');
+  }
+
+  TronFeeKey _tronFeeKey(ListedAsset asset, String from) =>
+      (chainId: asset.chain.id, from: from, to: widget.toAddress, amount: widget.amount);
+
+  /// 收款方账户未激活的提示；无需提示时返回 null。
+  ///
+  /// 向一个从未上链的地址转 TRX，会被额外扣一笔账户创建费（主网 1 TRX）。
+  /// 不说的话，用户只会在事后发现余额对不上。
+  String? _activationNotice(ListedAsset asset, String from) {
+    if (asset.chain.kind != ChainKind.tron || from.isEmpty) return null;
+    final estimate = ref.watch(tronFeeProvider(_tronFeeKey(asset, from))).value;
+    if (estimate == null || !estimate.activatesRecipient) return null;
+    return '收款方账户尚未激活，本次转账将额外消耗 '
+        '${formatTokenAmount(formatUnits(estimate.feeSun, asset.chain.decimals))} ${asset.chain.symbol} 为其激活';
+  }
+
   /// 网络费选择器：展示所选档位的预计实付，点击可切换档位。
   /// 查询失败该行回退 `--`——估费只是展示，不阻塞发送，最终由节点把关。
   Widget _feeSelector(ListedAsset asset, String from) {
@@ -194,6 +249,8 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     final sendable = _sendableAmount(asset, from);
     // 代币转账：原生币不够付 gas 就别让用户白等一次链上报错。
     final shortfall = _feeShortfall(asset, from);
+    // Tron：收款方未激活会被额外扣账户创建费，发送前必须让用户看到。
+    final activationNotice = _activationNotice(asset, from);
 
     return Scaffold(
       body: SafeArea(
@@ -266,7 +323,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                           SizedBox(height: 12.s),
                           _DetailRow(label: '网络', value: asset.chain.name),
                           SizedBox(height: 12.s),
-                          _feeSelector(asset, from),
+                          _feeRow(asset, from),
                         ],
                       ),
                     ),
@@ -277,6 +334,17 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                         shortfall,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                      ),
+                    ],
+                    // —— Tron 收款方未激活：会被额外扣一笔账户创建费 —— //
+                    // 用 tertiary 而不是 error：这不是错误，交易能成，只是要多花钱，
+                    // 但用户有权在按下发送前知道。
+                    if (activationNotice != null) ...[
+                      SizedBox(height: 16.s),
+                      Text(
+                        activationNotice,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.tertiary),
                       ),
                     ],
                     SizedBox(height: 24.s),

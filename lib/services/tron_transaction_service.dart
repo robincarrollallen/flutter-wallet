@@ -5,6 +5,7 @@ import '../blockchain/chain_registry.dart';
 import '../blockchain/units.dart';
 import '../data/datasource/remote/chain_balance_api.dart';
 import '../data/datasource/remote/tron_service.dart';
+import '../domain/tron_fee.dart';
 import '../enums/evm_send_status.dart';
 
 /// Tron 转账：让节点补齐区块引用 → **回解校验** → 本地签名 → 广播 → 轮询回执。
@@ -37,16 +38,64 @@ class TronTransactionService {
 
   TronProvider _providerFor(Chain chain) => _injected ?? tronProviderFor(chain);
 
+  /// 估算一笔原生 TRX 转账的费用。
+  ///
+  /// 三次查询：发送方可用带宽、收款方是否已激活、链上费率。字节数不问节点，
+  /// 由 [TronFeeCalculator.bandwidthFor] 本地推算——省一次往返，且能离线单测。
+  Future<TronFeeEstimate> estimateNativeFee({
+    required Chain chain,
+    required String from,
+    required String to,
+    required String amount,
+  }) async {
+    final provider = _providerFor(chain);
+    final owner = TronAddress(from.trim());
+    final recipient = TronAddress(to.trim());
+    final amountSun = parseUnits(amount, chain.decimals);
+
+    final results = await Future.wait([
+      provider.request(TronRequestGetAccountResource(address: owner)),
+      _isActivated(provider, recipient),
+      provider.request(TronRequestGetChainParameters()),
+    ]);
+
+    final resource = results[0] as AccountResourceModel;
+    final activated = results[1] as bool;
+    final rates = TronFeeRates.fromChainParameters(results[2] as TronChainParameters);
+
+    return TronFeeCalculator.estimate(
+      bandwidthNeeded: TronFeeCalculator.bandwidthFor(owner: owner, to: recipient, amountSun: amountSun),
+      // SDK 已算好 (freeNetLimit + netLimit) − (freeNetUsed + netUsed)。
+      bandwidthAvailable: resource.howManyBandwIth,
+      recipientActivated: activated,
+      rates: rates,
+    );
+  }
+
+  /// 收款方账户是否已上链。未激活的账户 `wallet/getaccount` 返回空对象 `{}`。
+  ///
+  /// 走 [TronProvider.requestDynamic] 而不是 `request`：后者会把响应喂给
+  /// `TronAccountModel.fromJson`，而那个模型对 `create_time` 等字段用的是**非空
+  /// parse**，字段缺失直接抛异常——偏偏「什么都没有」正是我们这里要识别的情形。
+  /// `requestDynamic` 返回未经模型解析的原始 Map，既绕开了这个坑，
+  /// 又仍然走注入的 provider（测试可替换）。
+  Future<bool> _isActivated(TronProvider provider, TronAddress address) async {
+    final json = await provider.requestDynamic(TronRequestGetAccount(address: address));
+    return json.isNotEmpty && json['address'] != null;
+  }
+
   /// 发送原生 TRX，返回 (交易哈希, 实际发送金额, 上链状态)。
   ///
   /// [privateKey] 为原始 32 字节 secp256k1 私钥，仅在本次调用内使用。
   /// [fromAddress] 为钱包展示的 T 开头 base58 地址，必须与私钥派生地址一致。
   /// [amount] 为用户输入的十进制字符串，按 [Chain.decimals]（TRX = 6）换算成 sun。
   ///
-  /// 刻意没有 `deductFeeFromAmount`：Tron 原生转账通常零费用，且费用取决于账户
-  /// 当前带宽而非交易本身，没有 EVM 那种「金额 + feeCap」的确定上限可以先减掉。
-  /// 因此 MAX 全额转出就是余额本身，由第 3 步的余额校验兜底，
-  /// 返回的 sentAmount 恒等于入参金额。
+  /// 目前没有 `deductFeeFromAmount`，返回的 sentAmount 恒等于入参金额。
+  ///
+  /// **已知后果**：第 3 步的余额校验现在计入了网络费，所以当带宽不足（或收款方
+  /// 未激活）时，「MAX 全额转出」必然因「全额 + 费用 > 余额」被拒。这比静默广播
+  /// 一笔注定失败的交易好，但那种情况下 MAX 会不可用。要修就是在这里支持从转出额
+  /// 里扣费，并让确认页的 `_sendableAmount` 认 Tron 的报价。
   Future<({String hash, String sentAmount, EvmSendStatus status})> sendNative({
     required Chain chain,
     required List<int> privateKey,
@@ -71,11 +120,15 @@ class TronTransactionService {
 
     final recipient = TronAddress(to.trim());
 
-    // 3. 余额校验：不足直接报错，绝不静默改小金额（与 EVM 手输金额同一原则）。
+    // 3. 余额校验：金额 + 网络费一起算。带宽不足要烧 TRX、收款方未激活还要 1 TRX
+    //    创建费，只比金额会放过一批注定在链上失败的交易。
+    //    不足直接报错，绝不静默改小金额（与 EVM 手输金额同一原则）。
     final balance = await _balances.fetchNativeBalance(chain, expectedFrom);
-    if (value > balance) {
+    final fee = await estimateNativeFee(chain: chain, from: expectedFrom, to: to, amount: amount);
+    if (value + fee.feeSun > balance) {
       throw Exception(
-        '余额不足：本次需 ${formatUnits(value, chain.decimals)} ${chain.symbol}，'
+        '余额不足：本次需 ${formatUnits(value + fee.feeSun, chain.decimals)} ${chain.symbol}'
+        '（含网络费用约 ${formatUnits(fee.feeSun, chain.decimals)}），'
         '可用 ${formatUnits(balance, chain.decimals)} ${chain.symbol}',
       );
     }
