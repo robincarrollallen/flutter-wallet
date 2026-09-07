@@ -8,14 +8,18 @@ final _to = TronPrivateKey('${'2' * 63}3').publicKey().toAddress();
 /// 主网默认费率，便于在用例里显式对照。
 const _rates = TronFeeRates();
 
+/// [available] 默认落在**免费**额度上——普通账户没质押过，这才是常态。
+/// 要测激活场景必须用 [staked]，因为免费额度不能用于创建账户。
 TronFeeEstimate _estimate({
   int needed = 268,
   int available = 600,
+  int staked = 0,
   bool activated = true,
   TronFeeRates rates = _rates,
 }) => TronFeeCalculator.estimate(
   bandwidthNeeded: needed,
-  bandwidthAvailable: BigInt.from(available),
+  freeBandwidth: BigInt.from(available),
+  stakedBandwidth: BigInt.from(staked),
   recipientActivated: activated,
   rates: rates,
 );
@@ -72,23 +76,40 @@ void main() {
       expect(_estimate(needed: 268, available: 267).feeSun, isNot(BigInt.zero));
     });
 
-    test('收款方未激活 → 固定 1 TRX 创建费', () {
-      final fee = _estimate(available: 600, activated: false);
+    test('收款方未激活且有足够质押带宽 → 只收 1 TRX 创建费', () {
+      final fee = _estimate(staked: 600, activated: false);
       expect(fee.feeSun, BigInt.from(1000000)); // 1 TRX
       expect(fee.activatesRecipient, isTrue);
+    });
+
+    // java-tron 的 consumeBandwidthForCreateNewAccount 只走 useAccountNet，
+    // 不走 useFreeNet——每日免费额度**不能**用于创建账户。普通账户没质押过，
+    // 所以「转给未激活地址」在现实中几乎总是 1.1 TRX 而非 1 TRX。
+    test('免费带宽不能用于激活账户，仍要付 0.1 TRX 带宽费', () {
+      final fee = _estimate(available: 600, staked: 0, activated: false);
+      expect(fee.feeSun, BigInt.from(1100000)); // 1 + 0.1
+      expect(fee.bandwidthFeeSun, BigInt.from(100000));
+      expect(fee.bandwidthCovered, isFalse);
+    });
+
+    // 但对**已激活**的收款方，免费额度照常可用。
+    test('普通转账时免费带宽照常可用', () {
+      final fee = _estimate(available: 600, staked: 0);
+      expect(fee.feeSun, BigInt.zero);
+      expect(fee.bandwidthCovered, isTrue);
     });
 
     // 激活场景下带宽那部分是固定的 0.1 TRX，而**不是**按字节算——
     // 这是 Tron 的特殊规则，容易想当然写成 needed × 1000。
     test('收款方未激活且带宽不足 → 1 TRX + 固定 0.1 TRX', () {
-      final fee = _estimate(available: 0, activated: false);
+      final fee = _estimate(available: 0, staked: 0, activated: false);
       expect(fee.feeSun, BigInt.from(1100000)); // 1.1 TRX
     });
 
     // 确认页要单独说「激活费是多少」，不能拿总额去说——带宽也不足时总额里还
     // 混着 0.1 TRX 带宽欠费，说成「1.1 TRX 为其激活」就把这笔说大了。
     test('费用可拆分：激活费与带宽欠费各归各的', () {
-      final fee = _estimate(needed: 268, available: 0, activated: false);
+      final fee = _estimate(needed: 268, available: 0, staked: 0, activated: false);
       expect(fee.activationFeeSun, BigInt.from(1000000)); // 只有激活那 1 TRX
       expect(fee.bandwidthFeeSun, BigInt.from(100000)); // 激活场景下带宽欠费是固定 0.1
       expect(fee.feeSun, fee.activationFeeSun + fee.bandwidthFeeSun);
@@ -116,7 +137,7 @@ void main() {
 
     test('费率取自链参数：账户创建费可被改动', () {
       final fee = _estimate(
-        available: 600,
+        staked: 600,
         activated: false,
         rates: const TronFeeRates(createNewAccountFeeSun: 5000000),
       );

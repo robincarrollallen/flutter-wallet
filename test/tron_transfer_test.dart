@@ -33,6 +33,7 @@ class _FakeTronService with TronServiceProvider {
     this.broadcastOk = true,
     this.receiptSuccess = true,
     this.freeBandwidth = 600,
+    this.stakedBandwidth = 0,
     this.recipientActivated = true,
   });
 
@@ -40,6 +41,9 @@ class _FakeTronService with TronServiceProvider {
 
   /// 账户当日剩余免费带宽。默认 600（够一笔转账），设为 0 可模拟「要烧 TRX」。
   final int freeBandwidth;
+
+  /// 质押所得带宽。默认 0（普通账户没质押过）——注意激活账户时只有这一档算数。
+  final int stakedBandwidth;
 
   /// 收款方账户是否已上链。false 时 `wallet/getaccount` 返回空对象。
   final bool recipientActivated;
@@ -63,7 +67,12 @@ class _FakeTronService with TronServiceProvider {
       'wallet/broadcasthex' => _broadcast(body),
       'wallet/gettransactionbyid' => _receipt(),
       // —— 费用估算用到的三个接口 —— //
-      'wallet/getaccountresource' => {'freeNetLimit': freeBandwidth, 'freeNetUsed': 0},
+      'wallet/getaccountresource' => {
+        'freeNetLimit': freeBandwidth,
+        'freeNetUsed': 0,
+        'NetLimit': stakedBandwidth,
+        'NetUsed': 0,
+      },
       // 收款方是否已激活：非空且带 address 即视为已激活。
       'wallet/getaccount' => recipientActivated ? {'address': body['address']} : <String, dynamic>{},
       'wallet/getchainparameters' => {
@@ -179,10 +188,21 @@ void main() {
     });
 
     // 未激活的账户 wallet/getaccount 返回 {}，绝不能被当成「已激活且余额 0」。
-    test('收款方未激活时识别出激活费', () async {
+    //
+    // 只有免费带宽（普通账户的常态）时总额是 1.1 TRX：免费额度不能用于创建账户，
+    // 所以那 0.1 TRX 的带宽费躲不掉。
+    test('收款方未激活时识别出激活费，且免费带宽抵不掉带宽费', () async {
       final fee = await estimate(_FakeTronService(recipientActivated: false));
       expect(fee.activatesRecipient, isTrue);
+      expect(fee.activationFeeSun, BigInt.from(1000000));
+      expect(fee.bandwidthFeeSun, BigInt.from(100000));
+      expect(fee.feeSun, BigInt.from(1100000));
+    });
+
+    test('有足够质押带宽时激活只花 1 TRX', () async {
+      final fee = await estimate(_FakeTronService(recipientActivated: false, stakedBandwidth: 600));
       expect(fee.feeSun, BigInt.from(1000000));
+      expect(fee.bandwidthFeeSun, BigInt.zero);
     });
   });
 
@@ -211,6 +231,7 @@ void main() {
       expect(signed.signature, hasLength(1));
       expect(signed.signature.single, isNotEmpty);
     });
+
 
     // 下面两条是本实现的安全支点：createtransaction 由节点构造，
     // 若不校验就签，一个被劫持的节点即可改掉收款方或金额。

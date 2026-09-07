@@ -65,11 +65,19 @@ class TronTransactionService {
 
     return TronFeeCalculator.estimate(
       bandwidthNeeded: TronFeeCalculator.bandwidthFor(owner: owner, to: recipient, amountSun: amountSun),
-      // SDK 已算好 (freeNetLimit + netLimit) − (freeNetUsed + netUsed)。
-      bandwidthAvailable: resource.howManyBandwIth,
+      // 免费额度与质押所得分开传：激活账户时只有质押那档算数，见 estimate 的注释。
+      // 不用 SDK 的 howManyBandwIth——它把两者加在一起，正好抹掉这个区分。
+      freeBandwidth: _remaining(resource.freeNetLimit, resource.freeNetUsed),
+      stakedBandwidth: _remaining(resource.netLimit, resource.netUsed),
       recipientActivated: activated,
       rates: rates,
     );
+  }
+
+  /// 某档带宽的剩余量。已用超过额度时按 0 计，不返回负数。
+  static BigInt _remaining(BigInt limit, BigInt used) {
+    final left = limit - used;
+    return left > BigInt.zero ? left : BigInt.zero;
   }
 
   /// 收款方账户是否已上链。未激活的账户 `wallet/getaccount` 返回空对象 `{}`。

@@ -9,7 +9,8 @@ class TronFeeEstimate {
   // 不是 const：feeSun 由两个分量相加得出，而加法不是常量表达式。
   TronFeeEstimate({
     required this.bandwidthNeeded,
-    required this.bandwidthAvailable,
+    required this.freeBandwidth,
+    required this.stakedBandwidth,
     required this.bandwidthFeeSun,
     required this.activationFeeSun,
     required this.fetchedAt,
@@ -18,8 +19,18 @@ class TronFeeEstimate {
   /// 本次交易要消耗的带宽点数（= 上链后交易的字节数）。
   final int bandwidthNeeded;
 
-  /// 发送方当前可用带宽（每日免费额度 + 质押所得，均已扣除已用部分）。
-  final BigInt bandwidthAvailable;
+  /// 发送方每日免费额度的剩余带宽。
+  ///
+  /// 与 [stakedBandwidth] 分开存不是为了好看：**免费带宽不能用于创建账户**
+  /// （java-tron 的 `consumeBandwidthForCreateNewAccount` 只走 `useAccountNet`，
+  /// 不走 `useFreeNet`），所以激活场景下只有质押那部分算数。
+  final BigInt freeBandwidth;
+
+  /// 发送方质押 / 受代理所得的剩余带宽。
+  final BigInt stakedBandwidth;
+
+  /// 可用带宽合计，仅用于展示。判定「够不够」要按场景区分，见 [bandwidthCovered]。
+  BigInt get bandwidthAvailable => freeBandwidth + stakedBandwidth;
 
   /// 本次要烧掉的 TRX 总额（单位 sun）= [bandwidthFeeSun] + [activationFeeSun]。
   /// 带宽够且收款方已激活时为 0。
@@ -43,7 +54,7 @@ class TronFeeEstimate {
   bool get isFree => feeSun == BigInt.zero;
 
   /// 带宽是否够用（够用则不烧 TRX 抵带宽，但仍可能有账户创建费）。
-  bool get bandwidthCovered => bandwidthAvailable >= BigInt.from(bandwidthNeeded);
+  bool get bandwidthCovered => bandwidthFeeSun == BigInt.zero;
 }
 
 /// 链上费率，取自 `wallet/getchainparameters`。
@@ -125,12 +136,23 @@ class TronFeeCalculator {
   ///   则带宽那部分**改按固定的 `createAccountFeeSun`（0.1 TRX）收**，而不是按字节。
   static TronFeeEstimate estimate({
     required int bandwidthNeeded,
-    required BigInt bandwidthAvailable,
+    required BigInt freeBandwidth,
+    required BigInt stakedBandwidth,
     required bool recipientActivated,
     TronFeeRates rates = const TronFeeRates(),
     DateTime? fetchedAt,
   }) {
-    final covered = bandwidthAvailable >= BigInt.from(bandwidthNeeded);
+    final needed = BigInt.from(bandwidthNeeded);
+
+    // 带宽是**按档全额**扣的，不是「先用完再烧差额」：某一档不足以覆盖整笔，
+    // 这一档就完全用不上，直接进入下一档乃至烧 TRX。所以这里是 >= 判定，
+    // 而欠费也按整笔算，不减去已有的那部分。
+    //
+    // 激活场景刻意只看质押那档：免费额度不能用于创建账户
+    // （java-tron 的 consumeBandwidthForCreateNewAccount 只走 useAccountNet）。
+    final covered = recipientActivated
+        ? (freeBandwidth + stakedBandwidth) >= needed
+        : stakedBandwidth >= needed;
 
     final activationFee = recipientActivated ? BigInt.zero : BigInt.from(rates.createNewAccountFeeSun);
 
@@ -140,14 +162,15 @@ class TronFeeCalculator {
     if (covered) {
       bandwidthFee = BigInt.zero;
     } else if (recipientActivated) {
-      bandwidthFee = BigInt.from(bandwidthNeeded) * BigInt.from(rates.sunPerBandwidthByte);
+      bandwidthFee = needed * BigInt.from(rates.sunPerBandwidthByte);
     } else {
       bandwidthFee = BigInt.from(rates.createAccountFeeSun);
     }
 
     return TronFeeEstimate(
       bandwidthNeeded: bandwidthNeeded,
-      bandwidthAvailable: bandwidthAvailable,
+      freeBandwidth: freeBandwidth,
+      stakedBandwidth: stakedBandwidth,
       bandwidthFeeSun: bandwidthFee,
       activationFeeSun: activationFee,
       fetchedAt: fetchedAt ?? DateTime.now(),
