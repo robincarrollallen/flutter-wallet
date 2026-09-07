@@ -205,14 +205,21 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
 
   /// 收款方账户未激活的提示；无需提示时返回 null。
   ///
-  /// 向一个从未上链的地址转 TRX，会被额外扣一笔账户创建费（主网 1 TRX）。
-  /// 不说的话，用户只会在事后发现余额对不上。
+  /// 向一个从未上链的地址转 TRX，会被扣一笔账户创建费（主网 1 TRX）。不说的话，
+  /// 用户只会在事后发现余额对不上。
+  ///
+  /// 措辞是「网络费中已包含」而不是「额外消耗」：这笔钱**已经算在**上方那行网络费
+  /// 里了，说「额外」会让用户以为要在网络费之外再付一次。
+  ///
+  /// 金额只取 [TronFeeEstimate.activationFeeSun] 而非 `feeSun`：后者在带宽也不足时
+  /// 还混着带宽欠费（1 TRX 激活 + 0.1 TRX 带宽 = 1.1），拿总额去说「为其激活」
+  /// 会把这笔说大。
   String? _activationNotice(ListedAsset asset, String from) {
     if (asset.chain.kind != ChainKind.tron || from.isEmpty) return null;
     final estimate = ref.watch(tronFeeProvider(_tronFeeKey(asset, from))).value;
     if (estimate == null || !estimate.activatesRecipient) return null;
-    return '收款方账户尚未激活，本次转账将额外消耗 '
-        '${formatTokenAmount(formatUnits(estimate.feeSun, asset.chain.decimals))} ${asset.chain.symbol} 为其激活';
+    final activation = formatTokenAmount(formatUnits(estimate.activationFeeSun, asset.chain.decimals));
+    return '收款方账户尚未激活，网络费中已包含 $activation ${asset.chain.symbol} 激活费';
   }
 
   /// 网络费选择器：展示所选档位的预计实付，点击可切换档位。

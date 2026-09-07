@@ -6,13 +6,14 @@ import 'package:on_chain/tron/tron.dart';
 /// Tron 是「够带宽就免费、不够按字节烧 TRX」且没有档位（加价也不会更快）。
 /// 两套模型硬套在一起只会让双方都变形。
 class TronFeeEstimate {
-  const TronFeeEstimate({
+  // 不是 const：feeSun 由两个分量相加得出，而加法不是常量表达式。
+  TronFeeEstimate({
     required this.bandwidthNeeded,
     required this.bandwidthAvailable,
-    required this.feeSun,
-    required this.activatesRecipient,
+    required this.bandwidthFeeSun,
+    required this.activationFeeSun,
     required this.fetchedAt,
-  });
+  }) : feeSun = bandwidthFeeSun + activationFeeSun;
 
   /// 本次交易要消耗的带宽点数（= 上链后交易的字节数）。
   final int bandwidthNeeded;
@@ -20,11 +21,21 @@ class TronFeeEstimate {
   /// 发送方当前可用带宽（每日免费额度 + 质押所得，均已扣除已用部分）。
   final BigInt bandwidthAvailable;
 
-  /// 实际要烧掉的 TRX（单位 sun）。带宽够且收款方已激活时为 0。
+  /// 本次要烧掉的 TRX 总额（单位 sun）= [bandwidthFeeSun] + [activationFeeSun]。
+  /// 带宽够且收款方已激活时为 0。
   final BigInt feeSun;
 
-  /// 收款方账户尚未上链，本次转账会顺带激活它——[feeSun] 里含固定的账户创建费。
-  final bool activatesRecipient;
+  /// 其中「带宽不足」那部分。带宽够时为 0。
+  final BigInt bandwidthFeeSun;
+
+  /// 其中「激活收款方账户」那部分。收款方已激活时为 0。
+  ///
+  /// 单独留一个字段是为了让 UI 能**只**说这一笔——[feeSun] 里还可能混着带宽欠费，
+  /// 拿总额去说「N TRX 为其激活」在带宽也不足时会把数字说大。
+  final BigInt activationFeeSun;
+
+  /// 收款方账户尚未上链，本次转账会顺带激活它。
+  bool get activatesRecipient => activationFeeSun > BigInt.zero;
 
   final DateTime fetchedAt;
 
@@ -121,20 +132,24 @@ class TronFeeCalculator {
   }) {
     final covered = bandwidthAvailable >= BigInt.from(bandwidthNeeded);
 
-    final BigInt feeSun;
-    if (recipientActivated) {
-      feeSun = covered ? BigInt.zero : BigInt.from(bandwidthNeeded) * BigInt.from(rates.sunPerBandwidthByte);
+    final activationFee = recipientActivated ? BigInt.zero : BigInt.from(rates.createNewAccountFeeSun);
+
+    // 带宽欠费的算法随场景变：普通转账按字节计价，而激活场景下是**固定**的
+    // createAccountFee，不按字节——这条容易想当然写成 needed × 单价。
+    final BigInt bandwidthFee;
+    if (covered) {
+      bandwidthFee = BigInt.zero;
+    } else if (recipientActivated) {
+      bandwidthFee = BigInt.from(bandwidthNeeded) * BigInt.from(rates.sunPerBandwidthByte);
     } else {
-      feeSun =
-          BigInt.from(rates.createNewAccountFeeSun) +
-          (covered ? BigInt.zero : BigInt.from(rates.createAccountFeeSun));
+      bandwidthFee = BigInt.from(rates.createAccountFeeSun);
     }
 
     return TronFeeEstimate(
       bandwidthNeeded: bandwidthNeeded,
       bandwidthAvailable: bandwidthAvailable,
-      feeSun: feeSun,
-      activatesRecipient: !recipientActivated,
+      bandwidthFeeSun: bandwidthFee,
+      activationFeeSun: activationFee,
       fetchedAt: fetchedAt ?? DateTime.now(),
     );
   }

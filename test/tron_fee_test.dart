@@ -85,6 +85,28 @@ void main() {
       expect(fee.feeSun, BigInt.from(1100000)); // 1.1 TRX
     });
 
+    // 确认页要单独说「激活费是多少」，不能拿总额去说——带宽也不足时总额里还
+    // 混着 0.1 TRX 带宽欠费，说成「1.1 TRX 为其激活」就把这笔说大了。
+    test('费用可拆分：激活费与带宽欠费各归各的', () {
+      final fee = _estimate(needed: 268, available: 0, activated: false);
+      expect(fee.activationFeeSun, BigInt.from(1000000)); // 只有激活那 1 TRX
+      expect(fee.bandwidthFeeSun, BigInt.from(100000)); // 激活场景下带宽欠费是固定 0.1
+      expect(fee.feeSun, fee.activationFeeSun + fee.bandwidthFeeSun);
+    });
+
+    test('已激活账户的带宽欠费按字节算，且激活费为 0', () {
+      final fee = _estimate(needed: 268, available: 0);
+      expect(fee.activationFeeSun, BigInt.zero);
+      expect(fee.bandwidthFeeSun, BigInt.from(268 * 1000));
+    });
+
+    test('全免费时两个分量都是 0', () {
+      final fee = _estimate(available: 600);
+      expect(fee.activationFeeSun, BigInt.zero);
+      expect(fee.bandwidthFeeSun, BigInt.zero);
+      expect(fee.isFree, isTrue);
+    });
+
     // 三个费率都是链参数，可由委员会提案改动，绝不能写死。
     test('费率取自链参数：sunPerBandwidthByte 翻倍则费用翻倍', () {
       final normal = _estimate(needed: 268, available: 0);
