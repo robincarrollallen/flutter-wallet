@@ -216,7 +216,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
 /// 带参路由的兜底：`extra` 不是期望类型（热重载丢失、或被直接以路径跳转）时回首页，
 /// 而不是在 builder 里强转崩溃。
-String? _requireArgs<T>(BuildContext context, GoRouterState state) => state.extra is T ? null : AppRoute.root;
+///
+/// **只在本路由就是本次跳转的终点时才校验**。go_router 会对匹配链上*每一个*带
+/// redirect 的路由执行守卫（见 `_processRouteLevelRedirects` 里的 `visitRouteMatches`），
+/// 而整条链共享同一个 `extra`。发送流程是嵌套路由，跳
+/// `/send/recipient/amount` 时父路由 `/send/recipient` 的守卫也会跑一遍，
+/// 拿到的却是 `SendAmountArgs`——类型对不上，于是把用户直接弹回首页。
+/// 少了这层判断，发送流程走不过收款人这一步，且**所有链都一样**。
+///
+/// 祖先路由的 [GoRouterState.matchedLocation] 只是完整路径的前缀，
+/// 只有终点那一个才与 `uri.path` 相等。
+String? _requireArgs<T>(BuildContext context, GoRouterState state) {
+  if (state.matchedLocation != state.uri.path) return null;
+  return state.extra is T ? null : AppRoute.root;
+}
 
 /// 无钱包门禁：没有任何钱包时把用户送回引导页。
 ///
