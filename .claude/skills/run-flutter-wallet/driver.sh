@@ -46,9 +46,19 @@ case "${1:-}" in
 
   run)   # 全量构建并启动（首次 ~45s）。日志落在 $OUT/run.log
     U=$(udid)
+    # 先杀掉上一次的 flutter run：它不会自己退出，叠加多个进程后新构建装不上去，
+    # 表现是「Xcode build done 但界面还是旧的」——极难看出问题出在哪。
+    pkill -f "flutter run" 2>/dev/null || true
+    sleep 2
     flutter run -d "$U" --debug > "$OUT/run.log" 2>&1 &
     until grep -qE "Flutter run key commands|Error|error:" "$OUT/run.log" 2>/dev/null; do sleep 5; done
-    sleep 8; tail -3 "$OUT/run.log" ;;
+    sleep 8
+    # 装好了但连接掉线时，重启一次已安装的新二进制——否则留在屏幕上的还是旧进程。
+    grep -q "Lost connection to device" "$OUT/run.log" && {
+      xcrun simctl terminate booted $BUNDLE >/dev/null 2>&1 || true; sleep 1
+      xcrun simctl launch booted $BUNDLE >/dev/null 2>&1 || true; sleep 5
+    }
+    tail -3 "$OUT/run.log" ;;
 
   restart)  # 比点返回键可靠得多——顶部小控件命中率低，回首页一律用这个
     xcrun simctl terminate booted $BUNDLE >/dev/null 2>&1 || true; sleep 2

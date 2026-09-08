@@ -59,8 +59,20 @@ $D changed a b                   # 比对两张截图（已裁掉状态栏）
 | 设置面板「计价货币」行 | `600 779` |
 | 货币页 USD / CNY | `600 655` / `600 1517` |
 
-发送流程：`tap 232 1029`（发送）→ `tap 603 634`（ETH 行）→ `tap 599 487` + `type 地址`
-→ `tap 603 2394`（下一步）→ `tap 599 536` + `type 0.001` → `tap 599 1053`（下一步）→ 确认页。
+发送流程：`tap 232 1029`（发送）→ `tap 603 634`（首行资产）→ `tap 599 487` + `type 地址`
+→ `tap 603 2395`（下一步）→ `tap 599 536` + `type 0.001` → `tap 599 1053`（下一步）→ 确认页。
+发送弹窗的搜索框在 `603 378`。
+
+**确认页的「确认发送」没有固定坐标** —— 它在内容下方，位置随卡片高度变化：
+有「收款方未激活」提示时约 `603 1536`，没有时约 `603 1437`。点空了不会有任何反馈，
+和「焦点没拿到」的表现一模一样。**每次都用 `$D crop <截图名> 1350 250` 现场量**，
+别照抄上一次的值。
+
+**发送列表只显示有余额的资产**（`view.dart` 把 `SendLogic.partition` 的第二组直接丢弃）。
+所以新加的代币在领到测试币之前**不会出现在发送列表里**，这是设计而非 bug——
+要确认代币是否已进目录，去**首页**列表看（它零余额也显示）。
+
+资产按法币价值降序排，**首行是哪个币会随余额变化**，别把 `603 634` 当成固定的某个币。
 
 **不要点「确认发送」**（确认页 `599 1053`）—— 会真实广播交易。
 
@@ -103,6 +115,18 @@ cp /tmp/cg.bak lib/data/datasource/remote/coingecko_api.dart      # 务必还原
 
 这些都是实际踩过的，没一个能靠猜。
 
+- **改了代码但界面还是旧的**，这是最费时间的一个坑，因为它伪装成业务 bug。
+  `flutter run` 不会自己退出，反复调用会叠加多个进程，新构建装不上去——日志里
+  照样写着 `Xcode build done`，你会以为构建成功了。`$D run` 现在会先 `pkill`
+  再跑，并在出现 `Lost connection to device` 时自动重启已装的新二进制。
+  **怀疑构建没生效时，别猜，去核对安装时间**：
+  ```bash
+  for d in ~/Library/Developer/CoreSimulator/Devices/<UDID>/data/Containers/Bundle/Application/*/; do
+    a=$(ls -d "$d"*.app 2>/dev/null|head -1); [ -n "$a" ] &&
+    [ "$(plutil -extract CFBundleIdentifier raw "$a/Info.plist" 2>/dev/null)" = "com.crypto.wallet.flutter.wallet" ] &&
+    stat -f "%Sm  $a" "$a"; done
+  ```
+  注意目录里还躺着别的 App，按 bundle id 过滤，别 `head -1` 抓错。
 - **`osascript` 的 `click at {x,y}` 必然失败**，报 `error -25204`。必须用 CGEvent
   （`click.swift`）。
 - **前台焦点是最大的坑，而且是双向的**：Simulator 不在前台时点击静默落到别的 App
