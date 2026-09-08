@@ -2,7 +2,9 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:on_chain/tron/tron.dart';
 
 import '../blockchain/chain_registry.dart';
+import '../blockchain/token.dart';
 import '../blockchain/units.dart';
+import '../core/utils/erc20_abi.dart';
 import '../data/datasource/remote/chain_balance_api.dart';
 import '../data/datasource/remote/tron_service.dart';
 import '../domain/tron_fee.dart';
@@ -35,6 +37,10 @@ class TronTransactionService {
   /// 因此间隔取得比 EVM 那边的 2 秒更贴近出块节奏即可。
   static const Duration _receiptTimeout = Duration(seconds: 60);
   static const Duration _receiptPollInterval = Duration(seconds: 3);
+
+  /// 能量估算的上浮比例（分子/分母），与 EVM 那边 gas 的 1.2 倍同一用意。
+  static const int _energyBufferNum = 12;
+  static const int _energyBufferDen = 10;
 
   TronProvider _providerFor(Chain chain) => _injected ?? tronProviderFor(chain);
 
@@ -73,6 +79,86 @@ class TronTransactionService {
       rates: rates,
     );
   }
+
+  /// 估算一笔 TRC-20 转账的费用（带宽 + 能量）。
+  ///
+  /// 能量必须问节点：合约执行用量取决于实现（收款方是否已有余额槽、是否手续费
+  /// 代币等），没有 21000 那样的常量可猜。走 `triggerconstantcontract` 做一次
+  /// **只读**模拟，不上链、不花能量。
+  Future<TronFeeEstimate> estimateTokenFee({
+    required Chain chain,
+    required Token token,
+    required String from,
+    required String to,
+    required String amount,
+  }) async {
+    final provider = _providerFor(chain);
+    final owner = TronAddress(from.trim());
+    final recipient = TronAddress(to.trim());
+    final value = parseUnits(amount, token.decimals);
+
+    final results = await Future.wait([
+      provider.request(TronRequestGetAccountResource(address: owner)),
+      provider.request(TronRequestGetChainParameters()),
+      _simulateTransfer(provider, owner: owner, token: token, to: recipient, amount: value),
+    ]);
+
+    final resource = results[0] as AccountResourceModel;
+    final rates = TronFeeRates.fromChainParameters(results[1] as TronChainParameters);
+    final energyUsed = results[2] as int;
+
+    return TronFeeCalculator.estimateToken(
+      bandwidthNeeded: TronFeeCalculator.bandwidthForToken(
+        owner: owner,
+        contract: TronAddress(token.identifier),
+        parameter: _transferParameter(recipient, value),
+      ),
+      freeBandwidth: _remaining(resource.freeNetLimit, resource.freeNetUsed),
+      stakedBandwidth: _remaining(resource.netLimit, resource.netUsed),
+      // 上浮留余量：合约实际执行时链上状态可能已变（收款方余额槽从无到有等），
+      // 估少了会 OUT_OF_ENERGY——能量照扣、钱没转到。
+      energyNeeded: (energyUsed * _energyBufferNum) ~/ _energyBufferDen,
+      energyAvailable: resource.howManyEnergy,
+      rates: rates,
+    );
+  }
+
+  /// 只读模拟一次 `transfer`，取它的能量消耗。
+  ///
+  /// **回滚的模拟必须当作失败**：余额不足时合约会 REVERT，此时 `energy_used`
+  /// 只是回滚前那点消耗（实测约 2000，而真实转账要几万），拿它当估算会严重偏低。
+  /// 节点在这种情况下 `result.result` 仍是 true，只在 message 里写 REVERT，
+  /// 所以不能只看 result。
+  Future<int> _simulateTransfer(
+    TronProvider provider, {
+    required TronAddress owner,
+    required Token token,
+    required TronAddress to,
+    required BigInt amount,
+  }) async {
+    final result = await provider.request(
+      TronRequestTriggerConstantContract(
+        ownerAddress: owner,
+        contractAddress: TronAddress(token.identifier),
+        functionSelector: 'transfer(address,uint256)',
+        parameter: _transferParameter(to, amount),
+      ),
+    );
+
+    final message = result.result.message;
+    if (!result.result.result || (message != null && message.contains('REVERT'))) {
+      throw Exception('${token.symbol} 转账模拟失败：${message ?? '合约拒绝执行'}（余额是否足够？）');
+    }
+    final energy = result.energyUsed;
+    if (energy == null || energy <= 0) {
+      throw Exception('无法估算 ${token.symbol} 转账所需能量');
+    }
+    return energy;
+  }
+
+  /// `transfer(address,uint256)` 的 ABI 参数（不含选择器）。
+  static String _transferParameter(TronAddress to, BigInt amount) =>
+      encodeTrc20TransferParameter(to21Bytes: to.toBytes(), amount: amount);
 
   /// 某档带宽的剩余量。已用超过额度时按 0 计，不返回负数。
   static BigInt _remaining(BigInt limit, BigInt used) {
@@ -170,6 +256,119 @@ class TronTransactionService {
       sentAmount: formatUnits(value, chain.decimals),
       status: await waitForReceipt(chain, broadcast.txid, provider: provider),
     );
+  }
+
+  /// 发送 TRC-20 代币，返回 (交易哈希, 实际发送金额, 上链状态)。
+  ///
+  /// 与 [sendNative] 的差异：
+  /// - 金额按 [Token.decimals] 换算，**不是** [Chain.decimals]；
+  /// - 校验的是**代币余额**，而手续费（带宽 + 能量）付的是 TRX，是两本账，要分开验；
+  /// - 交易由 `triggersmartcontract` 构造，必须带 `feeLimit`——它是「最多愿意为
+  ///   能量烧多少 TRX」的上限，给小了链上会 OUT_OF_ENERGY：能量照扣、钱没转到。
+  Future<({String hash, String sentAmount, EvmSendStatus status})> sendToken({
+    required Chain chain,
+    required Token token,
+    required List<int> privateKey,
+    required String fromAddress,
+    required String to,
+    required String amount,
+  }) async {
+    if (token.standard != TokenStandard.trc20) {
+      throw UnsupportedError('${token.symbol} 不是 TRC-20 代币，无法在 ${chain.name} 上转账');
+    }
+
+    final provider = _providerFor(chain);
+    final signer = TronPrivateKey.fromBytes(privateKey);
+    final owner = signer.publicKey().toAddress();
+    final expectedFrom = fromAddress.trim();
+    if (owner.toAddress() != expectedFrom) {
+      throw Exception('签名地址与钱包地址不一致');
+    }
+
+    final value = parseUnits(amount, token.decimals);
+    if (value <= BigInt.zero) throw Exception('转账金额必须大于 0');
+    final recipient = TronAddress(to.trim());
+    final contract = TronAddress(token.identifier);
+
+    // 代币余额：不足直接报错，绝不静默改小金额（与原生币手输金额同一原则）。
+    final tokenBalance = await _balances.fetchTokenBalance(chain, token, expectedFrom);
+    if (value > tokenBalance) {
+      throw Exception(
+        '${token.symbol} 余额不足：本次需 ${formatUnits(value, token.decimals)}，'
+        '可用 ${formatUnits(tokenBalance, token.decimals)}',
+      );
+    }
+
+    // 手续费走 TRX，与代币余额是两本账，必须单独校验。
+    final fee = await estimateTokenFee(chain: chain, token: token, from: expectedFrom, to: to, amount: amount);
+    final trxBalance = await _balances.fetchNativeBalance(chain, expectedFrom);
+    if (fee.feeSun > trxBalance) {
+      throw Exception(
+        '${chain.symbol} 不足以支付网络费：需约 ${formatUnits(fee.feeSun, chain.decimals)} ${chain.symbol}，'
+        '可用 ${formatUnits(trxBalance, chain.decimals)}',
+      );
+    }
+
+    final unsigned = await provider.request(
+      TronRequestTriggerSmartContract(
+        ownerAddress: owner,
+        contractAddress: contract,
+        functionSelector: 'transfer(address,uint256)',
+        parameter: _transferParameter(recipient, value),
+        // 上限按估算出的能量折算，够付就行；留 buffer 已在 energyNeeded 里做过。
+        feeLimit: fee.energyFeeSun > BigInt.zero ? fee.energyFeeSun : BigInt.one,
+      ),
+    );
+
+    final transaction = unsigned.transaction;
+    if (transaction == null || !unsigned.result.result) {
+      throw Exception('构造 ${token.symbol} 转账交易失败：${unsigned.result.message ?? '节点未说明原因'}');
+    }
+    _verifyTokenCall(transaction.rawData, owner: owner, contract: contract, to: recipient, amount: value);
+
+    final signature = signer.sign(transaction.rawData.toBuffer());
+    final signed = Transaction(rawData: transaction.rawData, signature: [signature]);
+    final broadcast = await provider.request(
+      TronRequestBroadcastHex(transaction: BytesUtils.toHexString(signed.toBuffer())),
+    );
+    if (!broadcast.result) {
+      throw Exception('广播失败：${broadcast.message ?? broadcast.code ?? '节点未说明原因'}');
+    }
+
+    return (
+      hash: broadcast.txid,
+      sentAmount: formatUnits(value, token.decimals),
+      status: await waitForReceipt(chain, broadcast.txid, provider: provider),
+    );
+  }
+
+  /// 校验节点返回的合约调用与本地意图一致，不一致即抛。
+  ///
+  /// 与 [_verifyMatches] 同一用意，只是要多比 calldata：合约调用的收款方与金额
+  /// 都藏在 ABI 编码的 data 里，不比对就等于让节点决定这笔代币转给谁。
+  void _verifyTokenCall(
+    TransactionRaw raw, {
+    required TronAddress owner,
+    required TronAddress contract,
+    required TronAddress to,
+    required BigInt amount,
+  }) {
+    final contracts = raw.contract;
+    if (contracts.length != 1) {
+      throw Exception('节点返回的交易包含 ${contracts.length} 条合约，预期 1 条');
+    }
+    final call = contracts.single.parameter.value;
+    if (call is! TriggerSmartContract) {
+      throw Exception('节点返回的不是合约调用（${contracts.single.type.name}）');
+    }
+    if (call.ownerAddress != owner || call.contractAddress != contract) {
+      throw Exception('节点返回的合约调用与本次转账不一致，已中止签名');
+    }
+    final expected = 'a9059cbb${_transferParameter(to, amount)}';
+    final actual = BytesUtils.toHexString(call.data ?? const []);
+    if (actual.toLowerCase() != expected.toLowerCase()) {
+      throw Exception('节点返回的 calldata 与本次转账不一致，已中止签名');
+    }
   }
 
   /// 校验节点返回的交易与本地意图完全一致，不一致即抛。

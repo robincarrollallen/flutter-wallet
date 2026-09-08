@@ -145,6 +145,75 @@ void main() {
     });
   });
 
+  group('TronFeeCalculator.estimateToken', () {
+    TronFeeEstimate token({int energyNeeded = 30000, int energyAvailable = 0, int free = 600}) =>
+        TronFeeCalculator.estimateToken(
+          bandwidthNeeded: 345,
+          freeBandwidth: BigInt.from(free),
+          stakedBandwidth: BigInt.zero,
+          energyNeeded: energyNeeded,
+          energyAvailable: BigInt.from(energyAvailable),
+          rates: _rates,
+        );
+
+    // 能量与带宽的计费方式相反，这是最容易搞混的一处：能量**只烧差额**。
+    test('能量部分够时只烧差额', () {
+      final fee = token(energyNeeded: 30000, energyAvailable: 10000);
+      expect(fee.energyFeeSun, BigInt.from(20000 * 210)); // 差额 20000 × 210
+    });
+
+    test('能量完全够时不烧 TRX', () {
+      expect(token(energyNeeded: 30000, energyAvailable: 30000).energyFeeSun, BigInt.zero);
+      expect(token(energyNeeded: 30000, energyAvailable: 50000).energyFeeSun, BigInt.zero);
+    });
+
+    test('能量为 0 时全额烧', () {
+      expect(token(energyNeeded: 30000).energyFeeSun, BigInt.from(30000 * 210));
+    });
+
+    // 代币转账的带宽仍是按档全额，与原生币一致。
+    test('带宽够则不收带宽费，不够则按整笔字节收', () {
+      expect(token(free: 600).bandwidthFeeSun, BigInt.zero);
+      expect(token(free: 0).bandwidthFeeSun, BigInt.from(345 * 1000));
+    });
+
+    // 向未激活地址转 TRC-20 不收那 1 TRX，代价体现在能量里。
+    test('代币转账没有账户创建费', () {
+      expect(token().activationFeeSun, BigInt.zero);
+      expect(token().activatesRecipient, isFalse);
+    });
+
+    test('总额 = 带宽费 + 能量费', () {
+      final fee = token(free: 0, energyNeeded: 30000);
+      expect(fee.feeSun, fee.bandwidthFeeSun + fee.energyFeeSun);
+    });
+
+    test('能量费率取自链参数', () {
+      final fee = TronFeeCalculator.estimateToken(
+        bandwidthNeeded: 345,
+        freeBandwidth: BigInt.from(600),
+        stakedBandwidth: BigInt.zero,
+        energyNeeded: 30000,
+        energyAvailable: BigInt.zero,
+        rates: const TronFeeRates(sunPerEnergy: 100), // Nile 的费率
+      );
+      expect(fee.energyFeeSun, BigInt.from(30000 * 100));
+    });
+  });
+
+  group('TronFeeCalculator.bandwidthForToken', () {
+    test('代币转账的交易比原生转账大，但仍在合理范围', () {
+      final native = TronFeeCalculator.bandwidthFor(owner: _owner, to: _to, amountSun: BigInt.from(1000000));
+      final token = TronFeeCalculator.bandwidthForToken(
+        owner: _owner,
+        contract: _to,
+        parameter: '0' * 128, // 两个 32 字节参数
+      );
+      expect(token, greaterThan(native));
+      expect(token, lessThan(400));
+    });
+  });
+
   group('TronFeeRates.fromChainParameters', () {
     test('字段缺失时回落到主网默认值', () {
       final rates = TronFeeRates.fromChainParameters(TronChainParameters.fromJson(const {}));

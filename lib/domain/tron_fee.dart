@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:on_chain/tron/tron.dart';
 
 /// Tron 转账的费用估算结果。
@@ -14,7 +15,12 @@ class TronFeeEstimate {
     required this.bandwidthFeeSun,
     required this.activationFeeSun,
     required this.fetchedAt,
-  }) : feeSun = bandwidthFeeSun + activationFeeSun;
+    this.energyNeeded = 0,
+    BigInt? energyAvailable,
+    BigInt? energyFeeSun,
+  }) : energyAvailable = energyAvailable ?? BigInt.zero,
+       energyFeeSun = energyFeeSun ?? BigInt.zero,
+       feeSun = bandwidthFeeSun + activationFeeSun + (energyFeeSun ?? BigInt.zero);
 
   /// 本次交易要消耗的带宽点数（= 上链后交易的字节数）。
   final int bandwidthNeeded;
@@ -38,6 +44,18 @@ class TronFeeEstimate {
 
   /// 其中「带宽不足」那部分。带宽够时为 0。
   final BigInt bandwidthFeeSun;
+
+  /// 本次合约调用要消耗的能量。原生 TRX 转账不碰能量，恒为 0。
+  final int energyNeeded;
+
+  /// 账户当前可用能量（质押所得；能量**没有**每日免费额度）。
+  final BigInt energyAvailable;
+
+  /// 其中「能量不足」那部分。
+  ///
+  /// 与带宽的计费方式**相反**：能量是部分消耗——账户里的能量先用掉，只有差额
+  /// 按 `sunPerEnergy` 烧 TRX；而带宽是按档全额，某一档不够就整笔都烧。
+  final BigInt energyFeeSun;
 
   /// 其中「激活收款方账户」那部分。收款方已激活时为 0。
   ///
@@ -66,6 +84,7 @@ class TronFeeRates {
     this.sunPerBandwidthByte = 1000,
     this.createAccountFeeSun = 100000,
     this.createNewAccountFeeSun = 1000000,
+    this.sunPerEnergy = 210,
   });
 
   /// `getTransactionFee`：带宽不足时每字节烧多少 sun（主网 1000 = 0.001 TRX/字节）。
@@ -77,12 +96,17 @@ class TronFeeRates {
   /// `getCreateNewAccountFeeInSystemContract`：激活一个新账户的固定费（1 TRX）。
   final int createNewAccountFeeSun;
 
+  /// `getEnergyFee`：能量不足时每点能量烧多少 sun（主网 210，Nile 测试网 100）。
+  /// 只有合约调用（TRC-20 转账等）才消耗能量，原生 TRX 转账不碰它。
+  final int sunPerEnergy;
+
   /// 从 SDK 的链参数模型构造；字段缺失时回落到默认值。
   factory TronFeeRates.fromChainParameters(TronChainParameters params) => TronFeeRates(
     sunPerBandwidthByte: params.getTransactionFee ?? const TronFeeRates().sunPerBandwidthByte,
     createAccountFeeSun: params.getCreateAccountFee ?? const TronFeeRates().createAccountFeeSun,
     createNewAccountFeeSun:
         params.getCreateNewAccountFeeInSystemContract ?? const TronFeeRates().createNewAccountFeeSun,
+    sunPerEnergy: params.getEnergyFee ?? const TronFeeRates().sunPerEnergy,
   );
 }
 
@@ -123,6 +147,72 @@ class TronFeeCalculator {
           type: contract.contractType,
           parameter: Any(typeUrl: contract.typeURL, value: contract),
         ),
+      ],
+    );
+    return raw.toBuffer().length + _protobufOverhead + _resultFieldBytes + _signatureBytes;
+  }
+
+  /// TRC-20 转账的费用：带宽（交易字节）+ 能量（合约执行）。
+  ///
+  /// 与原生转账的两点不同：
+  /// - **没有账户创建费**。向未激活地址转 TRC-20 不收那 1 TRX，代价体现为更高的
+  ///   能量消耗（合约要为对方写一个新的余额槽），已经含在 [energyNeeded] 里。
+  /// - **能量是部分消耗**：账户里的能量先用掉，只有差额烧 TRX。带宽则是按档全额。
+  static TronFeeEstimate estimateToken({
+    required int bandwidthNeeded,
+    required BigInt freeBandwidth,
+    required BigInt stakedBandwidth,
+    required int energyNeeded,
+    required BigInt energyAvailable,
+    TronFeeRates rates = const TronFeeRates(),
+    DateTime? fetchedAt,
+  }) {
+    final covered = (freeBandwidth + stakedBandwidth) >= BigInt.from(bandwidthNeeded);
+    final bandwidthFee = covered
+        ? BigInt.zero
+        : BigInt.from(bandwidthNeeded) * BigInt.from(rates.sunPerBandwidthByte);
+
+    // 只烧差额，不是整笔——这是能量与带宽最容易搞混的地方。
+    final shortfall = BigInt.from(energyNeeded) - energyAvailable;
+    final energyFee = shortfall > BigInt.zero ? shortfall * BigInt.from(rates.sunPerEnergy) : BigInt.zero;
+
+    return TronFeeEstimate(
+      bandwidthNeeded: bandwidthNeeded,
+      freeBandwidth: freeBandwidth,
+      stakedBandwidth: stakedBandwidth,
+      bandwidthFeeSun: bandwidthFee,
+      activationFeeSun: BigInt.zero,
+      energyNeeded: energyNeeded,
+      energyAvailable: energyAvailable,
+      energyFeeSun: energyFee,
+      fetchedAt: fetchedAt ?? DateTime.now(),
+    );
+  }
+
+  /// 一笔 TRC-20 转账要消耗多少带宽。
+  ///
+  /// 与 [bandwidthFor] 同一套算法，只是合约体换成 [TriggerSmartContract]：
+  /// 多了合约地址与 calldata，所以比原生转账大几十字节。
+  ///
+  /// [parameter] 为 `transfer(address,uint256)` 的 ABI 参数十六进制（不含选择器），
+  /// 与发给节点的 `parameter` 字段同一份。
+  static int bandwidthForToken({
+    required TronAddress owner,
+    required TronAddress contract,
+    required String parameter,
+  }) {
+    // 选择器 4 字节 + 参数：链上 data 是二者拼接后的字节。
+    const transferSelector = 'a9059cbb';
+    final data = BytesUtils.fromHexString('$transferSelector$parameter');
+    final call = TriggerSmartContract(ownerAddress: owner, contractAddress: contract, data: data);
+    final now = BigInt.from(DateTime.now().millisecondsSinceEpoch);
+    final raw = TransactionRaw(
+      refBlockBytes: List.filled(2, 0),
+      refBlockHash: List.filled(8, 0),
+      expiration: now + BigInt.from(60000),
+      timestamp: now,
+      contract: [
+        TransactionContract(type: call.contractType, parameter: Any(typeUrl: call.typeURL, value: call)),
       ],
     );
     return raw.toBuffer().length + _protobufOverhead + _resultFieldBytes + _signatureBytes;

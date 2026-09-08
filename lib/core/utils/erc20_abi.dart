@@ -56,6 +56,26 @@ String encodeTransfer({required String to, required BigInt amount}) {
   return '0x$_transferSelector${_addressArg(to, 'to')}$amountArg';
 }
 
+/// 编码 TRC-20 `transfer(address,uint256)` 的**参数部分**（不含选择器）。
+///
+/// Tron 的 REST 接口把选择器与参数拆成 `function_selector` / `parameter` 两个字段
+/// 分别传，所以这里只出参数；而收款方是 21 字节的 Tron 地址，要先剥掉版本字节
+/// 取出 20 字节地址体再补零。
+///
+/// 返回**不带 `0x`** 的十六进制，正是 `triggerconstantcontract` 与
+/// `triggersmartcontract` 的 `parameter` 所需格式。
+String encodeTrc20TransferParameter({required List<int> to21Bytes, required BigInt amount}) {
+  if (to21Bytes.length != 21) {
+    throw ArgumentError.value(to21Bytes.length, 'to21Bytes', 'Tron 地址必须是 21 字节');
+  }
+  if (amount.isNegative || amount >= _uint256Ceiling) {
+    throw ArgumentError.value(amount, 'amount', '金额超出 uint256 范围');
+  }
+  // 首字节是 Tron 的版本前缀 0x41，ABI 里要的是后 20 字节。
+  final addressArg = encodeAddressArgument(to21Bytes.sublist(1));
+  return '$addressArg${amount.toRadixString(16).padLeft(64, '0')}';
+}
+
 /// 校验十六进制地址并编成 32 字节 ABI 参数；[name] 仅用于报错定位。
 String _addressArg(String address, String name) {
   final clean = _strip0x(address);

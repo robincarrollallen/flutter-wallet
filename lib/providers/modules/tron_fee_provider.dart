@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../blockchain/chain_registry.dart';
 import '../../domain/tron_fee.dart';
 import '../../services/tron_transaction_service.dart';
+import '../token_catalog_provider.dart';
 
 /// 一次 Tron 费用报价的查询键。
 ///
 /// 带上 [amount]：金额的 varint 长度会影响交易字节数，进而影响带宽消耗——
 /// 虽然只差几个字节，但正好可能落在「够不够免费额度」的边界上。
 /// [to] 也必须在键里：收款方是否已激活决定了那笔 1 TRX 的账户创建费。
-typedef TronFeeKey = ({String chainId, String from, String to, String amount});
+typedef TronFeeKey = ({String chainId, String from, String to, String amount, String? tokenIdentifier});
 
 /// Tron 原生转账的费用报价。
 ///
@@ -24,8 +25,22 @@ final tronFeeProvider = FutureProvider.autoDispose.family<TronFeeEstimate, TronF
   if (chain.kind != ChainKind.tron) {
     throw ArgumentError('tronFeeProvider 只服务 Tron 链，收到 ${chain.id}');
   }
-  return const TronTransactionService().estimateNativeFee(
+  const service = TronTransactionService();
+
+  final identifier = key.tokenIdentifier;
+  if (identifier == null) {
+    return service.estimateNativeFee(chain: chain, from: key.from, to: key.to, amount: key.amount);
+  }
+
+  // 目录里查不到就报错，绝不降级成原生币估算——那会把一笔 USDT 转账的费用
+  // 说成 TRX 转账的费用，差着两个数量级。
+  final token = ref.watch(tokenCatalogProvider).findToken(key.chainId, identifier);
+  if (token == null) {
+    throw StateError('代币目录中找不到 $identifier（${chain.name}）');
+  }
+  return service.estimateTokenFee(
     chain: chain,
+    token: token,
     from: key.from,
     to: key.to,
     amount: key.amount,

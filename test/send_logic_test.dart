@@ -8,18 +8,23 @@ import 'package:wallet/blockchain/token_catalog.dart';
 
 final _catalog = TokenCatalog.merge(chains: SupportedChains.all, remote: BundledTokenCatalog.all);
 
-/// 打包目录里落在 EVM 链上的代币数——只有它们会进可发送列表。
-final _evmTokenCount = BundledTokenCatalog.all
-    .where((t) => SupportedChains.byId(t.chainId).kind == ChainKind.evm)
+/// 打包目录里落在「已接入代币转账」的链上的代币数——只有它们会进可发送列表。
+const _tokenTransferKinds = {ChainKind.evm, ChainKind.tron};
+final _sendableTokenCount = BundledTokenCatalog.all
+    .where((t) => _tokenTransferKinds.contains(SupportedChains.byId(t.chainId).kind))
     .length;
 
 void main() {
   group('SendLogic.assetsOf', () {
-    test('全部链原生币 + 仅 EVM 链的代币', () {
+    test('全部链原生币 + 已接入代币转账的链的代币', () {
       final all = SendLogic.assetsOf(null, _catalog);
-      expect(all.length, SupportedChains.all.length + _evmTokenCount);
-      // 代币转账只接入了 EVM，非 EVM 链的代币不该出现在可发送列表里。
-      expect(all.where((a) => a.token != null).every((a) => a.chain.kind == ChainKind.evm), isTrue);
+      expect(all.length, SupportedChains.all.length + _sendableTokenCount);
+      // 尚未接入代币转账的链（Solana/Sui/Aptos），其代币不该出现在可发送列表里——
+      // 让用户点进去才被拦下，比看不到更糟。
+      expect(
+        all.where((a) => a.token != null).every((a) => _tokenTransferKinds.contains(a.chain.kind)),
+        isTrue,
+      );
     });
 
     test('指定链时返回该链原生币 + 代币', () {

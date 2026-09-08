@@ -186,10 +186,11 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     if (estimate == null) return const _DetailRow(label: '网络费', value: '--');
 
     if (estimate.isFree) {
-      return _DetailRow(
-        label: '网络费',
-        value: '免费（剩余带宽 ${estimate.bandwidthAvailable}，本次需 ${estimate.bandwidthNeeded}）',
-      );
+      // 代币转账的免费是「能量也够」，与原生币只看带宽不是一回事，说清楚是哪一项。
+      final detail = estimate.energyNeeded > 0
+          ? '剩余能量 ${estimate.energyAvailable}，本次需 ${estimate.energyNeeded}'
+          : '剩余带宽 ${estimate.bandwidthAvailable}，本次需 ${estimate.bandwidthNeeded}';
+      return _DetailRow(label: '网络费', value: '免费（$detail）');
     }
 
     final price = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.price ?? 0.0;
@@ -201,7 +202,13 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   }
 
   TronFeeKey _tronFeeKey(ListedAsset asset, String from) =>
-      (chainId: asset.chain.id, from: from, to: widget.toAddress, amount: widget.amount);
+      (
+        chainId: asset.chain.id,
+        from: from,
+        to: widget.toAddress,
+        amount: widget.amount,
+        tokenIdentifier: asset.token?.identifier,
+      );
 
   /// 收款方账户未激活的提示；无需提示时返回 null。
   ///

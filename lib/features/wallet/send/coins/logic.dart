@@ -25,7 +25,7 @@ class SendLogic {
   ];
 
   /// 已接入代币转账的链类型。
-  static const _tokenTransferKinds = {ChainKind.evm};
+  static const _tokenTransferKinds = {ChainKind.evm, ChainKind.tron};
 
   /// 已接入**原生币**转账的链类型，与 `walletServiceProvider` 里注册的
   /// [ChainTransferService] 一一对应。接入新链时两处一起改。

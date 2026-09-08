@@ -71,5 +71,17 @@ class BundledTokenCatalog {
       coinGeckoId: 'usd-coin',
       decimals: 6,
     ),
+    // Nile 测试网的官方 USDT。合约元数据已上链核对过：
+    // name=Tether USD / symbol=USDT / decimals=6。
+    // 这里是 USDT 而非 USDC——Nile 水龙头发的就是它，Tron 生态的稳定币也以它为主。
+    Token(
+      chainId: SupportedChains.tronNile.id,
+      symbol: 'USDT',
+      name: 'Tether USD',
+      standard: TokenStandard.trc20,
+      identifier: 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf',
+      coinGeckoId: 'tether',
+      decimals: 6,
+    ),
   ];
 }

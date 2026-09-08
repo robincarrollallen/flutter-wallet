@@ -37,7 +37,10 @@ void main() {
     final assets = ReceiveLogic.assetsOf(null, _catalog);
 
     test('按符号 / 名称 / 链名过滤，忽略大小写', () {
-      expect(ReceiveLogic.filter(assets, 'usdc').length, BundledTokenCatalog.all.length);
+      // 目录里不再全是 USDC（Nile 上是 USDT），所以按符号数，不能拿目录总数当预期。
+      final usdcCount = BundledTokenCatalog.all.where((t) => t.symbol == 'USDC').length;
+      expect(ReceiveLogic.filter(assets, 'usdc').length, usdcCount);
+      expect(ReceiveLogic.filter(assets, 'usdt').single.chain.kind, ChainKind.tron);
       expect(ReceiveLogic.filter(assets, 'BITCOIN').single.symbol, 'BTC');
       expect(
         ReceiveLogic.filter(assets, 'sepolia').any((a) => a.chain.id == SupportedChains.ethereumSepolia.id),

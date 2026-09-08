@@ -20,19 +20,22 @@ class TronTransferService implements ChainTransferService {
 
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
-    // TRC-20 需要 triggersmartcontract + feeLimit 能量预算，是另一块工作量。
-    // 在这里明确拦下，而不是让它掉进原生币分支——那会把一笔 USDT 转账
-    // 变成一笔 TRX 转账。发送列表也已按 `_tokenTransferKinds` 提前过滤，
-    // 这条是兜底。
-    if (request.token != null) {
-      throw UnsupportedError('${request.token!.symbol} 转账暂未支持（${request.chain.name}）');
-    }
-
     // 私钥明文仅在本次调用内使用，不写入字段或日志，用完立刻清零（异常路径也清）。
     final privateKey = await _keyService.resolveSigningKeyBytes(wallet, request.chain);
     try {
-      return await _transactions.sendNative(
+      final token = request.token;
+      if (token == null) {
+        return await _transactions.sendNative(
+          chain: request.chain,
+          privateKey: privateKey,
+          fromAddress: request.from,
+          to: request.to,
+          amount: request.amount,
+        );
+      }
+      return await _transactions.sendToken(
         chain: request.chain,
+        token: token,
         privateKey: privateKey,
         fromAddress: request.from,
         to: request.to,
