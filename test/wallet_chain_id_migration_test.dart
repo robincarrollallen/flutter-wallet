@@ -8,7 +8,6 @@ import 'package:wallet/domain/wallet.dart';
 Wallet _fromStored(Map<String, String> addresses) => Wallet.fromJson({
   'id': 'w1',
   'name': '测试钱包',
-  'address': '0x0000000000000000000000000000000000000001',
   'source': 'mnemonic',
   'addresses': addresses,
 });

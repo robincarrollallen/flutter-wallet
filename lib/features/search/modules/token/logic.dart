@@ -35,7 +35,6 @@ class TokenSearchLogic {
     return wallets
         .where((w) {
           if (w.name.toLowerCase().contains(q)) return true;
-          if (w.address.toLowerCase().contains(q)) return true;
           return w.addresses.values.any((a) => a.toLowerCase().contains(q));
         })
         .toList(growable: false);

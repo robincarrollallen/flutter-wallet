@@ -27,7 +27,7 @@ class _RecordingTransfer implements ChainTransferService {
   }
 }
 
-const _wallet = Wallet(id: 'w1', name: '测试钱包', address: '0x0000000000000000000000000000000000000001');
+const _wallet = Wallet(id: 'w1', name: '测试钱包');
 
 WalletService _service(_RecordingTransfer transfer) =>
     WalletService(transferServices: {transfer.kind: transfer}, catalog: _catalog);

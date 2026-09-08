@@ -52,7 +52,7 @@ class TokenTabView extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.account_balance_wallet),
             title: Text(w.name),
-            subtitle: Text(w.address, maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(w.previewAddress ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         for (final c in results.chains)
           ListTile(

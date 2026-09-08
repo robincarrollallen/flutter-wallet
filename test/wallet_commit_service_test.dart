@@ -88,7 +88,7 @@ class _ThrowingCurrentWalletIdNotifier extends CurrentWalletIdNotifier {
   }
 }
 
-Wallet _wallet(String id) => Wallet(id: id, name: 'W-$id', address: '0xabc', addresses: const {'evm': '0xabc'});
+Wallet _wallet(String id) => Wallet(id: id, name: 'W-$id', addresses: const {'evm': '0xabc'});
 
 /// 组装一个注入了假安全存储的容器。
 Future<(ProviderContainer, _FakeSecureStoragePlatform)> _setUp({

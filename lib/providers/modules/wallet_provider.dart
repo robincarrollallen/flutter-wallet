@@ -6,7 +6,7 @@ import '../persistent_notifier.dart';
 import '../../enums/prefs_key.dart';
 
 /// 钱包列表的状态管理。
-/// 元数据（id/name/address/source）持久化到 SharedPreferences；
+/// 元数据（id/name/addresses/source）持久化到 SharedPreferences；
 /// 助记词 / 私钥等敏感数据存于 [SecureWalletStorage]，不在这里。
 class WalletListNotifier extends Notifier<List<Wallet>> with PersistentNotifier<List<Wallet>> {
   @override

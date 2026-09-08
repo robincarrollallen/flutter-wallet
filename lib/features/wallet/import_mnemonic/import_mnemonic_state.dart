@@ -82,7 +82,6 @@ class ImportMnemonicNotifier extends Notifier<ImportMnemonicState> {
     final wallet = Wallet(
       id: newWalletId(),
       name: t.import.mnemonic.walletName,
-      address: derived.primaryAddress,
       source: isPrivateKey ? WalletSource.importedPrivateKey : WalletSource.imported,
       addresses: derived.addresses,
       createdAt: DateTime.now(),

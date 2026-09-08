@@ -12,7 +12,6 @@ class Wallet {
   const Wallet({
     required this.id,
     required this.name,
-    required this.address,
     this.source = WalletSource.mnemonic,
     this.addresses = const {},
     this.createdAt,
@@ -22,9 +21,6 @@ class Wallet {
 
   final String id;
   final String name;
-
-  /// 主地址（以太坊 0x 地址），用于兼容旧逻辑。
-  final String address;
   final WalletSource source;
 
   /// 各链地址：chainId -> address。新建/导入时一次性派生写入。
@@ -46,16 +42,12 @@ class Wallet {
   /// 是否持有助记词（仅助记词新建/助记词导入的钱包有；私钥导入、硬件钱包没有）。
   bool get hasMnemonic => source == WalletSource.mnemonic || source == WalletSource.imported;
 
-  /// 取某条链的地址；缺失时仅为兼容老数据（addresses 为空但有主 0x 地址）回退到 EVM 主地址。
-  /// 注意：map 非空时不回退，避免把私钥钱包的非 EVM 主地址误认成 EVM 链地址。
-  String? addressFor(Chain chain) {
-    final a = addresses[chain.id];
-    if (a != null) return a;
-    if (addresses.isEmpty && chain.kind == ChainKind.evm && address.isNotEmpty) {
-      return address;
-    }
-    return null;
-  }
+  /// 搜索等只需展示一条地址时用：优先 EVM 主链，否则取 map 中第一项。
+  String? get previewAddress =>
+      addresses[SupportedChains.ethereumSepolia.id] ?? (addresses.isEmpty ? null : addresses.values.first);
+
+  /// 取某条链的地址。只认 [addresses]，老盘的单字段 `address` 在 [fromJson] 里迁进来。
+  String? addressFor(Chain chain) => addresses[chain.id];
 
   /// 钱包实际拥有地址的链（按 SupportedChains.all 顺序），用于列表页过滤。
   List<Chain> get chainsWithAddress => SupportedChains.all.where((c) => addressFor(c) != null).toList();
@@ -64,7 +56,6 @@ class Wallet {
     return Wallet(
       id: id,
       name: name ?? this.name,
-      address: address,
       source: source,
       addresses: addresses,
       createdAt: createdAt,
@@ -77,7 +68,6 @@ class Wallet {
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
-    'address': address,
     'source': source.name,
     'addresses': addresses,
     'createdAt': createdAt?.toIso8601String(),
@@ -86,10 +76,10 @@ class Wallet {
   };
 
   /// 从持久化的 JSON 还原；source 缺失或非法时回退到 mnemonic。
+  /// 老字段 `address` 只在读盘时消费，不再写回。
   factory Wallet.fromJson(Map<String, dynamic> json) => Wallet(
     id: json['id'] as String,
     name: json['name'] as String,
-    address: json['address'] as String,
     source: WalletSource.values.asNameMap()[json['source']] ?? WalletSource.mnemonic,
     addresses: _addressesFromJson(json),
     createdAt: json['createdAt'] is String ? DateTime.tryParse(json['createdAt'] as String) : null,
@@ -106,19 +96,32 @@ class Wallet {
   /// 同一个 T... 地址在 Shasta / Nile / 主网通用，搬键即可。
   static const _renamedChainIds = {'tron-shasta': 'tron-nile'};
 
-  /// 还原地址表，并把历史 chainId 迁移到现用 id。
+  /// 还原地址表：先搬历史 chainId，再把老字段 `address` 补进空 map。
   ///
-  /// 只在新键**尚不存在**时才搬，避免把已经派生好的新数据覆盖掉。
+  /// 只在新键**尚不存在**时才搬 chainId，避免把已经派生好的新数据覆盖掉。
+  /// 老 `address` 仅当 map 仍为空时才写入全部 EVM 链——map 非空时不回填，
+  /// 避免把私钥钱包的非 EVM 地址误认成 EVM 链地址。
   static Map<String, String> _addressesFromJson(Map<String, dynamic> json) {
     final raw = (json['addresses'] as Map?)?.map((k, v) => MapEntry(k as String, v as String));
-    if (raw == null || raw.isEmpty) return const {};
+    final migrated = <String, String>{...?raw};
 
-    final migrated = <String, String>{...raw};
     for (final entry in _renamedChainIds.entries) {
       final legacy = migrated.remove(entry.key);
       if (legacy != null) migrated.putIfAbsent(entry.value, () => legacy);
     }
-    return migrated;
+
+    if (migrated.isEmpty) {
+      final legacyAddress = json['address'];
+      if (legacyAddress is String && legacyAddress.isNotEmpty) {
+        for (final chain in SupportedChains.all) {
+          if (chain.kind == ChainKind.evm) {
+            migrated[chain.id] = legacyAddress;
+          }
+        }
+      }
+    }
+
+    return migrated.isEmpty ? const {} : migrated;
   }
 
   /// 解析备份方式集合；兼容旧字段 `backUp`(int 1)→ {manual}。

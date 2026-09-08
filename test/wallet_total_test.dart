@@ -73,7 +73,6 @@ Future<ProviderContainer> _container(_FakeBalances balances) async {
   final wallet = Wallet(
     id: _walletId,
     name: 'W',
-    address: '0xabc',
     addresses: {for (final c in _chains) c.id: 'addr-${c.id}'},
   );
   SharedPreferences.setMockInitialValues({

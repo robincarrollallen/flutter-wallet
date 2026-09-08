@@ -53,7 +53,6 @@ class CreateWalletNotifier extends Notifier<CreateWalletState> {
       final wallet = Wallet(
         id: newWalletId(),
         name: name,
-        address: derived.primaryAddress,
         source: WalletSource.mnemonic,
         addresses: derived.addresses,
         createdAt: DateTime.now(),
