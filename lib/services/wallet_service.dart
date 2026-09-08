@@ -33,23 +33,21 @@ class WalletService {
   /// [SendTxRequest.deductFeeFromAmount] 为 true（MAX 全额转出）时，
   /// 实际金额才可能小于入参。
   Future<TransferResult> sendTransaction(SendTxRequest request, Wallet wallet) async {
-    final chainId = request.chainId;
+    final chainId = request.chainId; // 链ID「链唯一标识」
     if (chainId == null) {
-      throw ArgumentError('sendTransaction 缺少 chainId');
+      throw ArgumentError('sendTransaction 缺少 chainId'); // 没有链ID抛出异常
     }
-    final chain = SupportedChains.byId(chainId);
 
-    // 目录里查不到就报错，绝不降级成「转原生币」——那会把用户的一笔代币转账
-    // 悄悄变成一笔以太转账。
-    final identifier = request.tokenIdentifier;
-    final token = identifier == null ? null : catalog.findToken(chainId, identifier);
+    final chain = SupportedChains.byId(chainId); // 根据链ID查找链实例
+    final identifier = request.tokenIdentifier; // 代币标识「EVM/Tron 合约地址、Solana mint、Sui/Aptos coin type」
+    final token = identifier == null ? null : catalog.findToken(chainId, identifier); // 根据链ID和代币标识查找代币实例
     if (identifier != null && token == null) {
-      throw StateError('代币目录中找不到 $identifier（${chain.name}）');
+      throw StateError('代币目录中找不到 $identifier（${chain.name}）'); // 代币目录中找不到代币抛出异常
     }
 
-    final service = transferServices[chain.kind];
+    final service = transferServices[chain.kind]; // 根据链类型查找转账实现方法
     if (service == null) {
-      throw UnsupportedError('${chain.name} 转账暂未支持');
+      throw UnsupportedError('${chain.name} 转账暂未支持'); // 转账暂未支持抛出异常
     }
 
     return service.send(

@@ -32,28 +32,40 @@ class Chain {
 
   /// 链的唯一标识符(用于查找链配置、保存用户选择、做数据关联, byId 就靠它)
   final String id;
+
   /// 链的名称(UI 展示给用户看)
   final String name;
+
   /// 原生币符号，例如 ETH / BTC / SOL(余额、资产列表、转账页面等地方显示币种简称)
   final String symbol;
+
   /// 链的类型(决定“用哪套逻辑”去派生地址、查余额、调用接口和签名)
   final ChainKind kind;
+
   /// BIP44 币种枚举(决定助记词派生路径；同一助记词在不同链会因为这个值派生出不同地址, EVM 多链共用 ethereum)
   final Bip44Coins coin;
+
   /// 该链的节点/API 地址(实际网络请求入口, EVM/Solana 通常是 RPC，Bitcoin 是区块浏览器 API)
   final String endpoint;
+
   /// CoinGecko 里的币种 ID (拉取价格<通常是 USD 单价>, 做资产估值)
   final String coinGeckoId;
+
   /// 原生币最小单位精度<如 ETH=18，BTC=8>(金额换算: 链上最小单位 <-> 人类可读金额)
   final int decimals;
+
   /// BTC 脚本类型/派生路径方案(仅 ChainKind.bitcoin 有意义，其余链忽略)
   final BtcScriptType btcScriptType;
+
   /// EVM 链的 chainId<数字>(EIP-155 签名必需, 非 EVM 链为空)
   final int? evmChainId;
+
   /// 原生币余额 RPC 方法（非 JSON-RPC 链为空）
   final RpcMethod? nativeBalanceRpcMethod;
+
   /// CoinGecko asset_platforms 的平台 id，用于取该链自己的图标(如 Base / Arbitrum 都有 ETH)
   final String? coinGeckoPlatformId;
+  
   /// 该链的节点是否接受批量 JSON-RPC（一个请求体里发多条调用)「Sui 公共节点明确拒绝批量请求」
   final bool supportsRpcBatch;
 
