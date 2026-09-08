@@ -4,8 +4,8 @@ import 'package:on_chain/ethereum/ethereum.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/token.dart';
 import 'package:wallet/core/utils/erc20_abi.dart';
-import 'package:wallet/enums/evm_send_status.dart';
 import 'package:wallet/services/evm_transaction_service.dart';
+import 'package:wallet/services/transfer/transfer_result.dart';
 
 /// 测试用私钥；地址由它现场派生，不写死。
 const _privateKeyHex = '4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318';
@@ -68,7 +68,7 @@ class _FakeNode {
 
 String get _from => ETHPrivateKey.fromBytes(_privateKey).publicKey().toAddress().address;
 
-Future<({String hash, String sentAmount, EvmSendStatus status})> _send(_FakeNode node, {String amount = '0.5'}) {
+Future<TransferResult> _send(_FakeNode node, {String amount = '0.5'}) {
   return EvmTransactionService(call: node.call).sendToken(
     chain: _chain,
     token: _usdc,

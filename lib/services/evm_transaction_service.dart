@@ -6,8 +6,8 @@ import '../core/utils/erc20_abi.dart';
 import '../core/utils/evm_hex.dart';
 import '../data/datasource/remote/json_rpc.dart';
 import '../domain/evm_fee.dart';
-import '../enums/evm_send_status.dart';
 import '../enums/fee_speed.dart';
+import 'transfer/transfer_result.dart';
 
 /// EVM 转账：取 nonce / 估费 / 估 gas → 构造交易 → 本地签名 → 广播 → 轮询 receipt。
 ///
@@ -46,7 +46,7 @@ class EvmTransactionService {
   ///
   /// 默认 false——用户手输的金额是明确意图，余额不足时必须报错，
   /// **绝不能**静默改小金额后广播。
-  Future<({String hash, String sentAmount, EvmSendStatus status})> sendNative({
+  Future<TransferResult> sendNative({
     required Chain chain,
     required List<int> privateKey,
     required String fromAddress,
@@ -122,7 +122,7 @@ class EvmTransactionService {
   ///
   /// 手续费付的是原生币，从代币里扣不出来，因此没有 `deductFeeFromAmount`：
   /// 代币「全额转出」就是余额本身，原生币不够付 gas 时直接报错而非改小金额。
-  Future<({String hash, String sentAmount, EvmSendStatus status})> sendToken({
+  Future<TransferResult> sendToken({
     required Chain chain,
     required Token token,
     required List<int> privateKey,

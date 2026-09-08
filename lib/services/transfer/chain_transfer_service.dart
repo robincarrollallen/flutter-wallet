@@ -1,10 +1,10 @@
 import '../../blockchain/chain_registry.dart';
 import '../../blockchain/token.dart';
 import '../../domain/wallet.dart';
-import '../../enums/evm_send_status.dart';
 import '../../enums/fee_speed.dart';
+import 'transfer_result.dart';
 
-export '../../enums/evm_send_status.dart';
+export 'transfer_result.dart';
 
 /// 一次转账的链无关入参。[token] 为 null 表示转原生币。
 class TransferRequest {
@@ -39,11 +39,6 @@ class TransferRequest {
 
   bool get isNative => token == null;
 }
-
-/// 转账结果：(交易哈希, 实际发送金额, 上链状态)。
-///
-/// 实际金额仅在原生币 MAX 扣费场景才可能小于入参金额。
-typedef TransferResult = ({String hash, String sentAmount, EvmSendStatus status});
 
 /// 单条链（准确说是单个 [ChainKind]）的转账实现。
 ///

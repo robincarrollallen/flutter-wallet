@@ -8,7 +8,7 @@ import '../core/utils/erc20_abi.dart';
 import '../data/datasource/remote/chain_balance_api.dart';
 import '../data/datasource/remote/tron_service.dart';
 import '../domain/tron_fee.dart';
-import '../enums/evm_send_status.dart';
+import 'transfer/transfer_result.dart';
 
 /// Tron 转账：让节点补齐区块引用 → **回解校验** → 本地签名 → 广播 → 轮询回执。
 ///
@@ -187,7 +187,7 @@ class TronTransactionService {
   /// [deductFeeFromAmount] 仅在「全额转出（MAX）」场景传 true：此时若
   /// 「金额 + 费用」超过余额，自动把费用从转出额中扣除，扣完不为正则抛异常，
   /// 实际金额随结果返回。默认 false——手输金额是明确意图，余额不足必须报错。
-  Future<({String hash, String sentAmount, EvmSendStatus status})> sendNative({
+  Future<TransferResult> sendNative({
     required Chain chain,
     required List<int> privateKey,
     required String fromAddress,
@@ -271,7 +271,7 @@ class TronTransactionService {
   /// - 校验的是**代币余额**，而手续费（带宽 + 能量）付的是 TRX，是两本账，要分开验；
   /// - 交易由 `triggersmartcontract` 构造，必须带 `feeLimit`——它是「最多愿意为
   ///   能量烧多少 TRX」的上限，给小了链上会 OUT_OF_ENERGY：能量照扣、钱没转到。
-  Future<({String hash, String sentAmount, EvmSendStatus status})> sendToken({
+  Future<TransferResult> sendToken({
     required Chain chain,
     required Token token,
     required List<int> privateKey,

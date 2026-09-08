@@ -276,6 +276,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     return message.startsWith(prefix) ? message.substring(prefix.length) : message;
   }
 
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

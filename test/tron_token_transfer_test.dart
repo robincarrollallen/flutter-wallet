@@ -6,7 +6,7 @@ import 'package:on_chain/tron/tron.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/token.dart';
 import 'package:wallet/data/datasource/remote/chain_balance_api.dart';
-import 'package:wallet/enums/evm_send_status.dart';
+import 'package:wallet/services/transfer/transfer_result.dart';
 import 'package:wallet/services/tron_transaction_service.dart';
 
 const _privateKeyHex = '4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318';
@@ -169,7 +169,7 @@ class _FakeBalances implements ChainBalanceApi {
 TronTransactionService _service(_FakeNode node, {_FakeBalances balances = const _FakeBalances()}) =>
     TronTransactionService(provider: TronProvider(node), balances: balances);
 
-Future<({String hash, String sentAmount, EvmSendStatus status})> _send(
+Future<TransferResult> _send(
   _FakeNode node, {
   String amount = '5',
   _FakeBalances balances = const _FakeBalances(),

@@ -7,7 +7,7 @@ import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/units.dart';
 import 'package:wallet/data/datasource/remote/chain_balance_api.dart';
 import 'package:wallet/domain/tron_fee.dart';
-import 'package:wallet/enums/evm_send_status.dart';
+import 'package:wallet/services/transfer/transfer_result.dart';
 import 'package:wallet/services/tron_transaction_service.dart';
 
 /// 测试用私钥；地址由它现场派生，不写死。
@@ -154,7 +154,7 @@ class _FakeBalances implements ChainBalanceApi {
 TronTransactionService _service(_FakeTronService node) =>
     TronTransactionService(provider: TronProvider(node), balances: _FakeBalances(node.balance));
 
-Future<({String hash, String sentAmount, EvmSendStatus status})> _send(
+Future<TransferResult> _send(
   _FakeTronService node, {
   String amount = '1.5',
   String? from,
@@ -334,7 +334,7 @@ void main() {
       return (signed.rawData.contract.single.parameter.value as TransferContract).amount;
     }
 
-    Future<({String hash, String sentAmount, EvmSendStatus status})> sendMax(_FakeTronService node) =>
+    Future<TransferResult> sendMax(_FakeTronService node) =>
         _service(node).sendNative(
           chain: _chain,
           privateKey: _privateKey,
