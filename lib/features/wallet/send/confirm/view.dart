@@ -118,6 +118,21 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   /// 够不够付 gas 由 [_feeShortfall] 单独判。
   bool get _deductsFee => widget.isMaxAmount && widget.asset.token == null;
 
+  /// 费用尚未就绪、但本次**会**从转出额里扣费。
+  ///
+  /// 这是唯一必须挡住发送的费用状态：[_sendableAmount] 在拿不到报价时回退成全额，
+  /// 而 `deductFeeFromAmount` 已经传给了服务层，链上照样会扣——于是确认页显示
+  /// 全额、实际发出的却更少，**用户确认的数字不是将要发生的事**。
+  ///
+  /// 只挡这一种。手输金额时费用未知只是信息不全，不是说了假话（输入多少就发多少），
+  /// 此时仍按仓库惯例放行：估费不阻塞发送，最终由链上把关；否则估费接口一挂，
+  /// 用户连本可成功的交易都发不出去。
+  ///
+  /// 注意 [_freshMaxFee] 对 EVM 的 **stale 报价**也返回 null，所以这条同时覆盖
+  /// 「报价过期」——两条链共用。
+  bool _feePendingForDeduction(ListedAsset asset, String from) =>
+      _deductsFee && from.isNotEmpty && _freshMaxFee(asset, from) == null;
+
   /// 全额转出（MAX）时的发送上限：可用余额 − 费用上限。
   /// 费用或余额尚未就绪、以及扣完不为正时回退用户输入值，由发送时的链上校验兜底。
   /// 非 MAX 场景（含代币 MAX）恒为用户输入的金额。
@@ -273,6 +288,9 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     final shortfall = _feeShortfall(asset, from);
     // Tron：收款方未激活会被额外扣账户创建费，发送前必须让用户看到。
     final activationNotice = _activationNotice(asset, from);
+    // MAX 且费用未就绪：此时展示的是全额，而链上会扣——先挡住，别让用户确认一个
+    // 不会发生的数字。
+    final feePending = _feePendingForDeduction(asset, from);
 
     return Scaffold(
       body: SafeArea(
@@ -358,6 +376,16 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
                       ),
                     ],
+                    // —— 全额转出但费用还没算出来：说明为什么发送键是灰的 —— //
+                    // 不给理由的禁用按钮会被当成卡死，用户只会反复点。
+                    if (feePending) ...[
+                      SizedBox(height: 16.s),
+                      Text(
+                        '正在估算网络费，稍候即可发送',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
                     // —— Tron 收款方未激活：会被额外扣一笔账户创建费 —— //
                     // 用 tertiary 而不是 error：这不是错误，交易能成，只是要多花钱，
                     // 但用户有权在按下发送前知道。
@@ -373,7 +401,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        onPressed: _submitting || shortfall != null ? null : _submit,
+                        onPressed: _submitting || shortfall != null || feePending ? null : _submit,
                         child: _submitting
                             ? SizedBox(
                                 width: 18.s,
