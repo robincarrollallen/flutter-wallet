@@ -4,6 +4,7 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
+import 'package:wallet/blockchain/units.dart';
 import 'package:wallet/data/datasource/remote/chain_balance_api.dart';
 import 'package:wallet/domain/tron_fee.dart';
 import 'package:wallet/enums/evm_send_status.dart';
@@ -322,6 +323,79 @@ void main() {
       final node = _FakeTronService(balance: '1500000', recipientActivated: false);
       await expectLater(_send(node, amount: '1.5'), throwsA(isA<Exception>()));
       expect(node.calls, isNot(contains('wallet/broadcasthex')));
+    });
+
+    // —— MAX 全额转出（deductFeeFromAmount） —— //
+
+    /// 从广播出去的载荷里解出**真正上链**的金额。
+    /// 只断言返回值会漏掉「返回一个数、发出另一个数」这类错。
+    BigInt broadcastAmount(_FakeTronService node) {
+      final signed = Transaction.deserialize(BytesUtils.fromHexString(node.broadcastPayload!));
+      return (signed.rawData.contract.single.parameter.value as TransferContract).amount;
+    }
+
+    Future<({String hash, String sentAmount, EvmSendStatus status})> sendMax(_FakeTronService node) =>
+        _service(node).sendNative(
+          chain: _chain,
+          privateKey: _privateKey,
+          fromAddress: _owner.toAddress(),
+          to: _recipient.toAddress(),
+          amount: formatUnits(BigInt.parse(node.balance), _chain.decimals), // 全额
+          deductFeeFromAmount: true,
+        );
+
+    test('MAX：带宽充足（费用 0）时不改金额，全额发出', () async {
+      final node = _FakeTronService(balance: '10000000', freeBandwidth: 600);
+      final result = await sendMax(node);
+
+      expect(result.sentAmount, '10');
+      expect(broadcastAmount(node), BigInt.from(10000000));
+    });
+
+    test('MAX：带宽不足时从转出额里扣掉带宽费', () async {
+      final node = _FakeTronService(balance: '10000000', freeBandwidth: 0);
+      // 费用不写死：带宽随金额的 varint 长度浮动（10 TRX 比 1 TRX 多一个字节），
+      // 写死数字会让这条测试在换金额时莫名其妙地红。按同一入参现算才站得住。
+      final fee = await _service(node).estimateNativeFee(
+        chain: _chain,
+        from: _owner.toAddress(),
+        to: _recipient.toAddress(),
+        amount: '10',
+      );
+      expect(fee.feeSun, greaterThan(BigInt.zero));
+
+      final result = await sendMax(node);
+      final expected = BigInt.from(10000000) - fee.feeSun;
+      expect(broadcastAmount(node), expected);
+      expect(result.sentAmount, formatUnits(expected, _chain.decimals));
+    });
+
+    test('MAX：收款方未激活时扣掉 1.1 TRX', () async {
+      final node = _FakeTronService(balance: '10000000', recipientActivated: false);
+      await sendMax(node);
+
+      // 1 TRX 激活费 + 0.1 TRX 带宽费（免费额度不能用于创建账户）。
+      expect(broadcastAmount(node), BigInt.from(10000000) - BigInt.from(1100000));
+    });
+
+    // 这条守住原有语义：手输金额是明确意图，不能因为新增了扣费能力就静默改小。
+    test('未开启扣费时余额不足仍报错，不静默改小', () async {
+      final node = _FakeTronService(balance: '10000000', freeBandwidth: 0);
+      await expectLater(
+        _send(node, amount: '10'), // 默认 deductFeeFromAmount: false
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('余额不足'))),
+      );
+      expect(node.broadcastPayload, isNull);
+    });
+
+    test('MAX：扣完不为正时报错', () async {
+      // 余额 0.2 TRX，带宽费就要 0.267 TRX。
+      final node = _FakeTronService(balance: '200000', freeBandwidth: 0);
+      await expectLater(
+        sendMax(node),
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('不足以支付网络费用'))),
+      );
+      expect(node.broadcastPayload, isNull);
     });
 
     test('回执显示执行失败时状态为 failed', () async {

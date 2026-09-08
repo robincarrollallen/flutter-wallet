@@ -31,8 +31,10 @@ class TronTransferService implements ChainTransferService {
           fromAddress: request.from,
           to: request.to,
           amount: request.amount,
+          deductFeeFromAmount: request.deductFeeFromAmount,
         );
       }
+      // 代币转账没有 deductFeeFromAmount：手续费付 TRX，从代币里扣不出来。
       return await _transactions.sendToken(
         chain: request.chain,
         token: token,

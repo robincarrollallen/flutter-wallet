@@ -140,7 +140,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   ///
   /// 原生币转账不用这条：它的「金额 + 费用」是同一本账，已由 [_sendableAmount]
   /// 与链上校验覆盖。报价或余额未就绪时返回 null——估费只是前置提醒，
-  /// 不确定就放行，最终由 [EvmTransactionService] 在链上数据前把关。
+  /// 不确定就放行，最终由各链的交易服务在链上数据前把关。
   String? _feeShortfall(ListedAsset asset, String from) {
     if (asset.token == null || from.isEmpty) return null;
     final fee = _freshMaxFee(asset, from);
@@ -156,8 +156,16 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
         '${asset.chain.symbol}，可用 $nativeBalance';
   }
 
-  /// 当前档位的费用上限；报价缺失或已过期时返回 null。
+  /// 本次转账的费用上限（以**原生币**计价）；报价缺失或已过期时返回 null。
+  ///
+  /// [_sendableAmount] 与 [_feeShortfall] 都经由这里，所以它是「费用如何影响金额与
+  /// 可发送性」的唯一入口——按链分流放在这一处，两条路径就一起通了。
   BigInt? _freshMaxFee(ListedAsset asset, String from) {
+    if (asset.chain.kind == ChainKind.tron) {
+      // Tron 没有 stale 这一说：tronFeeProvider 不轮询也不落盘，拿到即新鲜。
+      // feeSun 以 TRX 计价，与本方法「原生币计价」的约定一致。
+      return ref.watch(tronFeeProvider(_tronFeeKey(asset, from))).value?.feeSun;
+    }
     final view = ref.watch(evmFeeProvider(_feeKey(asset, from)));
     return view.stale ? null : view.quotes?[_feeSpeed]?.maxFee;
   }

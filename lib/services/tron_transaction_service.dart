@@ -184,18 +184,16 @@ class TronTransactionService {
   /// [fromAddress] 为钱包展示的 T 开头 base58 地址，必须与私钥派生地址一致。
   /// [amount] 为用户输入的十进制字符串，按 [Chain.decimals]（TRX = 6）换算成 sun。
   ///
-  /// 目前没有 `deductFeeFromAmount`，返回的 sentAmount 恒等于入参金额。
-  ///
-  /// **已知后果**：第 3 步的余额校验现在计入了网络费，所以当带宽不足（或收款方
-  /// 未激活）时，「MAX 全额转出」必然因「全额 + 费用 > 余额」被拒。这比静默广播
-  /// 一笔注定失败的交易好，但那种情况下 MAX 会不可用。要修就是在这里支持从转出额
-  /// 里扣费，并让确认页的 `_sendableAmount` 认 Tron 的报价。
+  /// [deductFeeFromAmount] 仅在「全额转出（MAX）」场景传 true：此时若
+  /// 「金额 + 费用」超过余额，自动把费用从转出额中扣除，扣完不为正则抛异常，
+  /// 实际金额随结果返回。默认 false——手输金额是明确意图，余额不足必须报错。
   Future<({String hash, String sentAmount, EvmSendStatus status})> sendNative({
     required Chain chain,
     required List<int> privateKey,
     required String fromAddress,
     required String to,
     required String amount,
+    bool deductFeeFromAmount = false,
   }) async {
     final provider = _providerFor(chain);
 
@@ -209,22 +207,30 @@ class TronTransactionService {
     }
 
     // 2. 金额换算成 sun（TRX decimals = 6，不是 18）。
-    final value = parseUnits(amount, chain.decimals);
+    // 非 final：MAX 全额转出时会在第 3 步被扣减。
+    var value = parseUnits(amount, chain.decimals);
     if (value <= BigInt.zero) throw Exception('转账金额必须大于 0');
 
     final recipient = TronAddress(to.trim());
 
     // 3. 余额校验：金额 + 网络费一起算。带宽不足要烧 TRX、收款方未激活还要 1 TRX
     //    创建费，只比金额会放过一批注定在链上失败的交易。
-    //    不足直接报错，绝不静默改小金额（与 EVM 手输金额同一原则）。
     final balance = await _balances.fetchNativeBalance(chain, expectedFrom);
     final fee = await estimateNativeFee(chain: chain, from: expectedFrom, to: to, amount: amount);
     if (value + fee.feeSun > balance) {
-      throw Exception(
-        '余额不足：本次需 ${formatUnits(value + fee.feeSun, chain.decimals)} ${chain.symbol}'
-        '（含网络费用约 ${formatUnits(fee.feeSun, chain.decimals)}），'
-        '可用 ${formatUnits(balance, chain.decimals)} ${chain.symbol}',
-      );
+      // 默认不扣：手输金额是明确意图，余额不足必须报错，**绝不**静默改小后广播。
+      if (!deductFeeFromAmount) {
+        throw Exception(
+          '余额不足：本次需 ${formatUnits(value + fee.feeSun, chain.decimals)} ${chain.symbol}'
+          '（含网络费用约 ${formatUnits(fee.feeSun, chain.decimals)}），'
+          '可用 ${formatUnits(balance, chain.decimals)} ${chain.symbol}',
+        );
+      }
+      value = balance - fee.feeSun;
+      if (value <= BigInt.zero) throw Exception('余额不足以支付网络费用');
+      // 不必像 EVM 那样二次收敛。EVM 要重估是因为 gasLimit 会随金额变（合约收款方），
+      // 而这里金额只通过 **varint 长度** 影响带宽：金额变小 → varint 只可能更短 →
+      // 带宽只可能更少 → 费用只可能更低。所以拿原费用去减恒偏保守，减完必然够付。
     }
 
     // 4. 让节点构造交易（它负责填最新区块引用与过期时间）。
