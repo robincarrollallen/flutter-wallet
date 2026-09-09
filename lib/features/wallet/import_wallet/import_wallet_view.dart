@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
@@ -7,10 +6,9 @@ import '../../../i18n/translations.g.dart';
 import '../../../router/route_args.dart';
 import '../../../router/routes.dart';
 import 'import_wallet_logic.dart';
-import 'import_wallet_state.dart';
 import '../../../enums/import_kind.dart';
 
-class ImportWalletScreen extends ConsumerWidget {
+class ImportWalletScreen extends StatelessWidget {
   const ImportWalletScreen({super.key});
 
   /// 入口标题：按导入方式取当前语言文案。
@@ -30,9 +28,9 @@ class ImportWalletScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final t = context.t;
-    final options = ref.watch(importWalletStateProvider).options;
+    const options = ImportWalletLogic.options;
     return Scaffold(
       appBar: AppBar(title: Text(t.import.selectTitle)),
       body: ListView.separated(

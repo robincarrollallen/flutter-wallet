@@ -46,7 +46,6 @@ class _SetSecurityPasswordPageState extends ConsumerState<SetSecurityPasswordPag
     });
 
     await ref.read(securityPasswordStorageProvider).setPassword(password);
-    ref.invalidate(securityPasswordSetProvider);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('安全码设置成功')));

@@ -16,7 +16,9 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // 空状态由 RootShell 的引导页处理，这里只会在已有钱包时渲染。
     // 钱包管理面板弹出时，首页随进度缩小 + 加圆角，形成卡片层叠效果。
-    final progress = ref.watch(walletPanelProgressProvider);
+    // read 而非 watch：这个 provider 交出的是 ValueNotifier 本身，永远不会重新 emit，
+    // 进度变化由下面的 ValueListenableBuilder 接管——只重建缩放层，不重建整个首页。
+    final progress = ref.read(walletPanelProgressProvider);
 
     // 向下位移距离 = 顶部安全区高度（状态栏/刘海）。
     final topPadding = MediaQuery.of(context).padding.top;

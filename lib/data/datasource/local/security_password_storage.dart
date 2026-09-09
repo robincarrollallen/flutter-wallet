@@ -39,8 +39,3 @@ class SecurityPasswordStorage {
 
 /// 全局单例 provider。
 final securityPasswordStorageProvider = Provider<SecurityPasswordStorage>((ref) => SecurityPasswordStorage());
-
-/// 是否已设置安全码（用于 UI 判断跳转设置页还是校验页）。
-final securityPasswordSetProvider = FutureProvider<bool>((ref) {
-  return ref.watch(securityPasswordStorageProvider).hasPassword();
-});
