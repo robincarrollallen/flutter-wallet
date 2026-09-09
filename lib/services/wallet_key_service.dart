@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../blockchain/chain_registry.dart';
 
 import '../domain/wallet.dart';
@@ -105,7 +104,3 @@ void wipeKey(List<int> key) {
   } catch (_) {}
 }
 
-/// 定义 provider，供导出私钥 / 签名等流程注入使用。
-final walletKeyServiceProvider = Provider<WalletKeyService>(
-  (ref) => WalletKeyService(ref.watch(secureWalletStorageProvider)),
-);

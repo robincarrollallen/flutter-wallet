@@ -1,14 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../blockchain/chain_registry.dart';
 import '../blockchain/token_catalog.dart';
 import '../dto/request/send_tx_request.dart';
 import '../domain/wallet.dart';
-import '../providers/token_catalog_provider.dart';
 import 'transfer/chain_transfer_service.dart';
-import 'transfer/evm_transfer_service.dart';
-import 'transfer/tron_transfer_service.dart';
-import 'wallet_key_service.dart';
 
 /// 转账编排：校验请求 → 解析链与代币 → 按 [ChainKind] 查表分发给各链实现。
 ///
@@ -16,8 +10,8 @@ import 'wallet_key_service.dart';
 /// - 签名与广播在 `services/transfer/` 下的各 [ChainTransferService] 实现里；
 /// - 余额查询与行情在 `data/repository/`。
 ///
-/// 新增一条链的转账支持，只需写一个实现类并在 [walletServiceProvider] 里注册，
-/// 本类无需改动。
+/// 新增一条链的转账支持，只需写一个实现类并在 `providers/service_provider.dart`
+/// 的 `walletServiceProvider` 里注册，本类无需改动。
 class WalletService {
   const WalletService({required this.transferServices, required this.catalog});
 
@@ -65,16 +59,3 @@ class WalletService {
   }
 }
 
-/// 定义 provider，供各 provider / UI 注入使用。
-///
-/// 各链转账实现在这里注册：接入新链时在 map 里加一行即可。
-final walletServiceProvider = Provider<WalletService>((ref) {
-  final keyService = ref.watch(walletKeyServiceProvider);
-  return WalletService(
-    transferServices: {
-      ChainKind.evm: EvmTransferService(keyService),
-      ChainKind.tron: TronTransferService(keyService),
-    },
-    catalog: ref.watch(tokenCatalogProvider),
-  );
-});

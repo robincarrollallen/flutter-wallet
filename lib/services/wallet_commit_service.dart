@@ -1,8 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../domain/wallet.dart';
 import '../data/datasource/local/secure_wallet_storage.dart';
-import '../providers/modules/wallet_provider.dart';
+import 'wallet_registry.dart';
 
 /// 提交失败的原因，供页面区分提示文案。
 enum WalletCommitFailure {
@@ -38,35 +36,35 @@ class WalletCommitException implements Exception {
 ///
 /// 任一步失败都逆序撤销，调用方只需处理 [WalletCommitException]。
 class WalletCommitService {
-  const WalletCommitService(this._ref);
+  const WalletCommitService(this._registry, this._secureStorage);
 
-  final Ref _ref;
+  final WalletRegistry _registry;
+  final SecureWalletStorage _secureStorage;
 
   /// 原子地提交一个新钱包：敏感数据 + 元数据 + 选中态要么全部生效，要么什么都不留。
   ///
   /// [mnemonic] 与 [privateKey] 按钱包来源二选一：助记词钱包只存助记词
   /// （私钥在签名 / 导出时现场派生，不预存）；私钥导入钱包只存私钥。
   Future<void> commit({required Wallet wallet, String? mnemonic, String? privateKey}) async {
-    final secureStorage = _ref.read(secureWalletStorageProvider);
     // 记下提交前的选中项，回滚时恢复——不能想当然地置 null，用户可能本来就选着别的钱包。
-    final previousSelectedId = _ref.read(currentWalletIdProvider);
+    final previousSelectedId = _registry.currentWalletId;
 
     try {
       // 安全存储单独一层 try：无论是抛异常还是回读不到，都归因为 secretWriteFailed，
       // 不能和后面的元数据落盘失败混为一谈——两者对用户的含义不同。
       try {
-        await secureStorage.saveSecrets(walletId: wallet.id, mnemonic: mnemonic, privateKey: privateKey);
+        await _secureStorage.saveSecrets(walletId: wallet.id, mnemonic: mnemonic, privateKey: privateKey);
         // write 不抛异常不代表真的写进去了，回读确认后才继续。
-        if (!await secureStorage.hasSecrets(wallet.id)) {
+        if (!await _secureStorage.hasSecrets(wallet.id)) {
           throw const WalletCommitException(WalletCommitFailure.secretWriteFailed);
         }
       } catch (_) {
         throw const WalletCommitException(WalletCommitFailure.secretWriteFailed);
       }
 
-      _ref.read(walletListProvider.notifier).add(wallet);
+      _registry.add(wallet);
       // 严格排在入列表之后：保证选中 id 永远能在列表里找到对应项。
-      _ref.read(currentWalletIdProvider.notifier).select(wallet.id);
+      _registry.select(wallet.id);
     } on WalletCommitException {
       await _rollback(wallet: wallet, previousSelectedId: previousSelectedId);
       rethrow;
@@ -83,15 +81,15 @@ class WalletCommitService {
   /// 会被下次启动的对账清掉。
   Future<void> _rollback({required Wallet wallet, required String? previousSelectedId}) async {
     try {
-      if (_ref.read(currentWalletIdProvider) == wallet.id) {
-        _ref.read(currentWalletIdProvider.notifier).select(previousSelectedId);
+      if (_registry.currentWalletId == wallet.id) {
+        _registry.select(previousSelectedId);
       }
 
-      if (_ref.read(walletListProvider).any((w) => w.id == wallet.id)) {
+      if (_registry.contains(wallet.id)) {
         // remove 内部已包含 deleteSecrets。
-        _ref.read(walletListProvider.notifier).remove(wallet.id);
+        _registry.remove(wallet.id);
       } else {
-        await _ref.read(secureWalletStorageProvider).deleteSecrets(wallet.id);
+        await _secureStorage.deleteSecrets(wallet.id);
       }
     } catch (_) {
       // 回滚失败不掩盖原始错误。
@@ -100,9 +98,6 @@ class WalletCommitService {
 
   /// 启动对账：清理上次被中断的提交在安全存储里留下的、无钱包引用的敏感数据。
   Future<int> purgeOrphanSecrets() {
-    final knownIds = _ref.read(walletListProvider).map((w) => w.id).toSet();
-    return _ref.read(secureWalletStorageProvider).purgeOrphanSecrets(knownIds);
+    return _secureStorage.purgeOrphanSecrets(_registry.knownWalletIds);
   }
 }
-
-final walletCommitServiceProvider = Provider<WalletCommitService>(WalletCommitService.new);
