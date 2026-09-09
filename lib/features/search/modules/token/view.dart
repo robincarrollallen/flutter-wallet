@@ -12,7 +12,7 @@ import 'logic.dart';
 import 'state.dart';
 import '../../../../providers/modules/market/markets_provider.dart';
 
-/// 代币 Tab：空词展示热门链，输入关键词后在钱包与受支持链中检索。
+/// 代币 Tab：空词展示热门链，输入关键词后在受支持链与代币目录中检索。
 class TokenTabView extends ConsumerWidget {
   const TokenTabView({super.key});
 
@@ -48,12 +48,6 @@ class TokenTabView extends ConsumerWidget {
     return ListView(
       padding: EdgeInsets.all(8.s),
       children: [
-        for (final w in results.wallets)
-          ListTile(
-            leading: const Icon(Icons.account_balance_wallet),
-            title: Text(w.name),
-            subtitle: Text(w.previewAddress ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
         for (final c in results.chains)
           ListTile(
             leading: TokenIcon(symbol: c.symbol, logoUrl: markets[c.coinGeckoId]?.logoUrl),

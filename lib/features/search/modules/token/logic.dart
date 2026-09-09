@@ -1,7 +1,6 @@
 import '../../../../blockchain/chain_registry.dart';
 import '../../../../blockchain/token.dart';
 import '../../../../blockchain/token_catalog.dart';
-import '../../../../domain/wallet.dart';
 
 /// 代币 Tab 的纯匹配逻辑：与状态/UI 无关，便于单测与复用。
 /// 入参 [q] 应为已规整（小写、去空白）的关键词。
@@ -27,16 +26,5 @@ class TokenSearchLogic {
       for (final (c, tk) in catalog.tokens)
         if (tk.name.toLowerCase().contains(q) || tk.symbol.toLowerCase().contains(q)) (c, tk),
     ];
-  }
-
-  /// 按名称 / 任一地址匹配钱包。
-  static List<Wallet> matchWallets(String q, List<Wallet> wallets) {
-    if (q.isEmpty) return const [];
-    return wallets
-        .where((w) {
-          if (w.name.toLowerCase().contains(q)) return true;
-          return w.addresses.values.any((a) => a.toLowerCase().contains(q));
-        })
-        .toList(growable: false);
   }
 }
