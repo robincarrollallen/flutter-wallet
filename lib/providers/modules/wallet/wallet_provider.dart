@@ -56,10 +56,15 @@ class WalletListNotifier extends Notifier<List<Wallet>> with PersistentNotifier<
     ];
   }
 
-  void remove(String id) {
+  /// 移出列表，并清除该钱包的助记词 / 私钥，避免敏感数据残留。
+  ///
+  /// 列表先改、密钥后删：界面立刻就能看到钱包消失，不必等 Keychain 往返。
+  /// 但删密钥这一步必须 await 出去——它可能失败（设备锁定、存储不可用），
+  /// 丢掉 Future 会让异常没人接得住。调用方等不到、也拦不住的错误，
+  /// 比明确抛出来更难查。
+  Future<void> remove(String id) async {
     state = state.where((w) => w.id != id).toList();
-    // 同步清除该钱包的助记词 / 私钥，避免敏感数据残留。
-    ref.read(secureWalletStorageProvider).deleteSecrets(id);
+    await ref.read(secureWalletStorageProvider).deleteSecrets(id);
   }
 }
 
@@ -130,7 +135,7 @@ class _RiverpodWalletRegistry implements WalletRegistry {
   void add(Wallet wallet) => _ref.read(walletListProvider.notifier).add(wallet);
 
   @override
-  void remove(String walletId) => _ref.read(walletListProvider.notifier).remove(walletId);
+  Future<void> remove(String walletId) => _ref.read(walletListProvider.notifier).remove(walletId);
 
   @override
   void select(String? walletId) => _ref.read(currentWalletIdProvider.notifier).select(walletId);

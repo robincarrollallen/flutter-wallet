@@ -87,7 +87,7 @@ class WalletCommitService {
 
       if (_registry.contains(wallet.id)) {
         // remove 内部已包含 deleteSecrets。
-        _registry.remove(wallet.id);
+        await _registry.remove(wallet.id);
       } else {
         await _secureStorage.deleteSecrets(wallet.id);
       }

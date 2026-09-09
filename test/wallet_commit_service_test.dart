@@ -101,9 +101,9 @@ class _FakeWalletRegistry implements WalletRegistry {
   }
 
   @override
-  void remove(String walletId) {
+  Future<void> remove(String walletId) async {
     wallets.removeWhere((w) => w.id == walletId);
-    _storage.deleteSecrets(walletId);
+    await _storage.deleteSecrets(walletId);
   }
 
   @override

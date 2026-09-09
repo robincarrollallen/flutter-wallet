@@ -19,7 +19,11 @@ abstract interface class WalletRegistry {
   void add(Wallet wallet);
 
   /// 移出列表；实现方需一并清除该钱包的敏感数据。
-  void remove(String walletId);
+  ///
+  /// 返回 Future 是为了让调用方能等到密钥真的删完：清密钥要走 Keychain / Keystore，
+  /// 丢掉这个 Future 的话，删除失败会变成没人收得到的异步异常，
+  /// 连回滚里的 try/catch 都拦不住。
+  Future<void> remove(String walletId);
 
   /// 设置选中项，传 null 表示不选中任何钱包。
   void select(String? walletId);

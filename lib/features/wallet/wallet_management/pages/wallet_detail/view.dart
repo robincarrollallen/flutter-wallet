@@ -186,7 +186,11 @@ class WalletDetailPage extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    ref.read(walletListProvider.notifier).remove(current.id);
+    try {
+      await ref.read(walletListProvider.notifier).remove(current.id);
+    } catch (_) {
+      // 密钥没删掉不拦着用户返回：钱包已经从列表里没了，残留的密钥会被下次启动的对账清掉。
+    }
     rootNavigator.pop();
   }
 
