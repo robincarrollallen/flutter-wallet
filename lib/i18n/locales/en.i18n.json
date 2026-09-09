@@ -156,5 +156,11 @@
   },
   "placeholder": {
     "wip": "Feature under development"
+  },
+  "walletSource": {
+    "mnemonic": "New mnemonic",
+    "imported": "Imported mnemonic",
+    "importedPrivateKey": "Imported private key",
+    "hardware": "Hardware wallet"
   }
 }

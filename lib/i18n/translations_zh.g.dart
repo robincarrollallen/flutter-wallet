@@ -16,22 +16,22 @@ class TranslationsZh extends Translations with BaseTranslations<AppLocale, Trans
 	/// Constructing via the enum [AppLocale.build] is preferred.
 	TranslationsZh({Map<String, Node>? overrides, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver, TranslationMetadata<AppLocale, Translations>? meta})
 		: assert(overrides == null, 'Set "translation_overrides: true" in order to enable this feature.'),
-		  $meta = meta ?? TranslationMetadata(
+		  _meta = meta ?? TranslationMetadata(
 		    locale: AppLocale.zh,
 		    overrides: overrides ?? {},
 		    cardinalResolver: cardinalResolver,
 		    ordinalResolver: ordinalResolver,
 		  ),
 		  super(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
-		super.$meta.setFlatMapFunction($meta.getTranslation); // copy base translations to super.$meta
-		$meta.setFlatMapFunction(_flatMapFunction);
+		_meta.setFlatMapFunction(_flatMapFunction);
 	}
 
 	/// Metadata for the translations of <zh>.
-	@override final TranslationMetadata<AppLocale, Translations> $meta;
+	final TranslationMetadata<AppLocale, Translations> _meta;
+	@override TranslationMetadata<AppLocale, Translations> get $meta => _meta;
 
 	/// Access flat map
-	@override dynamic operator[](String key) => $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
+	@override dynamic operator[](String key) => _meta.getTranslation(key) ?? super[key];
 
 	late final TranslationsZh _root = this; // ignore: unused_field
 
@@ -100,6 +100,7 @@ class TranslationsZh extends Translations with BaseTranslations<AppLocale, Trans
 	@override late final _Translations$createWallet$zh createWallet = _Translations$createWallet$zh._(_root);
 	@override late final _Translations$import$zh import = _Translations$import$zh._(_root);
 	@override late final _Translations$placeholder$zh placeholder = _Translations$placeholder$zh._(_root);
+	@override late final _Translations$walletSource$zh walletSource = _Translations$walletSource$zh._(_root);
 }
 
 // Path: tabs
@@ -262,6 +263,19 @@ class _Translations$placeholder$zh extends Translations$placeholder$en {
 
 	// Translations
 	@override String get wip => '功能开发中';
+}
+
+// Path: walletSource
+class _Translations$walletSource$zh extends Translations$walletSource$en {
+	_Translations$walletSource$zh._(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get mnemonic => '新建助记词';
+	@override String get imported => '助记词导入';
+	@override String get importedPrivateKey => '私钥导入';
+	@override String get hardware => '硬件钱包';
 }
 
 // Path: search.tabs
@@ -471,6 +485,10 @@ extension on TranslationsZh {
 			'import.mnemonic.errors.checksum' => '助记词校验失败，请检查顺序或拼写',
 			'import.mnemonic.errors.invalidPrivateKey' => '私钥格式无效，请检查是否为完整的 EVM / Solana / Sui 私钥',
 			'placeholder.wip' => '功能开发中',
+			'walletSource.mnemonic' => '新建助记词',
+			'walletSource.imported' => '助记词导入',
+			'walletSource.importedPrivateKey' => '私钥导入',
+			'walletSource.hardware' => '硬件钱包',
 			_ => null,
 		};
 	}

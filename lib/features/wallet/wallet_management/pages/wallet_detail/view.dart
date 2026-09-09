@@ -8,6 +8,7 @@ import '../../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../../providers/modules/market/currency_provider.dart';
 import '../../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../../domain/wallet.dart';
+import '../../../../../i18n/translations.g.dart';
 import '../backup_method/view.dart';
 import '../export_private_key/view.dart';
 import '../../../../../domain/wallet_avatar.dart';
@@ -23,6 +24,7 @@ class WalletDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final t = context.t;
 
     // 监听列表，拿到最新钱包（改头像后实时刷新）；被删除则回退到传入值。
     final wallets = ref.watch(walletListProvider);
@@ -109,7 +111,7 @@ class WalletDetailPage extends ConsumerWidget {
                               ),
                         ),
                         Divider(height: 1.s),
-                        _DetailRow(label: '创建方式', value: walletSourceLabel(current.source)),
+                        _DetailRow(label: '创建方式', value: walletSourceLabel(current.source, t)),
                         Divider(height: 1.s),
                         _DetailRow(label: '创建时间', value: _formatCreatedAt(current.createdAt)),
                       ],

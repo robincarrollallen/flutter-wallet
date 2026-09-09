@@ -20,20 +20,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// Constructing via the enum [AppLocale.build] is preferred.
 	Translations({Map<String, Node>? overrides, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver, TranslationMetadata<AppLocale, Translations>? meta})
 		: assert(overrides == null, 'Set "translation_overrides: true" in order to enable this feature.'),
-		  $meta = meta ?? TranslationMetadata(
+		  _meta = meta ?? TranslationMetadata(
 		    locale: AppLocale.en,
 		    overrides: overrides ?? {},
 		    cardinalResolver: cardinalResolver,
 		    ordinalResolver: ordinalResolver,
 		  ) {
-		$meta.setFlatMapFunction(_flatMapFunction);
+		_meta.setFlatMapFunction(_flatMapFunction);
 	}
 
 	/// Metadata for the translations of <en>.
-	@override final TranslationMetadata<AppLocale, Translations> $meta;
+	final TranslationMetadata<AppLocale, Translations> _meta;
+	@override TranslationMetadata<AppLocale, Translations> get $meta => _meta;
 
 	/// Access flat map
-	dynamic operator[](String key) => $meta.getTranslation(key);
+	dynamic operator[](String key) => _meta.getTranslation(key);
 
 	late final Translations _root = this; // ignore: unused_field
 
@@ -104,6 +105,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$createWallet$en createWallet = Translations$createWallet$en.internal(_root);
 	late final Translations$import$en import = Translations$import$en.internal(_root);
 	late final Translations$placeholder$en placeholder = Translations$placeholder$en.internal(_root);
+	late final Translations$walletSource$en walletSource = Translations$walletSource$en.internal(_root);
 }
 
 // Path: tabs
@@ -369,6 +371,27 @@ class Translations$placeholder$en {
 	String get wip => 'Feature under development';
 }
 
+// Path: walletSource
+class Translations$walletSource$en {
+	Translations$walletSource$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'New mnemonic'
+	String get mnemonic => 'New mnemonic';
+
+	/// en: 'Imported mnemonic'
+	String get imported => 'Imported mnemonic';
+
+	/// en: 'Imported private key'
+	String get importedPrivateKey => 'Imported private key';
+
+	/// en: 'Hardware wallet'
+	String get hardware => 'Hardware wallet';
+}
+
 // Path: search.tabs
 class Translations$search$tabs$en {
 	Translations$search$tabs$en.internal(this._root);
@@ -625,6 +648,10 @@ extension on Translations {
 			'import.mnemonic.errors.checksum' => 'Mnemonic checksum failed, please check the order or spelling',
 			'import.mnemonic.errors.invalidPrivateKey' => 'Invalid private key format. Please check it is a complete EVM / Solana / Sui private key',
 			'placeholder.wip' => 'Feature under development',
+			'walletSource.mnemonic' => 'New mnemonic',
+			'walletSource.imported' => 'Imported mnemonic',
+			'walletSource.importedPrivateKey' => 'Imported private key',
+			'walletSource.hardware' => 'Hardware wallet',
 			_ => null,
 		};
 	}
