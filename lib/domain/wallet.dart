@@ -5,9 +5,7 @@ import '../blockchain/chain_registry.dart';
 export '../enums/backup_method.dart';
 export '../enums/wallet_source.dart';
 
-/// 【状态数据】应用内长期持有、驱动 UI 的钱包模型。
-/// 只保存非敏感信息；助记词 / 私钥等敏感数据应存入 flutter_secure_storage，
-/// 不要放进状态中。由 Riverpod 的 walletListProvider 管理。
+/// 钱包模型, 只保存非敏感信息；助记词 / 私钥等敏感数据应存入 flutter_secure_storage
 class Wallet {
   const Wallet({
     required this.id,
@@ -19,21 +17,25 @@ class Wallet {
     this.backupMethods = const {},
   });
 
+  /// 钱包 id
   final String id;
+
+  /// 钱包名称
   final String name;
+
+  /// 钱包来源[新建助记词 / 助记词导入 / 私钥导入 / 硬件钱包]
   final WalletSource source;
 
   /// 各链地址：chainId -> address。新建/导入时一次性派生写入。
   final Map<String, String> addresses;
 
-  /// 创建时间；老数据可能缺失，故可空。
+  /// 创建时间
   final DateTime? createdAt;
 
-  /// 头像图标名（映射到 Material 图标或品牌资产），默认钱包图标。
+  /// 钱包图标
   final String icon;
 
-  /// 已采用的备份方式集合（可同时多种）。
-  /// 新建钱包默认空（需引导备份）；导入钱包视为已手动备份；各方式成功后并入对应值。
+  /// 已采用的备份方式集合「可同时多种」(新建钱包默认空（需引导备份）；导入钱包视为已手动备份；各方式成功后并入对应值)
   final Set<BackupMethod> backupMethods;
 
   /// 是否已备份（任意一种方式即视为已备份）。
@@ -41,10 +43,6 @@ class Wallet {
 
   /// 是否持有助记词（仅助记词新建/助记词导入的钱包有；私钥导入、硬件钱包没有）。
   bool get hasMnemonic => source == WalletSource.mnemonic || source == WalletSource.imported;
-
-  /// 搜索等只需展示一条地址时用：优先 EVM 主链，否则取 map 中第一项。
-  String? get previewAddress =>
-      addresses[SupportedChains.ethereumSepolia.id] ?? (addresses.isEmpty ? null : addresses.values.first);
 
   /// 取某条链的地址。只认 [addresses]，老盘的单字段 `address` 在 [fromJson] 里迁进来。
   String? addressFor(Chain chain) => addresses[chain.id];
