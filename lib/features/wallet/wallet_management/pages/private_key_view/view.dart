@@ -7,7 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../domain/wallet.dart';
 import '../../../../../providers/core/service_provider.dart';
-import '../../../../../services/wallet_key_service.dart';
+import '../../../../../services/private_key_resolver.dart';
 import '../../widgets/panel/view.dart';
 
 /// 显示某条链的私钥：默认隐藏，点击「闭眼」区域后展示二维码与明文。
@@ -37,7 +37,7 @@ class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> {
   /// 点击展示：按需取出当前链的私钥明文到本地状态（不进 Provider 缓存）。
   ///
   /// 取私钥的分支逻辑（助记词现场派生 / 读取已存）统一收敛在
-  /// [WalletKeyService.resolveExportKey]，与将来的签名流程共用。
+  /// [PrivateKeyResolver.resolveExportKey]，与签名流程共用。
   Future<void> _reveal() async {
     if (_loading) return;
     setState(() {
@@ -45,7 +45,7 @@ class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> {
       _failed = false;
     });
     try {
-      final pk = await ref.read(walletKeyServiceProvider).resolveExportKey(widget.wallet, widget.chain);
+      final pk = await ref.read(privateKeyResolverProvider).resolveExportKey(widget.wallet, widget.chain);
       if (!mounted) return;
       setState(() {
         _privateKey = pk;

@@ -5,7 +5,7 @@ import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/features/wallet/send/coins/logic.dart';
 import 'package:wallet/services/mnemonic_service.dart';
 import 'package:wallet/services/private_key_service.dart';
-import 'package:wallet/services/wallet_key_service.dart';
+import 'package:wallet/services/private_key_resolver.dart';
 
 const vector = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 

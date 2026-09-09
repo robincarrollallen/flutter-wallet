@@ -6,15 +6,12 @@ import 'mnemonic_service.dart';
 import 'private_key_service.dart';
 import '../data/datasource/local/secure_wallet_storage.dart';
 
-/// 钱包私钥的统一解析入口：按钱包来源决定「现场派生」还是「读取已存」，
-/// 供导出私钥、（将来的）交易签名 / 授权等所有需要私钥的场景共用。
-///
-/// 设计原则：
 /// - 私钥/助记词明文按需取用、用完即弃，绝不进入 Riverpod 状态、日志或持久化；
 /// - 助记词钱包**不额外存私钥**，每次现场派生（攻击面最小），派生在后台 isolate；
 /// - 私钥导入 / 硬件钱包没有助记词，回退到读取已存的单一私钥。
-class WalletKeyService {
-  const WalletKeyService(this._storage);
+/// 钱包私钥的统一解析入口：按钱包来源决定「现场派生」还是「读取已存」(供导出私钥、交易签名 / 授权等所有需要私钥的场景共用)
+class PrivateKeyResolver {
+  const PrivateKeyResolver(this._storage);
 
   final SecureWalletStorage _storage;
 
@@ -103,4 +100,3 @@ void wipeKey(List<int> key) {
     key.fillRange(0, key.length, 0);
   } catch (_) {}
 }
-

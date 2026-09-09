@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../blockchain/chain_registry.dart';
 import '../../data/datasource/local/secure_wallet_storage.dart';
+import '../../blockchain/chain_registry.dart';
 import '../../services/evm_transaction_service.dart';
 import '../../services/transfer/evm_transfer_service.dart';
 import '../../services/transfer/tron_transfer_service.dart';
 import '../../services/tron_transaction_service.dart';
 import '../../services/wallet_commit_service.dart';
-import '../../services/wallet_key_service.dart';
+import '../../services/private_key_resolver.dart';
 import '../../services/wallet_service.dart';
 import '../modules/asset/token_catalog_provider.dart';
 import '../modules/wallet/wallet_provider.dart';
@@ -18,18 +18,16 @@ import '../modules/wallet/wallet_provider.dart';
 /// 由 `test/layering_test.dart` 守着），依赖一律走构造注入，谁跟谁组装只在这里决定。
 
 /// 导出私钥 / 签名等流程的私钥解析入口。
-final walletKeyServiceProvider = Provider<WalletKeyService>(
-  (ref) => WalletKeyService(ref.watch(secureWalletStorageProvider)),
+final privateKeyResolverProvider = Provider<PrivateKeyResolver>(
+  (ref) => PrivateKeyResolver(ref.watch(secureWalletStorageProvider)),
 );
 
-/// 转账编排入口。各链转账实现在这里注册：接入新链时在 map 里加一行即可。
+/// 转账编排入口。接入新链时在 map 里加一行即可。
 final walletServiceProvider = Provider<WalletService>((ref) {
-  final keyService = ref.watch(walletKeyServiceProvider);
+  final keyResolver = ref.watch(privateKeyResolverProvider);
+
   return WalletService(
-    transferServices: {
-      ChainKind.evm: EvmTransferService(keyService),
-      ChainKind.tron: TronTransferService(keyService),
-    },
+    transferServices: {ChainKind.evm: EvmTransferService(keyResolver), ChainKind.tron: TronTransferService(keyResolver)},
     catalog: ref.watch(tokenCatalogProvider),
   );
 });
