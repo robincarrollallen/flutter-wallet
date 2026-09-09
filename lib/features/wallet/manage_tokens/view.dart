@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../blockchain/listed_asset.dart';
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../i18n/translations.g.dart';
-import '../../../providers/modules/balance_provider.dart';
-import '../../../providers/modules/chain_icon_provider.dart';
-import '../../../providers/token_catalog_provider.dart';
+import '../../../providers/modules/asset/chain_icon_provider.dart';
 import '../../../widgets/asset_icon.dart';
 import 'logic.dart';
 import 'state.dart';
+import '../../../providers/modules/asset/hidden_assets_provider.dart';
+import '../../../providers/modules/market/markets_provider.dart';
 
 /// 管理代币：列出全量资产，用开关控制它在首页 / 接收页是否展示。
 ///

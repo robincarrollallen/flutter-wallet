@@ -7,12 +7,13 @@ import '../core/format/token_amount_formatter.dart';
 import '../core/responsive/screen_adapter.dart';
 import '../domain/account_balance.dart';
 import '../i18n/translations.g.dart';
-import '../providers/modules/balance_provider.dart';
-import '../providers/modules/chain_icon_provider.dart';
-import '../providers/modules/currency_provider.dart';
-import '../providers/modules/wallet_provider.dart';
+import '../providers/modules/asset/balance_provider.dart';
+import '../providers/modules/asset/chain_icon_provider.dart';
+import '../providers/modules/market/currency_provider.dart';
+import '../providers/modules/wallet/wallet_provider.dart';
 import 'amount_text.dart';
 import 'asset_icon.dart';
+import '../providers/modules/market/markets_provider.dart';
 
 /// 资产行：图标 + 符号/全名 + 副标题链名单价 + 右侧持仓。
 ///

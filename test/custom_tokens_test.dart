@@ -5,8 +5,9 @@ import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/bundled_token_catalog.dart';
 import 'package:wallet/blockchain/token.dart';
 import 'package:wallet/enums/prefs_key.dart';
-import 'package:wallet/providers/prefs_provider.dart';
-import 'package:wallet/providers/token_catalog_provider.dart';
+import 'package:wallet/providers/core/prefs_provider.dart';
+import 'package:wallet/providers/modules/asset/token_catalog_provider.dart';
+import 'package:wallet/providers/modules/asset/custom_tokens_provider.dart';
 
 final _foo = Token(
   chainId: SupportedChains.bscTestnet.id,

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../i18n/translations.g.dart';
-import '../../../providers/modules/wallet_panel_progress_provider.dart';
+import '../../../providers/modules/ui/wallet_panel_progress_provider.dart';
 import '../../../router/routes.dart';
 import '../../search/modules/pill/view.dart';
 import 'modules/wallet_list.dart';

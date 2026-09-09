@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../widgets/app_toast.dart';
-import '../../../../../providers/modules/wallet_provider.dart';
+import '../../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../../domain/wallet.dart';
 import '../../widgets/panel/view.dart';
 

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
-import '../../../../providers/modules/balance_provider.dart';
-import '../../../../providers/modules/chain_icon_provider.dart';
-import '../../../../providers/modules/wallet_provider.dart';
-import '../../../../providers/token_catalog_provider.dart';
+import '../../../../providers/modules/asset/balance_provider.dart';
+import '../../../../providers/modules/asset/chain_icon_provider.dart';
+import '../../../../providers/modules/wallet/wallet_provider.dart';
+import '../../../../providers/modules/asset/token_catalog_provider.dart';
 import '../../../../widgets/asset_tile.dart';
 import 'token_section.dart';
 import 'total_assets_card.dart';
+import '../../../../providers/modules/market/markets_provider.dart';
 
 /// 已有钱包时的首页视图：顶部总资产卡片 + 代币列表。
 ///

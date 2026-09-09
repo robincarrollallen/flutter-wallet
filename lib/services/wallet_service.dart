@@ -10,7 +10,7 @@ import 'transfer/chain_transfer_service.dart';
 /// - 签名与广播在 `services/transfer/` 下的各 [ChainTransferService] 实现里；
 /// - 余额查询与行情在 `data/repository/`。
 ///
-/// 新增一条链的转账支持，只需写一个实现类并在 `providers/service_provider.dart`
+/// 新增一条链的转账支持，只需写一个实现类并在 `providers/core/service_provider.dart`
 /// 的 `walletServiceProvider` 里注册，本类无需改动。
 class WalletService {
   const WalletService({required this.transferServices, required this.catalog});

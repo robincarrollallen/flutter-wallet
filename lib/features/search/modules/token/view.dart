@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../i18n/translations.g.dart';
-import '../../../../providers/modules/balance_provider.dart';
-import '../../../../providers/modules/chain_icon_provider.dart';
+import '../../../../providers/modules/asset/chain_icon_provider.dart';
 import '../../../../widgets/asset_icon.dart';
 import '../../../../widgets/token_icon.dart';
 import '../pill/state.dart';
 import '../search_hint.dart';
 import 'logic.dart';
 import 'state.dart';
+import '../../../../providers/modules/market/markets_provider.dart';
 
 /// 代币 Tab：空词展示热门链，输入关键词后在钱包与受支持链中检索。
 class TokenTabView extends ConsumerWidget {

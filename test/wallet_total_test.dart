@@ -9,12 +9,12 @@ import 'package:wallet/blockchain/listed_asset.dart';
 import 'package:wallet/data/datasource/remote/coingecko_api.dart';
 import 'package:wallet/domain/account_balance.dart';
 import 'package:wallet/domain/wallet.dart';
-import 'package:wallet/providers/coingecko_api_provider.dart';
-import 'package:wallet/providers/modules/balance_provider.dart';
+import 'package:wallet/providers/core/coingecko_api_provider.dart';
+import 'package:wallet/providers/modules/asset/balance_provider.dart';
 import 'package:wallet/constants/currency_symbols.dart';
 import 'package:wallet/enums/prefs_key.dart';
-import 'package:wallet/providers/prefs_provider.dart';
-import 'package:wallet/providers/token_catalog_provider.dart';
+import 'package:wallet/providers/core/prefs_provider.dart';
+import 'package:wallet/providers/modules/asset/token_catalog_provider.dart';
 
 /// 测试用钱包：给 EVM 之外的链也铺上地址，好让跨链并发真的展开。
 const _walletId = 'w1';

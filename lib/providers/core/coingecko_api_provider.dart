@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/datasource/remote/coingecko_api.dart';
+import '../../data/datasource/remote/coingecko_api.dart';
 
 /// CoinGecko 数据源。单独成 provider 是为了让测试能整体替身——
 /// 行情（[marketsProvider]）与链图标（[chainIconsProvider]）都直接用它：

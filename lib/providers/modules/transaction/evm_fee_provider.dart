@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../blockchain/chain_registry.dart';
-import '../../core/utils/erc20_abi.dart';
-import '../../domain/evm_fee.dart';
-import '../../enums/fee_speed.dart';
-import '../../enums/prefs_key.dart';
-import '../../services/evm_transaction_service.dart';
-import '../persistent_notifier.dart';
+import '../../../blockchain/chain_registry.dart';
+import '../../../core/utils/erc20_abi.dart';
+import '../../../domain/evm_fee.dart';
+import '../../../enums/fee_speed.dart';
+import '../../../enums/prefs_key.dart';
+import '../../../services/evm_transaction_service.dart';
+import '../../core/persistent_notifier.dart';
+import '../../core/service_provider.dart';
 
 /// 费率缓存：每条链一份基准，另按「链:收款方:资产」存 gasLimit。
 /// gasLimit 对同一个收款方 + 同一个资产是稳定的（EOA 转原生币恒 21000，合约几乎不变），
@@ -74,7 +75,7 @@ class EvmGasBasisNotifier extends Notifier<EvmFeeCache> with PersistentNotifier<
   Future<void> refresh(EvmFeeKey key) async {
     final chain = SupportedChains.byId(key.chainId);
     if (chain.kind != ChainKind.evm) return; // 非 EVM 链没有这套费率模型，别在它上面空转轮询。
-    const service = EvmTransactionService();
+    final service = ref.read(evmTransactionServiceProvider);
     try {
       final basis = await service.fetchGasBasis(chain.endpoint);
       final gasLimit = await _resolveGasLimit(service, chain, key);

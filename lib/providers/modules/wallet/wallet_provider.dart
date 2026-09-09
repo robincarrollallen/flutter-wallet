@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/wallet.dart';
-import '../../data/datasource/local/secure_wallet_storage.dart';
-import '../persistent_notifier.dart';
-import '../../enums/prefs_key.dart';
+import '../../../data/datasource/local/secure_wallet_storage.dart';
+import '../../../domain/wallet.dart';
+import '../../../enums/prefs_key.dart';
+import '../../../services/wallet_registry.dart';
+import '../../core/persistent_notifier.dart';
 
 /// 钱包列表的状态管理。
 /// 元数据（id/name/addresses/source）持久化到 SharedPreferences；
@@ -108,3 +109,32 @@ final activeWalletProvider = Provider<Wallet?>((ref) {
 final hasWalletProvider = Provider<bool>((ref) {
   return ref.watch(walletListProvider).isNotEmpty;
 });
+
+/// [WalletRegistry] 端口的 Riverpod 实现：把 services 层的读写请求转给上面两个
+/// notifier，让 services 不必认识 Riverpod。
+class _RiverpodWalletRegistry implements WalletRegistry {
+  _RiverpodWalletRegistry(this._ref);
+
+  final Ref _ref;
+
+  @override
+  String? get currentWalletId => _ref.read(currentWalletIdProvider);
+
+  @override
+  bool contains(String walletId) => _ref.read(walletListProvider).any((w) => w.id == walletId);
+
+  @override
+  Set<String> get knownWalletIds => _ref.read(walletListProvider).map((w) => w.id).toSet();
+
+  @override
+  void add(Wallet wallet) => _ref.read(walletListProvider.notifier).add(wallet);
+
+  @override
+  void remove(String walletId) => _ref.read(walletListProvider.notifier).remove(walletId);
+
+  @override
+  void select(String? walletId) => _ref.read(currentWalletIdProvider.notifier).select(walletId);
+}
+
+/// 钱包列表 / 选中态对 services 层暴露的读写端口。
+final walletRegistryProvider = Provider<WalletRegistry>(_RiverpodWalletRegistry.new);

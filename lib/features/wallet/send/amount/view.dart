@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/amount_text.dart';
-import '../../../../providers/modules/balance_provider.dart';
-import '../../../../providers/modules/wallet_provider.dart';
+import '../../../../providers/modules/asset/balance_provider.dart';
+import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../coins/logic.dart';
 import '../../../../blockchain/listed_asset.dart';
 import '../../../../router/route_args.dart';

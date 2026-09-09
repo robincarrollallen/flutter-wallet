@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../persistent_notifier.dart';
-import '../../enums/prefs_key.dart';
+import '../../../enums/prefs_key.dart';
+import '../../core/persistent_notifier.dart';
 
 /// 一条最近使用过的收款地址记录。
 class RecentAddress {

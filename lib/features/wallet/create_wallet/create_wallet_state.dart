@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/wallet.dart';
 import '../../../domain/wallet_id.dart';
 import '../../../services/mnemonic_service.dart';
-import '../../../services/wallet_commit_service.dart';
-import '../../../providers/modules/wallet_provider.dart';
+import '../../../providers/core/service_provider.dart';
+import '../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../enums/create_phase.dart';
 

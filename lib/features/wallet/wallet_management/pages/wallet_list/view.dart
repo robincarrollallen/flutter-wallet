@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
-import '../../../../../providers/modules/wallet_provider.dart';
+import '../../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../widgets/create_wallet_sheet.dart';
 import '../../widgets/panel/view.dart';
 import '../../../../../core/navigation/panel_routes.dart';

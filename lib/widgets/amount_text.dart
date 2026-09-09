@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers/modules/balance_visibility_provider.dart';
-import '../providers/modules/currency_provider.dart';
+import '../providers/modules/asset/balance_visibility_provider.dart';
+import '../providers/modules/market/currency_provider.dart';
 import '../core/format/amount_formatter.dart';
 
 /// 全局金额展示组件：是否隐藏从缓存（[balanceHiddenProvider]）读取，

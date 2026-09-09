@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../providers/persistent_notifier.dart';
+import '../../../../providers/core/persistent_notifier.dart';
 import 'logic.dart';
 import '../../../../enums/prefs_key.dart';
 

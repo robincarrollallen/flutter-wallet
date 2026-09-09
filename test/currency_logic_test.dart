@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet/constants/currency_symbols.dart';
 import 'package:wallet/features/settings/currency/logic.dart';
 import 'package:wallet/i18n/translations.g.dart';
-import 'package:wallet/providers/modules/currency_provider.dart';
+import 'package:wallet/providers/modules/market/currency_provider.dart';
 
 void main() {
   final en = AppLocale.en.buildSync(); // base locale，非 deferred，可同步构建

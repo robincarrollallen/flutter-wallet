@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/responsive/screen_adapter.dart';
-import '../../providers/modules/theme_provider.dart';
+import '../../providers/modules/settings/theme_provider.dart';
 import '../../enums/app_theme_name.dart';
 
 /// 主题 / 模式选择页：

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../constants/currency_symbols.dart';
-import '../persistent_notifier.dart';
-import '../../enums/prefs_key.dart';
+import '../../../constants/currency_symbols.dart';
+import '../../../enums/prefs_key.dart';
+import '../../core/persistent_notifier.dart';
 
 /// 可选法币列表：直接取内置符号表的键——表里有符号才显示得出金额。
 /// 该表已对齐 CoinGecko `/simple/supported_vs_currencies` 的全部法币（46 种），

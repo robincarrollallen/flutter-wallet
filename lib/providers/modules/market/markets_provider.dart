@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/datasource/remote/coingecko_api.dart' show Markets;
-import '../../enums/prefs_key.dart';
-import '../coingecko_api_provider.dart';
-import '../persistent_notifier.dart';
-import '../token_catalog_provider.dart';
+import '../../../data/datasource/remote/coingecko_api.dart' show Markets;
+import '../../../enums/prefs_key.dart';
+import '../../core/coingecko_api_provider.dart';
+import '../../core/persistent_notifier.dart';
+import '../asset/token_catalog_provider.dart';
 import 'currency_provider.dart';
 
-export '../../data/datasource/remote/coingecko_api.dart' show Markets;
+export '../../../data/datasource/remote/coingecko_api.dart' show Markets;
 
 /// 一个币种的行情快照：数据 + 写入时刻 + 抓这份数据时请求过的 coinGeckoId。
 ///

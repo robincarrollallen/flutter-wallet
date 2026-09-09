@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
-import '../../../providers/modules/wallet_panel_progress_provider.dart';
+import '../../../providers/modules/ui/wallet_panel_progress_provider.dart';
 import 'pages/wallet_list/view.dart';
 import '../../../core/navigation/panel_routes.dart';
 import '../../../router/routes.dart';

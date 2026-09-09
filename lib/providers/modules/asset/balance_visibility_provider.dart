@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../persistent_notifier.dart';
-import '../../enums/prefs_key.dart';
+import '../../../enums/prefs_key.dart';
+import '../../core/persistent_notifier.dart';
 
 /// 全局金额隐私开关：true=隐藏所有法币金额与代币数量（显示为掩码）。
 /// 只持久化「是否隐藏」；掩码符号与长度不入缓存（由展示端 AmountText 决定）。

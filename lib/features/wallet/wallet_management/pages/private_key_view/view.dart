@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../domain/wallet.dart';
+import '../../../../../providers/core/service_provider.dart';
 import '../../../../../services/wallet_key_service.dart';
 import '../../widgets/panel/view.dart';
 

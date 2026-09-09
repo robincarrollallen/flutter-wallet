@@ -5,7 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../blockchain/listed_asset.dart';
-import '../../../../../providers/modules/wallet_provider.dart';
+import '../../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../../widgets/asset_icon.dart';
 import '../../../../../widgets/app_toast.dart';
 import '../../../../../enums/toast_position.dart';

@@ -5,6 +5,7 @@ import '../../../domain/wallet.dart';
 import '../../../domain/wallet_id.dart';
 import '../../../services/mnemonic_service.dart';
 import '../../../services/private_key_service.dart';
+import '../../../providers/core/service_provider.dart';
 import '../../../services/wallet_commit_service.dart';
 import '../../../i18n/translations.g.dart';
 import 'import_mnemonic_logic.dart';

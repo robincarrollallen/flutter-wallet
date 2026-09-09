@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../enums/prefs_key.dart';
-import '../persistent_notifier.dart';
+import '../../../enums/prefs_key.dart';
+import '../../core/persistent_notifier.dart';
 
 /// 用户手动隐藏的资产身份键集合（见 `ListedAsset.key`），持久化到 SharedPreferences。
 ///

@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
-import '../../../providers/modules/balance_provider.dart';
-import '../../../providers/modules/chain_icon_provider.dart';
+import '../../../providers/modules/asset/chain_icon_provider.dart';
 import '../../../blockchain/chain_registry.dart';
 import '../../../widgets/token_icon.dart';
 import '../../../domain/wallet.dart';
+import '../../../providers/modules/market/markets_provider.dart';
 
 /// 地址管理页：列出当前钱包在各条链上的地址，支持复制与查看二维码。
 class AddressManagementScreen extends ConsumerWidget {

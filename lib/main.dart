@@ -4,11 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'router/app_router.dart';
-import 'providers/modules/locale_provider.dart';
-import 'providers/modules/theme_provider.dart';
+import 'providers/modules/settings/locale_provider.dart';
+import 'providers/modules/settings/theme_provider.dart';
 import 'core/responsive/screen_adapter.dart';
-import 'providers/prefs_provider.dart';
-import 'services/wallet_commit_service.dart';
+import 'providers/core/prefs_provider.dart';
+import 'providers/core/service_provider.dart';
 import 'i18n/translations.g.dart';
 
 Future<void> main() async {

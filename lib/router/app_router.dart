@@ -21,7 +21,7 @@ import '../features/wallet/send/confirm/view.dart';
 import '../features/wallet/send/recipient/view.dart';
 import '../features/wallet/send/result/view.dart';
 import '../features/wallet/wallet_management/view.dart';
-import '../providers/modules/wallet_provider.dart';
+import '../providers/modules/wallet/wallet_provider.dart';
 import '../widgets/placeholder_screen.dart';
 import 'route_args.dart';
 import 'routes.dart';

@@ -10,8 +10,8 @@ import 'package:wallet/data/datasource/remote/bitcoin_utxo_api.dart';
 import 'package:wallet/data/datasource/remote/http_config.dart';
 import 'package:wallet/domain/btc_utxo.dart';
 import 'package:wallet/enums/prefs_key.dart';
-import 'package:wallet/providers/modules/broadcast_history_provider.dart';
-import 'package:wallet/providers/prefs_provider.dart';
+import 'package:wallet/providers/modules/transaction/broadcast_history_provider.dart';
+import 'package:wallet/providers/core/prefs_provider.dart';
 
 /// 与 chain_balance_api_test 同法：起个本地服务替代真实节点，
 /// 顺带把 rest_client 的状态码处理一起覆盖。

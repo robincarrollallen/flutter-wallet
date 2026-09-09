@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../enums/prefs_key.dart';
-import '../persistent_notifier.dart';
+import '../../../enums/prefs_key.dart';
+import '../../core/persistent_notifier.dart';
 
 /// txid -> 广播时刻（毫秒）。
 ///

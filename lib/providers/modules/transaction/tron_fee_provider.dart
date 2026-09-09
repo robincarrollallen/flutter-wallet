@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../blockchain/chain_registry.dart';
-import '../../domain/tron_fee.dart';
-import '../../services/tron_transaction_service.dart';
-import '../token_catalog_provider.dart';
+import '../../../blockchain/chain_registry.dart';
+import '../../../domain/tron_fee.dart';
+import '../../core/service_provider.dart';
+import '../asset/token_catalog_provider.dart';
 
 /// 一次 Tron 费用报价的查询键。
 ///
@@ -25,7 +25,7 @@ final tronFeeProvider = FutureProvider.autoDispose.family<TronFeeEstimate, TronF
   if (chain.kind != ChainKind.tron) {
     throw ArgumentError('tronFeeProvider 只服务 Tron 链，收到 ${chain.id}');
   }
-  const service = TronTransactionService();
+  final service = ref.watch(tronTransactionServiceProvider);
 
   final identifier = key.tokenIdentifier;
   if (identifier == null) {

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../constants/currency_symbols.dart';
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../i18n/translations.g.dart';
-import '../../../providers/modules/currency_provider.dart';
+import '../../../providers/modules/market/currency_provider.dart';
 import 'logic.dart';
 
 /// 计价货币选择页：搜索 + 单选列表，选中即时生效并持久化。

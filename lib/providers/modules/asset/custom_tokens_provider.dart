@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../blockchain/token.dart';
-import '../../blockchain/token_catalog.dart';
-import '../../enums/prefs_key.dart';
-import '../persistent_notifier.dart';
+import '../../../blockchain/token.dart';
+import '../../../blockchain/token_catalog.dart';
+import '../../../enums/prefs_key.dart';
+import '../../core/persistent_notifier.dart';
 
 /// 用户手动添加的代币，持久化到 SharedPreferences。
 ///

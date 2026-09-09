@@ -5,14 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
 import '../../../../widgets/asset_tile.dart';
-import '../../../../providers/modules/balance_provider.dart';
-import '../../../../providers/modules/chain_icon_provider.dart';
-import '../../../../providers/modules/wallet_provider.dart';
-import '../../../../providers/token_catalog_provider.dart';
+import '../../../../providers/modules/asset/balance_provider.dart';
+import '../../../../providers/modules/asset/chain_icon_provider.dart';
+import '../../../../providers/modules/wallet/wallet_provider.dart';
+import '../../../../providers/modules/asset/token_catalog_provider.dart';
 import '../../../../blockchain/listed_asset.dart';
 import '../../../../router/route_args.dart';
 import '../../../../router/routes.dart';
 import 'logic.dart';
+import '../../../../providers/modules/market/markets_provider.dart';
 
 /// 发送页面：普通全屏页面。根页为按余额法币价值降序的持仓列表
 /// （零余额/无地址的链不展示），点击资产后以普通路由依次进入

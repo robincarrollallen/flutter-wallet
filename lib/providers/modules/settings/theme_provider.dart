@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../persistent_notifier.dart';
-import '../../enums/app_theme_name.dart';
-import '../../enums/prefs_key.dart';
+import '../../../enums/app_theme_name.dart';
+import '../../../enums/prefs_key.dart';
+import '../../core/persistent_notifier.dart';
 
 /// 外观状态：同时持有「主题名称」与「主题模式」两个属性
 @immutable // 注解: 字段全是 final，建好就不能改(可以更改对象中的字段值)

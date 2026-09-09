@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../enums/prefs_key.dart';
 import 'prefs_provider.dart';
-import '../enums/prefs_key.dart';
 
 /// 给任意 Notifier 复用的持久化能力——**写时过滤、读时全量**。
 ///

@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/responsive/screen_adapter.dart';
 import '../../i18n/translations.g.dart';
-import '../../providers/modules/currency_provider.dart';
+import '../../providers/modules/market/currency_provider.dart';
 import '../../router/routes.dart';
 
 /// 设置面板：从屏幕顶部下滑进入的全屏毛玻璃覆盖层。

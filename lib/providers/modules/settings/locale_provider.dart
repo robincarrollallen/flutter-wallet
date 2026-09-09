@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../persistent_notifier.dart';
-import '../../i18n/translations.g.dart';
-import '../../enums/prefs_key.dart';
+import '../../../enums/prefs_key.dart';
+import '../../../i18n/translations.g.dart';
+import '../../core/persistent_notifier.dart';
 
 /// 应用语言，用 PersistentNotifier 持久化。
 ///

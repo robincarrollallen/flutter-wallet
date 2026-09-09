@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
-import '../../../../providers/modules/recent_address_provider.dart';
-import '../../../../providers/modules/wallet_provider.dart';
+import '../../../../providers/modules/transaction/recent_address_provider.dart';
+import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../domain/wallet_avatar.dart';
 import '../coins/logic.dart';
 import '../../../../blockchain/listed_asset.dart';

@@ -6,11 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wallet/constants/currency_symbols.dart';
 import 'package:wallet/data/datasource/remote/coingecko_api.dart';
 import 'package:wallet/enums/prefs_key.dart';
-import 'package:wallet/providers/coingecko_api_provider.dart';
-import 'package:wallet/providers/modules/currency_provider.dart';
-import 'package:wallet/providers/modules/markets_provider.dart';
-import 'package:wallet/providers/prefs_provider.dart';
-import 'package:wallet/providers/token_catalog_provider.dart';
+import 'package:wallet/providers/core/coingecko_api_provider.dart';
+import 'package:wallet/providers/modules/market/currency_provider.dart';
+import 'package:wallet/providers/modules/market/markets_provider.dart';
+import 'package:wallet/providers/core/prefs_provider.dart';
+import 'package:wallet/providers/modules/asset/token_catalog_provider.dart';
 
 /// 假数据源：记录被调用次数与币种，好断言「命中缓存时一次请求都不发」。
 class _FakeApi implements CoinGeckoApi {

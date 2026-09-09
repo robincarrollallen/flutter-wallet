@@ -8,8 +8,9 @@ import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/token.dart';
 import 'package:wallet/data/datasource/remote/token_catalog_api.dart';
 import 'package:wallet/enums/prefs_key.dart';
-import 'package:wallet/providers/prefs_provider.dart';
-import 'package:wallet/providers/token_catalog_provider.dart';
+import 'package:wallet/providers/core/prefs_provider.dart';
+import 'package:wallet/providers/modules/asset/token_catalog_provider.dart';
+import 'package:wallet/providers/core/token_catalog_api_provider.dart';
 
 final _usdc = Token(
   chainId: SupportedChains.ethereumSepolia.id,

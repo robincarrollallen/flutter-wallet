@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
-import '../../../providers/modules/balance_provider.dart';
-import '../../../providers/modules/chain_icon_provider.dart';
+import '../../../providers/modules/asset/chain_icon_provider.dart';
 import '../../../blockchain/chain_registry.dart';
-import '../../../providers/token_catalog_provider.dart';
+import '../../../providers/modules/asset/token_catalog_provider.dart';
 import '../../../widgets/token_icon.dart';
 import '../../../core/navigation/panel_routes.dart';
 import '../../../widgets/asset_tile.dart';
 import 'logic.dart';
 import 'pages/address/view.dart';
+import '../../../providers/modules/market/markets_provider.dart';
 
 /// 接收弹窗：从底部弹起，选择要接收的资产。
 /// 内部嵌套 Navigator（类似钱包管理面板）：

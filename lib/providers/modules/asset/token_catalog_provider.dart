@@ -2,20 +2,16 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../blockchain/chain_registry.dart';
-import '../blockchain/bundled_token_catalog.dart';
-import '../blockchain/token.dart';
-import '../blockchain/listed_asset.dart';
-import '../blockchain/token_catalog.dart';
-import '../enums/prefs_key.dart';
-import 'modules/custom_tokens_provider.dart';
-import 'modules/hidden_assets_provider.dart';
-import 'persistent_notifier.dart';
-import 'token_catalog_api_provider.dart';
-
-export 'modules/custom_tokens_provider.dart';
-export 'modules/hidden_assets_provider.dart';
-export 'token_catalog_api_provider.dart';
+import '../../../blockchain/bundled_token_catalog.dart';
+import '../../../blockchain/chain_registry.dart';
+import '../../../blockchain/listed_asset.dart';
+import '../../../blockchain/token.dart';
+import '../../../blockchain/token_catalog.dart';
+import '../../../enums/prefs_key.dart';
+import '../../core/persistent_notifier.dart';
+import '../../core/token_catalog_api_provider.dart';
+import 'custom_tokens_provider.dart';
+import 'hidden_assets_provider.dart';
 
 /// 远程代币目录 + 这份数据的写入时刻。
 ///

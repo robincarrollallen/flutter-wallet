@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// 依赖方向只能是 providers → services → data。service 需要读写状态时，
 /// 在 services 层定义端口（如 `WalletRegistry`）、由 providers 层提供实现；
-/// service 的组装一律放在 `lib/providers/service_provider.dart`。
+/// service 的组装一律放在 `lib/providers/core/service_provider.dart`。
 void main() {
   test('lib/services 下不出现 Riverpod 与 providers 层依赖', () {
     final offenders = <String>[];
