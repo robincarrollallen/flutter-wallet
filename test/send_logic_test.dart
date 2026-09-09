@@ -1,48 +1,104 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/units.dart';
+import 'package:wallet/domain/wallet.dart';
 import 'package:wallet/features/wallet/send/coins/logic.dart';
 import 'package:wallet/blockchain/listed_asset.dart';
 import 'package:wallet/blockchain/bundled_token_catalog.dart';
 import 'package:wallet/blockchain/token_catalog.dart';
+import 'package:wallet/services/transfer/chain_transfer_service.dart';
 
 final _catalog = TokenCatalog.merge(chains: SupportedChains.all, remote: BundledTokenCatalog.all);
 
+class _Cap implements ChainTransferService {
+  _Cap(this.kind, {this.supportsToken = true});
+
+  @override
+  final ChainKind kind;
+
+  @override
+  bool get supportsNative => true;
+
+  @override
+  final bool supportsToken;
+
+  @override
+  Future<TransferResult> send(TransferRequest request, Wallet wallet) {
+    throw UnimplementedError();
+  }
+}
+
+/// 与 `walletServiceProvider` 当前接入的链一致，供列表过滤断言。
+final _transfers = <ChainKind, ChainTransferService>{
+  ChainKind.evm: _Cap(ChainKind.evm),
+  ChainKind.tron: _Cap(ChainKind.tron),
+};
+
+List<ListedAsset> _assetsOf(Chain? chain) => SendLogic.assetsOf(chain, _catalog, _transfers);
+
+bool _supportsToken(ChainKind kind, [Map<ChainKind, ChainTransferService>? transfers]) =>
+    (transfers ?? _transfers)[kind]?.supportsToken ?? false;
+
 /// 打包目录里落在「已接入代币转账」的链上的代币数——只有它们会进可发送列表。
-const _tokenTransferKinds = {ChainKind.evm, ChainKind.tron};
 final _sendableTokenCount = BundledTokenCatalog.all
-    .where((t) => _tokenTransferKinds.contains(SupportedChains.byId(t.chainId).kind))
+    .where((t) => _supportsToken(SupportedChains.byId(t.chainId).kind))
     .length;
 
 void main() {
   group('SendLogic.assetsOf', () {
     test('全部链原生币 + 已接入代币转账的链的代币', () {
-      final all = SendLogic.assetsOf(null, _catalog);
+      final all = _assetsOf(null);
       expect(all.length, SupportedChains.all.length + _sendableTokenCount);
       // 尚未接入代币转账的链（Solana/Sui/Aptos），其代币不该出现在可发送列表里——
       // 让用户点进去才被拦下，比看不到更糟。
-      expect(
-        all.where((a) => a.token != null).every((a) => _tokenTransferKinds.contains(a.chain.kind)),
-        isTrue,
-      );
+      expect(all.where((a) => a.token != null).every((a) => _supportsToken(a.chain.kind)), isTrue);
     });
 
     test('指定链时返回该链原生币 + 代币', () {
-      final assets = SendLogic.assetsOf(SupportedChains.ethereumSepolia, _catalog);
+      final assets = _assetsOf(SupportedChains.ethereumSepolia);
       expect(assets, hasLength(2));
       expect(assets.first.symbol, 'ETH');
       expect(assets.last.symbol, 'USDC');
     });
 
     test('非 EVM 链只返回原生币', () {
-      final assets = SendLogic.assetsOf(SupportedChains.solanaDevnet, _catalog);
+      final assets = _assetsOf(SupportedChains.solanaDevnet);
       expect(assets.single.symbol, 'SOL');
+    });
+
+    test('supportsToken 为 false 时该链代币不进列表', () {
+      final transfers = {ChainKind.evm: _Cap(ChainKind.evm, supportsToken: false)};
+      final assets = SendLogic.assetsOf(SupportedChains.ethereumSepolia, _catalog, transfers);
+      expect(assets.single.symbol, 'ETH');
+    });
+  });
+
+  group('SendLogic.canTransfer', () {
+    test('已注册且声明支持的资产放行', () {
+      const eth = ListedAsset(chain: SupportedChains.ethereumSepolia);
+      expect(SendLogic.canTransfer(eth, _transfers), isTrue);
+    });
+
+    test('未注册的链拦截', () {
+      const sol = ListedAsset(chain: SupportedChains.solanaDevnet);
+      expect(SendLogic.canTransfer(sol, _transfers), isFalse);
+    });
+
+    test('原生币能转、代币不能时拦截代币', () {
+      final transfers = {ChainKind.evm: _Cap(ChainKind.evm, supportsToken: false)};
+      const eth = ListedAsset(chain: SupportedChains.ethereumSepolia);
+      final usdc = ListedAsset(
+        chain: SupportedChains.ethereumSepolia,
+        token: _catalog.tokensOf(SupportedChains.ethereumSepolia.id).first,
+      );
+      expect(SendLogic.canTransfer(eth, transfers), isTrue);
+      expect(SendLogic.canTransfer(usdc, transfers), isFalse);
     });
   });
 
   group('SendLogic.filter', () {
     test('按符号/名称过滤，忽略大小写', () {
-      final assets = SendLogic.assetsOf(null, _catalog);
+      final assets = _assetsOf(null);
       expect(SendLogic.filter(assets, 'sol').single.symbol, 'SOL');
       expect(SendLogic.filter(assets, 'BITCOIN').single.symbol, 'BTC');
       expect(SendLogic.filter(assets, ''), assets);
@@ -51,7 +107,7 @@ void main() {
 
   group('SendLogic.partition', () {
     // 只取原生币：本组测的是「按价值排序」，用 chain.id 当键才不会因同链多个资产而歧义。
-    final assets = SendLogic.assetsOf(null, _catalog).where((a) => a.token == null).toList();
+    final assets = _assetsOf(null).where((a) => a.token == null).toList();
 
     test('价值降序，零值进 rest 并保持原顺序', () {
       final values = {'ethereum-sepolia': 10.0, 'solana-devnet': 30.0, 'bsc-testnet': 20.0};
@@ -155,14 +211,8 @@ void main() {
     });
 
     test('按 decimals 精确比较，不受 double 精度影响', () {
-      expect(
-        SendLogic.validateAmount('0.100000000000000001', '0.1', decimals: 18),
-        '余额不足',
-      );
-      expect(
-        SendLogic.validateAmount('0.1', '0.100000000000000001', decimals: 18),
-        isNull,
-      );
+      expect(SendLogic.validateAmount('0.100000000000000001', '0.1', decimals: 18), '余额不足');
+      expect(SendLogic.validateAmount('0.1', '0.100000000000000001', decimals: 18), isNull);
     });
   });
 

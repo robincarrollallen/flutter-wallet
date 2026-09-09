@@ -42,11 +42,17 @@ class TransferRequest {
 
 /// 单条链（准确说是单个 [ChainKind]）的转账实现。
 ///
-/// 新增一条链的转账支持 = 新增一个实现类 + 在 `walletServiceProvider` 里注册一行，
-/// `WalletService` 无需改动。
+/// 新增一条链的转账支持 = 新增一个实现类 + 在 `walletServiceProvider` 的 map 加一行，
+/// `WalletService` 与发送页逻辑都无需改动。
 abstract interface class ChainTransferService {
   /// 本实现负责的链类型，用作分发表的键。
   ChainKind get kind;
+
+  /// 是否支持该链原生币转账。发送页据此决定入口是否放行。
+  bool get supportsNative;
+
+  /// 是否支持该链代币转账。一条链可能原生币能转、代币还不能。
+  bool get supportsToken;
 
   /// 执行转账。私钥明文由实现方自行解析，仅在本次调用内使用、用完即弃，
   /// 不得留存到字段、状态或日志中。

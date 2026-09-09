@@ -1,9 +1,11 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
+
 import '../../../../blockchain/chain_registry.dart';
 import '../../../../blockchain/units.dart';
 
 import '../../../../blockchain/listed_asset.dart';
 import '../../../../blockchain/token_catalog.dart';
+import '../../../../services/transfer/chain_transfer_service.dart';
 
 /// 发送弹窗的纯逻辑：资产列表构建/过滤与地址、金额校验，不依赖 UI/状态框架。
 class SendLogic {
@@ -15,28 +17,23 @@ class SendLogic {
   /// 指定链的可发送资产（原生币 + 该链代币）；[chain] 为空表示全部链。
   /// 代币来自 [catalog]。
   ///
-  /// **只列出 EVM 链的代币**：代币转账目前只有 EVM 一条实现
-  /// （见 `services/transfer/`）。把发不出去的代币列进来，用户点进去才被拦下，
-  /// 比看不到更糟。等某条链的 [ChainTransferService] 实现补齐，
-  /// 把它的 [ChainKind] 加进 [_tokenTransferKinds] 即可放行。
-  static List<ListedAsset> assetsOf(Chain? chain, TokenCatalog catalog) => [
+  /// 代币只列出 [transfers] 已声明支持代币转账的链。把发不出去的代币列进来，
+  /// 用户点进去才被拦下，比看不到更糟。接入新链时在 `walletServiceProvider` 的 map 加一行即可。
+  static List<ListedAsset> assetsOf(
+    Chain? chain,
+    TokenCatalog catalog,
+    Map<ChainKind, ChainTransferService> transfers,
+  ) => [
     for (final asset in ListedAsset.fromCatalog(catalog, chain: chain))
-      if (asset.token == null || _tokenTransferKinds.contains(asset.chain.kind)) asset,
+      if (asset.token == null || (transfers[asset.chain.kind]?.supportsToken ?? false)) asset,
   ];
 
-  /// 已接入代币转账的链类型。
-  static const _tokenTransferKinds = {ChainKind.evm, ChainKind.tron};
-
-  /// 已接入**原生币**转账的链类型，与 `walletServiceProvider` 里注册的
-  /// [ChainTransferService] 一一对应。接入新链时两处一起改。
-  static const _nativeTransferKinds = {ChainKind.evm, ChainKind.tron};
-
   /// 该资产当前能否发起转账。发送入口据此拦截，避免用户点进流程才被拦下。
-  ///
-  /// 代币比原生币多一层限制：一条链可能原生币能转、代币还不能（Tron 即如此）。
-  static bool canTransfer(ListedAsset asset) => asset.token == null
-      ? _nativeTransferKinds.contains(asset.chain.kind)
-      : _tokenTransferKinds.contains(asset.chain.kind);
+  static bool canTransfer(ListedAsset asset, Map<ChainKind, ChainTransferService> transfers) {
+    final service = transfers[asset.chain.kind];
+    if (service == null) return false;
+    return asset.token == null ? service.supportsNative : service.supportsToken;
+  }
 
   /// 按关键词过滤（匹配符号 / 名称，忽略大小写）。
   static List<ListedAsset> filter(List<ListedAsset> assets, String query) {

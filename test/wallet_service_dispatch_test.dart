@@ -13,10 +13,16 @@ final _sepoliaUsdc = BundledTokenCatalog.all.firstWhere((t) => t.chainId == Supp
 
 /// 只记录收到的请求，不真的上链。
 class _RecordingTransfer implements ChainTransferService {
-  _RecordingTransfer(this.kind);
+  _RecordingTransfer(this.kind, {this.supportsToken = true});
 
   @override
   final ChainKind kind;
+
+  @override
+  bool get supportsNative => true;
+
+  @override
+  final bool supportsToken;
 
   TransferRequest? received;
 
@@ -70,10 +76,7 @@ void main() {
     test('目录里查不到代币即报错，不降级为原生币', () async {
       final evm = _RecordingTransfer(ChainKind.evm);
       await expectLater(
-        _service(evm).sendTransaction(
-          _request(tokenIdentifier: '0x000000000000000000000000000000000000dead'),
-          _wallet,
-        ),
+        _service(evm).sendTransaction(_request(tokenIdentifier: '0x000000000000000000000000000000000000dead'), _wallet),
         throwsStateError,
       );
       expect(evm.received, isNull);
@@ -100,10 +103,7 @@ void main() {
     test('缺少 chainId 即报错', () async {
       final evm = _RecordingTransfer(ChainKind.evm);
       await expectLater(
-        _service(evm).sendTransaction(
-          const SendTxRequest(from: '0x1', to: '0x2', amount: '1'),
-          _wallet,
-        ),
+        _service(evm).sendTransaction(const SendTxRequest(from: '0x1', to: '0x2', amount: '1'), _wallet),
         throwsArgumentError,
       );
     });

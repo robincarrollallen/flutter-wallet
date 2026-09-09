@@ -1,7 +1,7 @@
 import '../../domain/wallet.dart';
 import '../../enums/chain_kind.dart';
 import '../evm_transaction_service.dart';
-import '../wallet_key_service.dart';
+import '../private_key_resolver.dart';
 import 'chain_transfer_service.dart';
 
 /// EVM 系（Ethereum / Polygon / BSC / Base / Arbitrum …）的转账实现。
@@ -9,19 +9,25 @@ import 'chain_transfer_service.dart';
 /// 职责仅是「解析签名私钥 + 按原生币/代币分派」，交易构造与广播下沉在
 /// [EvmTransactionService]。
 class EvmTransferService implements ChainTransferService {
-  const EvmTransferService(this._keyService, {EvmTransactionService transactions = const EvmTransactionService()})
+  const EvmTransferService(this._keyResolver, {EvmTransactionService transactions = const EvmTransactionService()})
     : _transactions = transactions;
 
-  final WalletKeyService _keyService;
+  final PrivateKeyResolver _keyResolver;
   final EvmTransactionService _transactions;
 
   @override
   ChainKind get kind => ChainKind.evm;
 
   @override
+  bool get supportsNative => true;
+
+  @override
+  bool get supportsToken => true;
+
+  @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
     // 私钥明文仅在本次调用内使用，不写入字段或日志，用完立刻清零（异常路径也清）。
-    final privateKey = await _keyService.resolveSigningKeyBytes(wallet, request.chain);
+    final privateKey = await _keyResolver.resolveSigningKeyBytes(wallet, request.chain);
     try {
       final token = request.token;
       if (token == null) {

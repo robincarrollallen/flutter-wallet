@@ -9,6 +9,7 @@ import '../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../providers/modules/asset/chain_icon_provider.dart';
 import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../providers/modules/asset/token_catalog_provider.dart';
+import '../../../../providers/core/service_provider.dart';
 import '../../../../blockchain/listed_asset.dart';
 import '../../../../router/route_args.dart';
 import '../../../../router/routes.dart';
@@ -42,7 +43,8 @@ class _SendScreenState extends ConsumerState<SendScreen> {
     final chainIcons = ref.watch(chainIconsProvider).icons;
     final wallet = ref.watch(activeWalletProvider);
 
-    final assets = SendLogic.filter(SendLogic.assetsOf(null, ref.watch(tokenCatalogProvider)), _query);
+    final transfers = ref.watch(walletServiceProvider).transferServices;
+    final assets = SendLogic.filter(SendLogic.assetsOf(null, ref.watch(tokenCatalogProvider), transfers), _query);
     // 法币价值：无地址按 0（进折叠区）；余额加载中为 null（留在可发送区尾部）。
     double? fiatValueOf(ListedAsset a) {
       final address = wallet?.addressFor(a.chain);
@@ -145,7 +147,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
       return;
     }
     // 尚未接入转账实现的链在入口拦截，别让用户走完三步才被拦下。
-    if (!SendLogic.canTransfer(asset)) {
+    if (!SendLogic.canTransfer(asset, ref.read(walletServiceProvider).transferServices)) {
       AppToast.show(context, '${asset.symbol}（${asset.chain.name}）转账暂未支持');
       return;
     }
