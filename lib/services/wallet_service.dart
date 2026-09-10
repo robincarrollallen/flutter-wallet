@@ -8,7 +8,7 @@ import 'transfer/chain_transfer_service.dart';
 class WalletService {
   const WalletService({required this.transferServices, required this.catalog});
 
-  /// 各链类型的转账实现；缺席的链类型即「暂未支持」。
+  /// 各链类型的转账实现；缺席的链类型即「暂未支持」
   final Map<ChainKind, ChainTransferService> transferServices;
 
   /// 用于把 [SendTxRequest.tokenIdentifier] 解析成 [Token]。

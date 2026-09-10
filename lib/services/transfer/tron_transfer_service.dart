@@ -12,8 +12,8 @@ class TronTransferService implements ChainTransferService {
   const TronTransferService(this._keyResolver, {TronTransactionService transactions = const TronTransactionService()})
     : _transactions = transactions;
 
-  final PrivateKeyResolver _keyResolver;
-  final TronTransactionService _transactions;
+  final PrivateKeyResolver _keyResolver; // 私钥解析器
+  final TronTransactionService _transactions; // 波场交易服务
 
   @override
   ChainKind get kind => ChainKind.tron;
@@ -26,10 +26,12 @@ class TronTransferService implements ChainTransferService {
 
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
-    // 私钥明文仅在本次调用内使用，不写入字段或日志，用完立刻清零（异常路径也清）。
-    final privateKey = await _keyResolver.resolveSigningKeyBytes(wallet, request.chain);
+    final privateKey = await _keyResolver.resolveSigningKeyBytes(wallet, request.chain); // 获取私钥明文
+
     try {
-      final token = request.token;
+      final token = request.token; // 代币实例
+
+      /// 如果代币实例为空，则发送原生币
       if (token == null) {
         return await _transactions.sendNative(
           chain: request.chain,
@@ -40,7 +42,8 @@ class TronTransferService implements ChainTransferService {
           deductFeeFromAmount: request.deductFeeFromAmount,
         );
       }
-      // 代币转账没有 deductFeeFromAmount：手续费付 TRX，从代币里扣不出来。
+
+      /// 如果代币实例不为空，则发送代币
       return await _transactions.sendToken(
         chain: request.chain,
         token: token,
@@ -50,7 +53,7 @@ class TronTransferService implements ChainTransferService {
         amount: request.amount,
       );
     } finally {
-      wipeKey(privateKey);
+      wipeKey(privateKey); // 清零私钥明文
     }
   }
 }

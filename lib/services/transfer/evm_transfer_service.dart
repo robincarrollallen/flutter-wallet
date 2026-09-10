@@ -4,16 +4,13 @@ import '../evm_transaction_service.dart';
 import '../private_key_resolver.dart';
 import 'chain_transfer_service.dart';
 
-/// EVM 系（Ethereum / Polygon / BSC / Base / Arbitrum …）的转账实现。
-///
-/// 职责仅是「解析签名私钥 + 按原生币/代币分派」，交易构造与广播下沉在
-/// [EvmTransactionService]。
+/// EVM 「Ethereum / Polygon / BSC / Base / Arbitrum」的转账实现
 class EvmTransferService implements ChainTransferService {
   const EvmTransferService(this._keyResolver, {EvmTransactionService transactions = const EvmTransactionService()})
     : _transactions = transactions;
 
-  final PrivateKeyResolver _keyResolver;
-  final EvmTransactionService _transactions;
+  final PrivateKeyResolver _keyResolver; // 私钥解析器
+  final EvmTransactionService _transactions; // EVM 交易服务
 
   @override
   ChainKind get kind => ChainKind.evm;
@@ -26,10 +23,12 @@ class EvmTransferService implements ChainTransferService {
 
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
-    // 私钥明文仅在本次调用内使用，不写入字段或日志，用完立刻清零（异常路径也清）。
-    final privateKey = await _keyResolver.resolveSigningKeyBytes(wallet, request.chain);
+    final privateKey = await _keyResolver.resolveSigningKeyBytes(wallet, request.chain); // 获取私钥明文
+
     try {
-      final token = request.token;
+      final token = request.token; // 代币实例
+
+      /// 如果代币实例为空，则发送原生币
       if (token == null) {
         return await _transactions.sendNative(
           chain: request.chain,
@@ -41,7 +40,8 @@ class EvmTransferService implements ChainTransferService {
           speed: request.speed,
         );
       }
-      // 代币转账没有 deductFeeFromAmount：手续费付原生币，从代币里扣不出来。
+      
+      /// 如果代币实例不为空，则发送代币
       return await _transactions.sendToken(
         chain: request.chain,
         token: token,
@@ -52,7 +52,7 @@ class EvmTransferService implements ChainTransferService {
         speed: request.speed,
       );
     } finally {
-      wipeKey(privateKey);
+      wipeKey(privateKey); // 清零私钥明文
     }
   }
 }

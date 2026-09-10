@@ -9,96 +9,90 @@ import '../domain/evm_fee.dart';
 import '../enums/fee_speed.dart';
 import 'transfer/transfer_result.dart';
 
-/// EVM 转账：取 nonce / 估费 / 估 gas → 构造交易 → 本地签名 → 广播 → 轮询 receipt。
-///
-/// 原生币与 ERC-20 共用同一条构造/签名/广播链路（[_signAndBroadcast]），差异只在
-/// 交易的 to/value/data、gasLimit 的估法、以及余额校验口径。
-/// 原生币 EOA→EOA 通常为 21000；合约收款与代币转账走 eth_estimateGas。
+/// EVM 转账实现：取 nonce / 估费 / 估 gas → 构造交易 → 本地签名 → 广播 → 轮询 receipt
 class EvmTransactionService {
-  /// [call] 只为测试留的注入口，生产代码用默认的 [jsonRpcCall] 即可。
   const EvmTransactionService({JsonRpcCaller call = jsonRpcCall}) : _call = call;
 
+  /// 调用 JSON-RPC 的接口，用于与链上交互(测试注入, 生产默认使用[jsonRpcCall])
   final JsonRpcCaller _call;
 
-  /// EOA 纯转账的固定 gas 用量下限。
+  /// EOA「原生币」纯转账的固定 gas 用量下限
   static final BigInt _nativeEoaGasLimit = BigInt.from(21000);
 
-  /// 估算 gas 上浮比例（分子/分母），给合约执行留余量。
+  /// 估算 gas 上浮比例「分子[_gasBufferNum] / [_gasBufferDen]分母」，给合约执行留余量
   static const int _gasBufferNum = 12;
   static const int _gasBufferDen = 10;
 
-  /// 等待 receipt 的默认超时与轮询间隔。
+  /// 等待 receipt 的超时时间
   static const Duration _receiptTimeout = Duration(seconds: 90);
+  /// 等待 receipt 的轮询间隔
   static const Duration _receiptPollInterval = Duration(seconds: 2);
 
-  /// eth_feeHistory 回看的区块数：太短受单块抖动影响，太长跟不上拥堵变化。
+  /// eth_feeHistory 回看的区块数：太短受单块抖动影响，太长跟不上拥堵变化
   static const int _feeHistoryBlocks = 10;
 
-  /// 发送原生币转账，返回 (交易哈希, 实际发送金额, 上链状态)。
-  ///
-  /// [privateKey] 为原始 32 字节 secp256k1 私钥，仅在本次调用内使用。
-  /// [fromAddress] 为 UI/钱包展示的发送方地址，必须与私钥派生地址一致（忽略大小写）。
-  /// [amount] 为用户输入的十进制金额字符串，按 [Chain.decimals] 转 wei。
-  ///
-  /// [deductFeeFromAmount] 仅在「全额转出（MAX）」场景传 true：此时若
-  /// 「金额 + 费用上限」超过实时余额（例如从填入 MAX 到确认之间 baseFee 上涨），
-  /// 自动把费用从转出额中扣除，扣完不为正则抛 [Exception]，实际金额随结果返回。
-  ///
-  /// 默认 false——用户手输的金额是明确意图，余额不足时必须报错，
-  /// **绝不能**静默改小金额后广播。
+  /// 发送原生币转账，返回 (交易哈希, 实际发送金额, 上链状态)
   Future<TransferResult> sendNative({
-    required Chain chain,
-    required List<int> privateKey,
-    required String fromAddress,
-    required String to,
-    required String amount,
-    bool deductFeeFromAmount = false,
-    FeeSpeed speed = FeeSpeed.defaultSpeed,
+    required Chain chain, // 链信息「实例」
+    required List<int> privateKey, // 私钥「原始 32 字节 secp256k1」(仅在本次调用内使用)
+    required String fromAddress, // 发送方地址，必须与私钥派生地址一致（忽略大小写）
+    required String to, // 接收方地址
+    required String amount, // 用户输入的十进制金额字符串，按 [Chain.decimals] 转 wei
+    bool deductFeeFromAmount = false, // 是否从金额中扣除费用
+    FeeSpeed speed = FeeSpeed.defaultSpeed, // 手续费档位
   }) async {
-    final chainId = chain.evmChainId;
+    final chainId = chain.evmChainId; // EVM 链的 chainId「数字」
     if (chainId == null) {
-      throw StateError('链 ${chain.id} 缺少 evmChainId 配置');
+      throw StateError('链 ${chain.id} 缺少 evmChainId 配置'); // 链缺少 evmChainId 配置抛出异常
     }
 
-    final signer = ETHPrivateKey.fromBytes(privateKey);
-    final from = signer.publicKey().toAddress();
+    final signer = ETHPrivateKey.fromBytes(privateKey); // 从私钥生成签名器
+    final from = signer.publicKey().toAddress(); // 从签名器生成发送方地址
     if (from.address.toLowerCase() != fromAddress.trim().toLowerCase()) {
-      throw Exception('签名地址与钱包地址不一致');
+      throw Exception('签名地址与钱包地址不一致'); // 签名地址与钱包地址不一致抛出异常
     }
 
-    var value = parseUnits(amount, chain.decimals);
+    var value = parseUnits(amount, chain.decimals); // 将转出金额转换为wei
 
-    // pending：与 nonce 同口径，避免未确认转出仍被算作可用余额。
+    // 交易序号：与 nonce 同口径，pending「含未上链的发出交易」避免未确认转出仍被算作可用余额
     final nonceHex =
         await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending'])
             as String;
-    final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed);
-    var gasLimit = await _resolveGasLimit(chain.endpoint, from.address, to, value, chain.symbol);
-    var feeCap = fee.capGasPrice * gasLimit;
+    final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed); // 获取并计算手续费「实例」(按档位)
+    var gasLimit = await _resolveGasLimit(chain.endpoint, from.address, to, value, chain.symbol); // 估算 gas 用量
+    var feeCap = fee.capGasPrice * gasLimit; // 计算手续费上限[wei]
 
+    // 余额校验：检查账户余额是否足够支付本次交易费用(金额 + 手续费上限)[wei]
     final balanceHex =
         await _call(chain.endpoint, EvmRpcMethod.getBalance.wireName, [from.address, 'pending']) as String;
-    final balance = parseEvmHexQuantity(balanceHex);
+    final balance = parseEvmHexQuantity(balanceHex); // 获取账户余额[wei]
+
+    // 如果本次交易费用(金额 + 手续费上限)大于账户余额(后续判断是否需要从余额中扣除手续费或重新估算gas用量)
     if (value + feeCap > balance) {
+      // 如果需要从金额中扣除手续费，则计算本次交易所需金额和账户余额, 然后抛出异常
       if (!deductFeeFromAmount) {
-        final need = formatUnits(value + feeCap, chain.decimals);
-        final have = formatUnits(balance, chain.decimals);
+        final need = formatUnits(value + feeCap, chain.decimals); // 计算本次交易所需金额[单位：chain.symbol]
+        final have = formatUnits(balance, chain.decimals); // 计算账户余额[单位：chain.symbol]
         throw Exception(
           '余额不足：本次需 $need ${chain.symbol}'
           '（含网络费用约 ${formatUnits(feeCap, chain.decimals)}），可用 $have ${chain.symbol}',
-        );
+        ); // 抛出异常(余额不足)
       }
-      value = balance - feeCap;
-      if (value <= BigInt.zero) throw Exception('余额不足以支付网络费用');
-      // MAX 扣费后金额变了，合约收款可能需重新估 gas，再按新 feeCap 收敛一次。
-      gasLimit = await _resolveGasLimit(chain.endpoint, from.address, to, value, chain.symbol);
-      feeCap = fee.capGasPrice * gasLimit;
+
+      value = balance - feeCap; // 重新计算转出金额: 余额扣除手续费后金额[wei]
+      if (value <= BigInt.zero) throw Exception('余额不足以支付网络费用'); // 如果扣除手续费后金额小于0，则抛出异常
+
+      gasLimit = await _resolveGasLimit(chain.endpoint, from.address, to, value, chain.symbol); // 重新估算 gas 用量
+      feeCap = fee.capGasPrice * gasLimit; // 重新计算手续费上限[wei]
+
+      // 如果重新计算的手续费上限大于账户余额，重新计算转出金额
       if (value + feeCap > balance) {
-        value = balance - feeCap;
-        if (value <= BigInt.zero) throw Exception('余额不足以支付网络费用');
+        value = balance - feeCap; // 重新计算转出金额: 余额扣除手续费后金额[wei]
+        if (value <= BigInt.zero) throw Exception('余额不足以支付网络费用'); // 如果扣除手续费后金额小于0，则抛出异常
       }
     }
 
+    // 签名并广播交易
     final (:hash, :status) = await _signAndBroadcast(
       chain: chain,
       evmChainId: chainId,
@@ -114,41 +108,34 @@ class EvmTransactionService {
     return (hash: hash, sentAmount: formatUnits(value, chain.decimals), status: status);
   }
 
-  /// 发送 ERC-20 代币转账，返回 (交易哈希, 实际发送金额, 上链状态)。
-  ///
-  /// 交易本身的 `to` 是代币合约、`value` 为 0，转账语义全在 `transfer(address,uint256)`
-  /// 的 calldata 里；[to] 是**收款人**地址。[amount] 按 [Token.decimals] 换算，
-  /// 注意不是 [Chain.decimals]。
-  ///
-  /// 手续费付的是原生币，从代币里扣不出来，因此没有 `deductFeeFromAmount`：
-  /// 代币「全额转出」就是余额本身，原生币不够付 gas 时直接报错而非改小金额。
+  /// 发送 ERC-20 代币转账，返回 (交易哈希, 实际发送金额, 上链状态)
   Future<TransferResult> sendToken({
-    required Chain chain,
-    required Token token,
-    required List<int> privateKey,
-    required String fromAddress,
-    required String to,
-    required String amount,
-    FeeSpeed speed = FeeSpeed.defaultSpeed,
+    required Chain chain, // 链信息「实例」
+    required Token token, // 代币信息「实例」
+    required List<int> privateKey, // 私钥「原始 32 字节 secp256k1」(仅在本次调用内使用)
+    required String fromAddress, // 发送方地址，必须与私钥派生地址一致（忽略大小写）
+    required String to, // 接收方地址
+    required String amount, // 用户输入的十进制金额字符串，按 [Token.decimals] 转 wei
+    FeeSpeed speed = FeeSpeed.defaultSpeed, // 手续费档位
   }) async {
-    final chainId = chain.evmChainId;
+    final chainId = chain.evmChainId; // EVM 链的 chainId「数字」
     if (chainId == null) {
-      throw StateError('链 ${chain.id} 缺少 evmChainId 配置');
+      throw StateError('链 ${chain.id} 缺少 evmChainId 配置'); // 链缺少 evmChainId 配置抛出异常
     }
     if (token.standard != TokenStandard.erc20) {
-      throw UnsupportedError('${token.symbol} 不是 ERC-20 代币，无法在 ${chain.name} 上转账');
+      throw UnsupportedError('${token.symbol} 不是 ERC-20 代币，无法在 ${chain.name} 上转账'); // 代币不是 ERC-20 代币抛出异常
     }
 
-    final signer = ETHPrivateKey.fromBytes(privateKey);
-    final from = signer.publicKey().toAddress();
+    final signer = ETHPrivateKey.fromBytes(privateKey); // 从私钥生成签名器
+    final from = signer.publicKey().toAddress(); // 从签名器生成发送方地址
     if (from.address.toLowerCase() != fromAddress.trim().toLowerCase()) {
-      throw Exception('签名地址与钱包地址不一致');
+      throw Exception('签名地址与钱包地址不一致'); // 签名地址与钱包地址不一致抛出异常
     }
 
-    final value = parseUnits(amount, token.decimals);
-    if (value <= BigInt.zero) throw Exception('转账金额必须大于 0');
-    final contract = token.identifier;
-    final data = encodeTransfer(to: to, amount: value);
+    final value = parseUnits(amount, token.decimals); // 将转出金额转换为wei
+    if (value <= BigInt.zero) throw Exception('转账金额必须大于 0'); // 转账金额必须大于 0抛出异常
+    final contract = token.identifier; // 代币合约地址
+    final data = encodeTransfer(to: to, amount: value); // 构造转账数据「传参」
 
     // 代币余额：不足时直接报错，绝不静默改小金额（与原生币手输金额同一原则）。
     final tokenBalance = decodeUint256(
@@ -158,6 +145,7 @@ class EvmTransactionService {
           ])
           as String,
     );
+    // 如果转出金额大于代币余额，则抛出异常
     if (value > tokenBalance) {
       throw Exception(
         '${token.symbol} 余额不足：本次需 ${formatUnits(value, token.decimals)}，'
@@ -165,17 +153,19 @@ class EvmTransactionService {
       );
     }
 
+    // 交易序号：与 nonce 同口径，pending「含未上链的发出交易」避免未确认转出仍被算作可用余额
     final nonceHex =
         await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending'])
             as String;
-    final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed);
-    final gasLimit = await resolveTokenGasLimit(chain, from: from.address, contract: contract, data: data);
-    final feeCap = fee.capGasPrice * gasLimit;
+    final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed); // 获取并计算手续费「实例」(按档位)
+    final gasLimit = await resolveTokenGasLimit(chain, from: from.address, contract: contract, data: data); // 估算 gas 用量
+    final feeCap = fee.capGasPrice * gasLimit; // 计算手续费上限[wei]
 
-    // 手续费走原生币，与代币余额是两本账，必须单独校验。
+    // 获取原生币余额(手续费走原生币，与代币余额是两本账，必须单独校验)
     final nativeBalance = parseEvmHexQuantity(
       await _call(chain.endpoint, EvmRpcMethod.getBalance.wireName, [from.address, 'pending']) as String,
     );
+    // 如果手续费上限大于原生币余额，则抛出异常
     if (feeCap > nativeBalance) {
       throw Exception(
         '${chain.symbol} 不足以支付网络费：需约 ${formatUnits(feeCap, chain.decimals)} ${chain.symbol}，'
@@ -183,6 +173,7 @@ class EvmTransactionService {
       );
     }
 
+    // 签名并广播交易
     final (:hash, :status) = await _signAndBroadcast(
       chain: chain,
       evmChainId: chainId,
@@ -200,17 +191,18 @@ class EvmTransactionService {
 
   /// 构造交易 → 本地签名 → 广播 → 轮询 receipt。原生币与代币共用。
   Future<({String hash, EvmSendStatus status})> _signAndBroadcast({
-    required Chain chain,
-    required int evmChainId,
-    required ETHPrivateKey signer,
-    required ETHAddress from,
-    required String to,
-    required BigInt value,
-    required List<int> data,
-    required int nonce,
-    required BigInt gasLimit,
-    required EvmFeeRate fee,
+    required Chain chain, // 链信息「实例」
+    required int evmChainId, // EVM 链的 chainId「数字」
+    required ETHPrivateKey signer, // 签名器「实例」
+    required ETHAddress from, // 发送方地址「实例」
+    required String to, // 接收方地址
+    required BigInt value, // 转出金额[wei]
+    required List<int> data, // 转账数据「传参」
+    required int nonce, // 交易序号
+    required BigInt gasLimit, // gas 用量[wei]
+    required EvmFeeRate fee, // 手续费「实例」
   }) async {
+    /// 构造交易「未签名」
     final unsigned = ETHTransaction(
       type: fee.eip1559 ? ETHTransactionType.eip1559 : ETHTransactionType.legacy,
       from: from,
@@ -224,12 +216,11 @@ class EvmTransactionService {
       data: data,
       chainId: BigInt.from(evmChainId),
     );
-    final signature = signer.sign(unsigned.serialized);
-    final raw = unsigned.copyWith(signature: signature).signedSerialized();
+    final signature = signer.sign(unsigned.serialized); // 给交易添加签名
+    final raw = unsigned.copyWith(signature: signature).signedSerialized(); // 签名后的交易
 
-    final hash =
-        await _call(chain.endpoint, EvmRpcMethod.sendRawTransaction.wireName, ['0x${evmBytesToHex(raw)}'])
-            as String;
+    // 发送签名后的交易
+    final hash = await _call(chain.endpoint, EvmRpcMethod.sendRawTransaction.wireName, ['0x${evmBytesToHex(raw)}']) as String;
     return (hash: hash, status: await waitForReceipt(chain.endpoint, hash));
   }
 

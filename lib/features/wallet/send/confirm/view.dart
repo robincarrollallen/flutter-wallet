@@ -61,20 +61,19 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
 
     setState(() => _submitting = true);
     try {
-      final result = await ref
-          .read(walletServiceProvider)
-          .sendTransaction(
-            SendTxRequest(
-              from: from,
-              to: widget.toAddress,
-              amount: widget.amount,
-              chainId: widget.asset.chain.id,
-              tokenIdentifier: widget.asset.token?.identifier,
-              deductFeeFromAmount: _deductsFee,
-              speed: _feeSpeed,
-            ),
-            wallet,
-          );
+      final result = await ref.read(walletServiceProvider)
+        .sendTransaction(
+          SendTxRequest(
+            from: from,
+            to: widget.toAddress,
+            amount: widget.amount,
+            chainId: widget.asset.chain.id,
+            tokenIdentifier: widget.asset.token?.identifier,
+            deductFeeFromAmount: _deductsFee,
+            speed: _feeSpeed,
+          ),
+          wallet,
+        );
       if (!mounted) return; // 确保当前 Widget 仍然存在于页面树（未被销毁）
       // 记入「最近使用」，供下次发送时快速选择。
       ref.read(recentAddressesProvider.notifier).record(widget.asset.chain.id, widget.toAddress);

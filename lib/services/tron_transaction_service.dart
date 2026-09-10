@@ -10,19 +10,9 @@ import '../data/datasource/remote/tron_service.dart';
 import '../domain/tron_fee.dart';
 import 'transfer/transfer_result.dart';
 
-/// Tron 转账：让节点补齐区块引用 → **回解校验** → 本地签名 → 广播 → 轮询回执。
-///
-/// 与 [EvmTransactionService] 同层：只做链上交互，不认识钱包与私钥来源。
-///
-/// 与 EVM 的两处根本差异：
-/// - **费用模型**：Tron 用带宽/能量，没有 gasPrice × gasLimit。原生 TRX 的 EOA 转账
-///   在免费带宽够用时不花钱，带宽不足才烧约 0.267 TRX。既然没有可选档位，
-///   [FeeSpeed] 在这里没有意义，调用方传什么都忽略。
-/// - **交易构造**：区块引用（refBlockBytes / refBlockHash / expiration）必须取自
-///   最新区块，这里交给节点的 `wallet/createtransaction` 生成——但**绝不闭眼签**，
-///   见 [_verifyMatches]。
+/// Tron 转账：让节点补齐区块引用 → **回解校验** → 本地签名 → 广播 → 轮询回执(只做链上交互，不认识钱包与私钥来源)
 class TronTransactionService {
-  /// [provider] / [balances] 都只为测试留的注入口，生产代码用默认值即可。
+  /// [provider] / [balances] 只为测试留的注入口，生产代码用默认值即可。
   const TronTransactionService({TronProvider? provider, ChainBalanceApi balances = const ChainBalanceApi()})
     : _injected = provider,
       _balances = balances;
