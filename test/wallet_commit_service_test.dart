@@ -85,8 +85,14 @@ class _FakeWalletRegistry implements WalletRegistry {
   /// 只抛一次：回滚时的恢复调用必须能正常执行，否则测不出「列表被摘掉」这一步。
   bool throwOnFirstSelect = false;
 
+  /// false 模拟「钱包列表键不存在 / 已损坏」，即删 App 重装后的首次启动。
+  bool listTrusted = true;
+
   @override
   String? get currentWalletId => selectedId;
+
+  @override
+  bool get walletListTrusted => listTrusted;
 
   @override
   bool contains(String walletId) => wallets.any((w) => w.id == walletId);
@@ -270,8 +276,48 @@ void main() {
         throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.persistFailed)),
       );
 
-      // 密钥删不掉是可接受的降级——它会在下次启动被对账清理。
-      expect(platform.store.keys, ['wallet.w1.mnemonic']);
+      // 密钥删不掉是可接受的降级——它连同提交标记一起留下，下次启动的对账认标记清理。
+      expect(platform.store.keys, containsAll(['wallet.w1.mnemonic', 'wallet.w1.pending']));
+    });
+
+    test('提交成功后撤下提交标记：这份密钥从此不再具备被对账删除的资格', () async {
+      final (service, _, platform) = _build();
+
+      await service.commit(wallet: _wallet('w1'), mnemonic: 'seed');
+
+      expect(platform.store.containsKey('wallet.w1.pending'), isFalse);
+      expect(platform.store['wallet.w1.mnemonic'], 'seed');
+    });
+
+    test('提交标记写不上时直接失败，绝不继续写密钥', () async {
+      final (service, registry, platform) = _build();
+      platform.throwOnWrite = true;
+
+      await expectLater(
+        service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
+        throwsA(
+          isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed),
+        ),
+      );
+
+      // 没有标记的密钥永远清不掉，所以宁可整笔提交失败，也不能留下这种残留。
+      expect(platform.store, isEmpty);
+      expect(registry.wallets, isEmpty);
+    });
+
+    test('撤标记失败不影响提交结果，遗留标记由对账自愈', () async {
+      final (service, registry, platform) = _build();
+      platform.throwOnDelete = true;
+
+      await service.commit(wallet: _wallet('w1'), mnemonic: 'seed');
+
+      expect(registry.wallets.map((w) => w.id), ['w1'], reason: '元数据已生效，用户视角就是成功了');
+      expect(platform.store['wallet.w1.pending'], isNotNull, reason: '标记残留');
+
+      // 下一次对账：钱包在列表里，只清标记、不碰密钥。
+      platform.throwOnDelete = false;
+      expect(await service.purgeOrphanSecrets(), 0);
+      expect(platform.store, {'wallet.w1.mnemonic': 'seed'});
     });
 
     test('失败后可重试：第二次提交正常成功', () async {
@@ -302,23 +348,76 @@ void main() {
   });
 
   group('purgeOrphanSecrets', () {
-    test('删除无钱包引用的孤儿密钥', () async {
+    test('删除带提交标记、且无钱包引用的孤儿密钥', () async {
       final (service, _, platform) = _build(
-        secrets: {'wallet.ghost.mnemonic': 'orphan seed', 'wallet.ghost2.pk': '0xorphan'},
+        secrets: {
+          'wallet.ghost.mnemonic': 'orphan seed',
+          'wallet.ghost.pending': 'at',
+          'wallet.ghost2.pk': '0xorphan',
+          'wallet.ghost2.pending': 'at',
+        },
       );
 
-      expect(await service.purgeOrphanSecrets(), 2);
-      expect(platform.store, isEmpty);
+      expect(await service.purgeOrphanSecrets(), 2, reason: '返回值只计密钥，不含标记');
+      expect(platform.store, isEmpty, reason: '标记也一并清掉，不留垃圾');
+    });
+
+    // 本次修复的核心：判据是「带标记」而不是「不在列表里」。没有标记的密钥可能是
+    // 删 App 重装后幸存下来的真钱包，删掉就等于销毁用户最后的恢复路径。
+    test('无提交标记的密钥一律不删，哪怕不在钱包列表里', () async {
+      final (service, _, platform) = _build(
+        secrets: {'wallet.survivor.mnemonic': 'real money seed', 'wallet.survivor2.pk': '0xreal'},
+      );
+
+      expect(await service.purgeOrphanSecrets(), 0);
+      expect(platform.store, {'wallet.survivor.mnemonic': 'real money seed', 'wallet.survivor2.pk': '0xreal'});
     });
 
     test('保留在列表中的钱包的密钥，不误删', () async {
       final (service, registry, platform) = _build(
-        secrets: {'wallet.keep.mnemonic': 'good seed', 'wallet.ghost.mnemonic': 'orphan seed'},
+        secrets: {
+          'wallet.keep.mnemonic': 'good seed',
+          'wallet.ghost.mnemonic': 'orphan seed',
+          'wallet.ghost.pending': 'at',
+        },
       );
       registry.add(_wallet('keep'));
 
       expect(await service.purgeOrphanSecrets(), 1);
       expect(platform.store, {'wallet.keep.mnemonic': 'good seed'});
+    });
+
+    // 撤标记那一步失败留下的陈旧标记：钱包已在列表里，说明提交其实成功了。
+    test('标记残留但钱包在列表里：只清标记，密钥保留', () async {
+      final (service, registry, platform) = _build(
+        secrets: {'wallet.keep.mnemonic': 'good seed', 'wallet.keep.pending': 'at'},
+      );
+      registry.add(_wallet('keep'));
+
+      expect(await service.purgeOrphanSecrets(), 0);
+      expect(platform.store, {'wallet.keep.mnemonic': 'good seed'});
+    });
+
+    // 打完标记、密钥还没写就被杀：标记要能自己收敛掉，否则会越积越多。
+    test('只有裸标记没有密钥：标记被清掉，返回 0', () async {
+      final (service, _, platform) = _build(secrets: {'wallet.ghost.pending': 'at'});
+
+      expect(await service.purgeOrphanSecrets(), 0);
+      expect(platform.store, isEmpty);
+    });
+
+    test('钱包列表不可信时（删 App 重装）一条都不删', () async {
+      final (service, registry, platform) = _build(
+        secrets: {'wallet.ghost.mnemonic': 'orphan seed', 'wallet.ghost.pending': 'at'},
+      );
+      registry.listTrusted = false;
+
+      expect(await service.purgeOrphanSecrets(), 0);
+      expect(
+        platform.store,
+        {'wallet.ghost.mnemonic': 'orphan seed', 'wallet.ghost.pending': 'at'},
+        reason: '空列表此时是「不知道」而非「确实没有」，连标记都不该动',
+      );
     });
 
     test('不触碰不属于本类键格式的数据', () async {
@@ -330,19 +429,37 @@ void main() {
 
     test('walletId 含点号时仍能正确切分，不误删', () async {
       final (service, registry, platform) = _build(
-        secrets: {'wallet.a.b.mnemonic': 'keep me', 'wallet.c.d.pk': 'orphan'},
+        secrets: {
+          'wallet.a.b.mnemonic': 'keep me',
+          'wallet.a.b.pending': 'at',
+          'wallet.c.d.pk': 'orphan',
+          'wallet.c.d.pending': 'at',
+        },
       );
       registry.add(_wallet('a.b'));
 
       expect(await service.purgeOrphanSecrets(), 1);
-      expect(platform.store.keys, ['wallet.a.b.mnemonic']);
+      expect(platform.store.keys, ['wallet.a.b.mnemonic'], reason: 'a.b 的陈旧标记被清，密钥留下');
     });
 
     test('同一钱包的助记词与私钥都是孤儿时，两条都删', () async {
-      final (service, _, platform) = _build(secrets: {'wallet.ghost.mnemonic': 'seed', 'wallet.ghost.pk': '0x1'});
+      final (service, _, platform) = _build(
+        secrets: {'wallet.ghost.mnemonic': 'seed', 'wallet.ghost.pk': '0x1', 'wallet.ghost.pending': 'at'},
+      );
 
       expect(await service.purgeOrphanSecrets(), 2);
       expect(platform.store, isEmpty);
+    });
+
+    // 标记的后缀与密钥键互斥，不能让它混进密钥的读取或统计里。
+    test('提交标记不会被当成密钥读取', () async {
+      _build(secrets: {'wallet.w1.pending': 'at'});
+      final storage = SecureWalletStorage(const FlutterSecureStorage());
+
+      expect(await storage.readMnemonic('w1'), isNull);
+      expect(await storage.readPrivateKey('w1'), isNull);
+      expect(await storage.hasSecrets('w1'), isFalse);
+      expect(await storage.hasPendingCommit('w1'), isTrue);
     });
 
     test('幂等：无孤儿时重复执行返回 0，不改动数据', () async {
@@ -377,10 +494,12 @@ void main() {
         throwsA(isA<WalletCommitException>()),
       );
       expect(platform.store['wallet.w1.mnemonic'], 'lost seed', reason: '前置条件：孤儿密钥确实残留了');
+      expect(platform.store['wallet.w1.pending'], isNotNull, reason: '前置条件：提交标记也残留了，这是可清理的凭据');
 
-      // 第二段生命周期：新容器 + 空的钱包列表，等价于重启后的启动对账。
+      // 第二段生命周期：新容器 + 一份**确实是空的**钱包列表（键在、内容为空），
+      // 等价于「用户手上真没有钱包」的重启，此时列表可信，对账照常进行。
       platform.throwOnDelete = false;
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({'flutter.wallet.list': '{"wallets":[]}'});
       final restarted = ProviderContainer(
         overrides: [
           sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance()),
@@ -391,6 +510,53 @@ void main() {
 
       expect(await restarted.read(walletCommitServiceProvider).purgeOrphanSecrets(), 1);
       expect(platform.store, isEmpty, reason: '重启后孤儿助记词已被清理，敏感数据不留在设备上');
+    });
+
+    // 本次修复的核心回归：删 App 会带走 SharedPreferences，却带不走 Keychain。
+    // 此时钱包列表为空不代表用户没钱包，对账必须停手。
+    test('删 App 重装（prefs 整体消失）：对账一条都不删，保住 Keychain 里的恢复路径', () async {
+      final (first, platform) = await _setUpContainer();
+      await first.read(walletCommitServiceProvider).commit(wallet: _wallet('w1'), mnemonic: 'real money seed');
+      expect(platform.store.containsKey('wallet.w1.pending'), isFalse, reason: '前置条件：提交成功已撤下标记');
+
+      // 第二段生命周期：prefs 容器被清空（键根本不存在），Keychain 原样保留。
+      SharedPreferences.setMockInitialValues({});
+      final reinstalled = ProviderContainer(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance()),
+          secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage())),
+        ],
+      );
+      addTearDown(reinstalled.dispose);
+
+      expect(reinstalled.read(walletListProvider), isEmpty, reason: '前置条件：钱包列表确实恢复成空');
+      expect(await reinstalled.read(walletCommitServiceProvider).purgeOrphanSecrets(), 0);
+      expect(
+        platform.store['wallet.w1.mnemonic'],
+        'real money seed',
+        reason: '助记词必须活着——这是用户找回资产的唯一凭据',
+      );
+    });
+
+    // 两道防线各挡一种失败：标记因撤除失败而残留时，列表不可信这一层仍要拦住删除。
+    test('陈旧标记 + prefs 整体消失：列表可信度门闩仍然拦住删除', () async {
+      final (first, platform) = await _setUpContainer();
+      platform.throwOnDelete = true; // 撤标记失败，标记就此残留
+      await first.read(walletCommitServiceProvider).commit(wallet: _wallet('w1'), mnemonic: 'real money seed');
+      expect(platform.store['wallet.w1.pending'], isNotNull, reason: '前置条件：陈旧标记残留了');
+
+      platform.throwOnDelete = false;
+      SharedPreferences.setMockInitialValues({});
+      final reinstalled = ProviderContainer(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance()),
+          secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage())),
+        ],
+      );
+      addTearDown(reinstalled.dispose);
+
+      expect(await reinstalled.read(walletCommitServiceProvider).purgeOrphanSecrets(), 0);
+      expect(platform.store['wallet.w1.mnemonic'], 'real money seed');
     });
 
     test('提交成功后重启：对账不会误删正常钱包的助记词', () async {

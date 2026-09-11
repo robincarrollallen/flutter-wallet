@@ -20,7 +20,9 @@ Future<void> main() async {
     overrides: [sharedPrefsProvider.overrideWithValue(sharedPreferences)], // 覆写原来的 Provider，注入真实的实例
   );
 
-  // 启动对账：清理上次被中断的创建 / 导入在安全存储里留下的、无钱包引用的助记词与私钥。
+  // 启动对账：清理上次被中断的创建 / 导入留下的、**带提交意图标记**的助记词与私钥。
+  // 没有标记的一律保留——钱包列表会随 App 删除一起消失而 Keychain 不会，按「不在列表里」
+  // 删等于抢先销毁用户最后的恢复路径。
   // 放在 runApp 前是为了排除与首帧内用户操作的竞争；耗时只是一次 Keychain 全量读，毫秒级。
   try {
     await container.read(walletCommitServiceProvider).purgeOrphanSecrets();

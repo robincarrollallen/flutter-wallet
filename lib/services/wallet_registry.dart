@@ -15,6 +15,14 @@ abstract interface class WalletRegistry {
   /// 列表中所有钱包的 id，用于与安全存储对账。
   Set<String> get knownWalletIds;
 
+  /// 钱包列表的持久化数据是否可信。
+  ///
+  /// false 表示存储键根本不存在或内容已损坏——**这不等于「用户没有钱包」**。
+  /// iOS 删除 App 会清掉 SharedPreferences 而 Keychain 属于 access group 会保留，
+  /// 重装后首次启动正是这个状态：[knownWalletIds] 返回空集是「不知道」而非
+  /// 「确实没有」，任何以它为依据的删除动作都必须停手。
+  bool get walletListTrusted;
+
   /// 钱包入列表。
   void add(Wallet wallet);
 

@@ -55,17 +55,41 @@ mixin PersistentNotifier<T> on Notifier<T> {
   /// 用来兜底 JSON 里缺失的字段（建议用 copyWith，缺啥就保留 fallback 的）。
   T fromJson(Map<String, dynamic> json, T fallback);
 
+  /// [restore] 执行时，本 Notifier 的持久化键是否已经存在。
+  ///
+  /// 用来区分「从没存过 / 数据容器被清」与「存过一份空值」——两者在 [restore] 的
+  /// 返回值上都是 initial，但对调用方含义天差地别：前者是「不知道」，后者才是
+  /// 「确实是空的」。拿它当删除依据的调用方（如启动对账）必须分清。
+  ///
+  /// 取的是 [restore] 当时的快照而不是现读：[restore] 挂的自动写回在 build 之后
+  /// 立刻就会把键建出来，现读永远是 true，问不出「原本有没有」。
+  bool get hasPersistedValue => _hadPersistedValue;
+  bool _hadPersistedValue = false;
+
+  /// [restore] 读到的存储值是否已损坏（JSON 解析失败或不是 Map）。
+  ///
+  /// 损坏与「没存过」一样，恢复结果都是 initial，同样不能当成「确实是空的」。
+  bool get persistedValueCorrupted => _corrupted;
+  bool _corrupted = false;
+
   /// 在 build() 里调用：用存储值全量恢复，并挂上「state 变化自动写回」的监听。
   /// 返回恢复后的初始 state；[initial] 同时充当缺失字段的默认值。
   T restore(T initial) {
     var s = initial;
+    _corrupted = false;
+    _hadPersistedValue = _prefs.containsKey(persistKey.value);
     final raw = _prefs.getString(persistKey.value);
     if (raw != null) {
       try {
         final json = jsonDecode(raw);
-        if (json is Map<String, dynamic>) s = fromJson(json, initial);
+        if (json is Map<String, dynamic>) {
+          s = fromJson(json, initial);
+        } else {
+          _corrupted = true; // 存着，但不是我们写下的结构。
+        }
       } catch (_) {
-        // 脏数据：当作没存过，用默认值。
+        // 脏数据：当作没存过，用默认值，但记下来——调用方可能需要区分。
+        _corrupted = true;
       }
     }
     /// 监听 state 变化，自动落盘

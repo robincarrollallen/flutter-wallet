@@ -132,6 +132,13 @@ class _RiverpodWalletRegistry implements WalletRegistry {
   Set<String> get knownWalletIds => _ref.read(walletListProvider).map((w) => w.id).toSet();
 
   @override
+  bool get walletListTrusted {
+    _ref.read(walletListProvider); // 先触发 build，恢复结果才就位。
+    final notifier = _ref.read(walletListProvider.notifier);
+    return notifier.hasPersistedValue && !notifier.persistedValueCorrupted;
+  }
+
+  @override
   void add(Wallet wallet) => _ref.read(walletListProvider.notifier).add(wallet);
 
   @override
