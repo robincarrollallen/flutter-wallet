@@ -85,7 +85,10 @@ class _ManualBackupNoticeSheet extends StatefulWidget {
 }
 
 class _ManualBackupNoticeSheetState extends State<_ManualBackupNoticeSheet> {
-  static const _notices = ['App 卸载后，助记词将被删除', '助记词一旦丢失无法找回'];
+  // 第一条刻意不写成「卸载后助记词会被删除」：iOS 上助记词存在 Keychain，卸载 App
+  // 并不会删掉它，但钱包列表会随数据一起消失，App 里再也打不开这个钱包。说成「被删除」
+  // 既不准确，还会让用户误以为卸载等于安全擦除，转手设备前少做一步真正的清理。
+  static const _notices = ['助记词只保存在本机，卸载 App 后将无法再打开这个钱包', '助记词一旦丢失无法找回'];
 
   // 每条须知的勾选状态，与 _notices 一一对应。
   final List<bool> _checked = List<bool>.filled(_notices.length, false);
