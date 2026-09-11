@@ -77,7 +77,7 @@ class TotalAssetsCard extends ConsumerWidget {
             ),
             SizedBox(height: 8.s),
             _Total(total: total),
-            // —— 功能按钮栏：发送 / 接收 / 历史 / 更多（仅有钱包时展示，逻辑待补） —— //
+            // —— 功能按钮栏：发送 / 接收 / 历史 / 更多（仅有钱包时展示，「更多」逻辑待补） —— //
             if (wallet != null) ...[
               SizedBox(height: 16.s),
               Row(
@@ -85,16 +85,20 @@ class TotalAssetsCard extends ConsumerWidget {
                 children: [
                   _ActionButton(
                     icon: Icons.arrow_upward_rounded,
-                    label: '发送',
+                    label: t.home.actions.send,
                     onTap: () => context.push(AppRoute.send),
                   ),
                   _ActionButton(
                     icon: Icons.arrow_downward_rounded,
-                    label: '接收',
+                    label: t.home.actions.receive,
                     onTap: () => ReceiveSheet.show(context),
                   ),
-                  const _ActionButton(icon: Icons.history_rounded, label: '历史'),
-                  const _ActionButton(icon: Icons.grid_view_rounded, label: '更多'),
+                  _ActionButton(
+                    icon: Icons.history_rounded,
+                    label: t.home.actions.history,
+                    onTap: () => context.push(AppRoute.transactionHistory),
+                  ),
+                  _ActionButton(icon: Icons.grid_view_rounded, label: t.home.actions.more),
                 ],
               ),
             ],

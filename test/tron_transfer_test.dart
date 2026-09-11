@@ -220,7 +220,8 @@ void main() {
       expect(contract.ownerAddress, _owner);
 
       expect(result.sentAmount, '1.5');
-      expect(result.status, EvmSendStatus.confirmed);
+      // 广播链路不等上链：状态一律先记 pending，由页面轮询回填。
+      expect(result.status, TransactionStatus.pending);
       expect(result.hash, signed.rawData.txID);
     });
 
@@ -305,7 +306,7 @@ void main() {
     test('余额刚好等于金额：带宽够则放行', () async {
       final node = _FakeTronService(balance: '1500000', freeBandwidth: 600);
       final result = await _send(node, amount: '1.5');
-      expect(result.status, EvmSendStatus.confirmed);
+      expect(result.hash, isNotEmpty, reason: '带宽够就该广播出去');
     });
 
     test('余额刚好等于金额：带宽不足则报错并提示含网络费', () async {
@@ -398,11 +399,19 @@ void main() {
       expect(node.broadcastPayload, isNull);
     });
 
-    test('回执显示执行失败时状态为 failed', () async {
+    // 状态查询已从广播链路里摘出来，单独验回执解读：contractRet 表示失败就是 failed。
+    test('回执显示执行失败时 waitForReceipt 返回 failed', () async {
       final node = _FakeTronService(receiptSuccess: false);
       final result = await _send(node);
 
-      expect(result.status, EvmSendStatus.failed);
+      expect(await _service(node).waitForReceipt(_chain, result.hash), TransactionStatus.failed);
+    });
+
+    test('回执显示执行成功时 waitForReceipt 返回 confirmed', () async {
+      final node = _FakeTronService();
+      final result = await _send(node);
+
+      expect(await _service(node).waitForReceipt(_chain, result.hash), TransactionStatus.confirmed);
     });
   });
 }

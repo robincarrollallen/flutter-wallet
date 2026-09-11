@@ -18,7 +18,36 @@
     "settings": "Settings",
     "scan": "Scan",
     "tokens": "Tokens",
-    "manageTokens": "Manage tokens"
+    "manageTokens": "Manage tokens",
+    "actions": {
+      "send": "Send",
+      "receive": "Receive",
+      "history": "History",
+      "more": "More"
+    }
+  },
+  "transactionHistory": {
+    "title": "Transaction history",
+    "empty": "No transactions yet",
+    "emptyHint": "Transactions sent from this app will show up here",
+    "filterAllChains": "All networks",
+    "selectChain": "Select network",
+    "statusPending": "Pending",
+    "statusConfirmed": "Confirmed",
+    "statusFailed": "Failed",
+    "directionOutgoing": "Sent",
+    "directionIncoming": "Received",
+    "detailTitle": "Transaction details",
+    "fieldHash": "Transaction hash",
+    "fieldStatus": "Status",
+    "fieldAmount": "Amount",
+    "fieldFrom": "From",
+    "fieldTo": "To",
+    "fieldChain": "Network",
+    "fieldTime": "Submitted",
+    "copied": "Copied",
+    "today": "Today",
+    "yesterday": "Yesterday"
   },
   "manageTokens": {
     "title": "Manage tokens",

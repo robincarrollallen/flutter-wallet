@@ -4,7 +4,7 @@ import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/token_catalog.dart';
 import 'package:wallet/domain/wallet.dart';
 import 'package:wallet/dto/request/send_tx_request.dart';
-import 'package:wallet/enums/evm_send_status.dart';
+import 'package:wallet/enums/transaction_status.dart';
 import 'package:wallet/services/transfer/chain_transfer_service.dart';
 import 'package:wallet/services/wallet_service.dart';
 
@@ -26,10 +26,19 @@ class _RecordingTransfer implements ChainTransferService {
 
   TransferRequest? received;
 
+  /// 最近一次被查询状态的交易哈希。
+  String? statusQueriedFor;
+
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
     received = request;
-    return (hash: '0xabc', sentAmount: request.amount, status: EvmSendStatus.confirmed);
+    return (hash: '0xabc', sentAmount: request.amount, status: TransactionStatus.confirmed);
+  }
+
+  @override
+  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash) async {
+    statusQueriedFor = transactionHash;
+    return TransactionStatus.confirmed;
   }
 }
 

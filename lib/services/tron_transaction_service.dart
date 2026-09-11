@@ -23,9 +23,14 @@ class TronTransactionService {
   /// 它已经处理了「未激活账户返回 {} = 真实的 0」这个业务空值。
   final ChainBalanceApi _balances;
 
-  /// 等待回执的超时与轮询间隔。Tron 出块 3 秒一个，比以太坊快，
-  /// 因此间隔取得比 EVM 那边的 2 秒更贴近出块节奏即可。
-  static const Duration _receiptTimeout = Duration(seconds: 60);
+  /// 查询回执的默认超时：只够发一轮请求。
+  ///
+  /// 与 EVM 同一原则——广播链路不等上链，拿不到回执即视为仍在打包中，
+  /// 状态交给结果页与历史页各自轮询回填。
+  static const Duration _receiptTimeout = Duration(seconds: 1);
+
+  /// 单次调用内多轮查询的间隔。Tron 出块 3 秒一个，比以太坊快，取 3 秒贴近出块节奏。
+  /// 默认超时下只会发一轮，这个值仅对显式传长超时的调用方有意义。
   static const Duration _receiptPollInterval = Duration(seconds: 3);
 
   /// 能量估算的上浮比例（分子/分母），与 EVM 那边 gas 的 1.2 倍同一用意。
@@ -250,7 +255,8 @@ class TronTransactionService {
     return (
       hash: broadcast.txid,
       sentAmount: formatUnits(value, chain.decimals),
-      status: await waitForReceipt(chain, broadcast.txid, provider: provider),
+      // 广播成功即返回，不在这里等上链：状态先记 pending，由结果页与历史页回填。
+      status: TransactionStatus.pending,
     );
   }
 
@@ -334,7 +340,8 @@ class TronTransactionService {
     return (
       hash: broadcast.txid,
       sentAmount: formatUnits(value, token.decimals),
-      status: await waitForReceipt(chain, broadcast.txid, provider: provider),
+      // 同 [sendNative]：广播成功即返回，上链状态交给页面轮询回填。
+      status: TransactionStatus.pending,
     );
   }
 
@@ -391,11 +398,12 @@ class TronTransactionService {
     }
   }
 
-  /// 轮询 `wallet/gettransactionbyid`，直到确认/失败或超时（返回 pending）。
+  /// 查询 `wallet/gettransactionbyid`，直到确认/失败或超时（返回 pending）。
   ///
   /// 广播返回 result:true 只代表节点收下了，不代表已上链——与 EVM 那边先拿到
-  /// txHash 再等 receipt 是同一回事。刚广播时查不到交易（返回 null）属正常，继续等。
-  Future<EvmSendStatus> waitForReceipt(
+  /// txHash 再查 receipt 是同一回事。刚广播时查不到交易（返回 null）属正常。
+  /// 默认超时只够发一轮，即「查一次当前状态」；传长超时才会变成真正的轮询。
+  Future<TransactionStatus> waitForReceipt(
     Chain chain,
     String txId, {
     TronProvider? provider,
@@ -409,7 +417,7 @@ class TronTransactionService {
       if (receipt != null) return _statusOf(receipt);
       await Future<void>.delayed(interval);
     }
-    return EvmSendStatus.pending;
+    return TransactionStatus.pending;
   }
 
   /// 从回执判断这笔交易到底成没成。
@@ -418,12 +426,12 @@ class TronTransactionService {
   /// `wallet/gettransactionbyid` 返回的是 `ret: [{"contractRet": "REVERT"}]`——
   /// `ret` 缺席时 `isSuccess` 恒为 true，一笔被回滚的交易会被报成「已确认」。
   /// 这里以 `contractRet` 为准，两个字段任一表示失败就算失败。
-  static EvmSendStatus _statusOf(TronGetTransactionByIdResponse receipt) {
+  static TransactionStatus _statusOf(TronGetTransactionByIdResponse receipt) {
     final failed = receipt.ret.any(
       (r) =>
           r.ret == TronResultCode.failed ||
           (r.contractRet != null && r.contractRet != TronContractResult.success),
     );
-    return failed ? EvmSendStatus.failed : EvmSendStatus.confirmed;
+    return failed ? TransactionStatus.failed : TransactionStatus.confirmed;
   }
 }

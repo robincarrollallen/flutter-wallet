@@ -17,6 +17,11 @@ abstract final class AppRoute {
   static const addressManagement = '/address-management';
   static const walletPanel = '/wallet-panel';
 
+  // —— 交易历史及其详情 —— //
+  static const transactionHistory = '/transaction-history';
+  static const transactionDetailSegment = 'detail';
+  static const transactionDetail = '$transactionHistory/$transactionDetailSegment';
+
   // —— 设置面板及其子页 —— //
   static const settings = '/settings';
   static const settingsAppearanceSegment = 'appearance';

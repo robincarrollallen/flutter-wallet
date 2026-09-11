@@ -26,6 +26,11 @@ class _Cap implements ChainTransferService {
   Future<TransferResult> send(TransferRequest request, Wallet wallet) {
     throw UnimplementedError();
   }
+
+  @override
+  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash) {
+    throw UnimplementedError();
+  }
 }
 
 /// 与 `walletServiceProvider` 当前接入的链一致，供列表过滤断言。

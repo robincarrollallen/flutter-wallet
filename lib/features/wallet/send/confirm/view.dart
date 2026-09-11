@@ -15,6 +15,8 @@ import '../../../../providers/modules/transaction/tron_fee_provider.dart';
 import '../../../../providers/core/service_provider.dart';
 import '../../../../providers/modules/market/currency_provider.dart';
 import '../../../../providers/modules/transaction/recent_address_provider.dart';
+import '../../../../providers/modules/transaction/transaction_history_provider.dart';
+import '../../../../domain/transaction_record.dart';
 import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../dto/request/send_tx_request.dart';
 import '../../../../blockchain/chain_registry.dart';
@@ -77,6 +79,23 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       if (!mounted) return; // 确保当前 Widget 仍然存在于页面树（未被销毁）
       // 记入「最近使用」，供下次发送时快速选择。
       ref.read(recentAddressesProvider.notifier).record(widget.asset.chain.id, widget.toAddress);
+      // 记入交易历史。金额取链上实际发出的值——MAX 扣费后可能小于用户输入。
+      ref
+          .read(transactionHistoryProvider.notifier)
+          .record(
+            TransactionRecord(
+              transactionHash: result.hash,
+              walletId: wallet.id,
+              chainId: widget.asset.chain.id,
+              tokenIdentifier: widget.asset.token?.identifier,
+              symbol: widget.asset.symbol,
+              fromAddress: from,
+              toAddress: widget.toAddress,
+              amount: result.sentAmount,
+              submittedAt: DateTime.now(),
+              status: result.status,
+            ),
+          );
       // 交易提交后余额可能变化，按惯例整体刷新（代币转账还会动原生币——扣了 gas）。
       ref.invalidate(balanceProvider);
       ref.invalidate(chainTokenBalancesProvider);
@@ -90,7 +109,6 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
           // MAX 场景下链上重估费用后金额可能再被扣减，结果页按链上实际值展示。
           amount: result.sentAmount,
           txHash: result.hash,
-          status: result.status,
         ),
       );
     } catch (e) {

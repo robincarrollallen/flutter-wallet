@@ -47,6 +47,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	late final Translations$tabs$en tabs = Translations$tabs$en.internal(_root);
 	late final Translations$home$en home = Translations$home$en.internal(_root);
+	late final Translations$transactionHistory$en transactionHistory = Translations$transactionHistory$en.internal(_root);
 	late final Translations$manageTokens$en manageTokens = Translations$manageTokens$en.internal(_root);
 	late final Translations$settings$en settings = Translations$settings$en.internal(_root);
 	late final Translations$currency$en currency = Translations$currency$en.internal(_root);
@@ -172,6 +173,80 @@ class Translations$home$en {
 
 	/// en: 'Manage tokens'
 	String get manageTokens => 'Manage tokens';
+
+	late final Translations$home$actions$en actions = Translations$home$actions$en.internal(_root);
+}
+
+// Path: transactionHistory
+class Translations$transactionHistory$en {
+	Translations$transactionHistory$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Transaction history'
+	String get title => 'Transaction history';
+
+	/// en: 'No transactions yet'
+	String get empty => 'No transactions yet';
+
+	/// en: 'Transactions sent from this app will show up here'
+	String get emptyHint => 'Transactions sent from this app will show up here';
+
+	/// en: 'All networks'
+	String get filterAllChains => 'All networks';
+
+	/// en: 'Select network'
+	String get selectChain => 'Select network';
+
+	/// en: 'Pending'
+	String get statusPending => 'Pending';
+
+	/// en: 'Confirmed'
+	String get statusConfirmed => 'Confirmed';
+
+	/// en: 'Failed'
+	String get statusFailed => 'Failed';
+
+	/// en: 'Sent'
+	String get directionOutgoing => 'Sent';
+
+	/// en: 'Received'
+	String get directionIncoming => 'Received';
+
+	/// en: 'Transaction details'
+	String get detailTitle => 'Transaction details';
+
+	/// en: 'Transaction hash'
+	String get fieldHash => 'Transaction hash';
+
+	/// en: 'Status'
+	String get fieldStatus => 'Status';
+
+	/// en: 'Amount'
+	String get fieldAmount => 'Amount';
+
+	/// en: 'From'
+	String get fieldFrom => 'From';
+
+	/// en: 'To'
+	String get fieldTo => 'To';
+
+	/// en: 'Network'
+	String get fieldChain => 'Network';
+
+	/// en: 'Submitted'
+	String get fieldTime => 'Submitted';
+
+	/// en: 'Copied'
+	String get copied => 'Copied';
+
+	/// en: 'Today'
+	String get today => 'Today';
+
+	/// en: 'Yesterday'
+	String get yesterday => 'Yesterday';
 }
 
 // Path: manageTokens
@@ -392,6 +467,27 @@ class Translations$walletSource$en {
 	String get hardware => 'Hardware wallet';
 }
 
+// Path: home.actions
+class Translations$home$actions$en {
+	Translations$home$actions$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Send'
+	String get send => 'Send';
+
+	/// en: 'Receive'
+	String get receive => 'Receive';
+
+	/// en: 'History'
+	String get history => 'History';
+
+	/// en: 'More'
+	String get more => 'More';
+}
+
 // Path: search.tabs
 class Translations$search$tabs$en {
 	Translations$search$tabs$en.internal(this._root);
@@ -545,6 +641,31 @@ extension on Translations {
 			'home.scan' => 'Scan',
 			'home.tokens' => 'Tokens',
 			'home.manageTokens' => 'Manage tokens',
+			'home.actions.send' => 'Send',
+			'home.actions.receive' => 'Receive',
+			'home.actions.history' => 'History',
+			'home.actions.more' => 'More',
+			'transactionHistory.title' => 'Transaction history',
+			'transactionHistory.empty' => 'No transactions yet',
+			'transactionHistory.emptyHint' => 'Transactions sent from this app will show up here',
+			'transactionHistory.filterAllChains' => 'All networks',
+			'transactionHistory.selectChain' => 'Select network',
+			'transactionHistory.statusPending' => 'Pending',
+			'transactionHistory.statusConfirmed' => 'Confirmed',
+			'transactionHistory.statusFailed' => 'Failed',
+			'transactionHistory.directionOutgoing' => 'Sent',
+			'transactionHistory.directionIncoming' => 'Received',
+			'transactionHistory.detailTitle' => 'Transaction details',
+			'transactionHistory.fieldHash' => 'Transaction hash',
+			'transactionHistory.fieldStatus' => 'Status',
+			'transactionHistory.fieldAmount' => 'Amount',
+			'transactionHistory.fieldFrom' => 'From',
+			'transactionHistory.fieldTo' => 'To',
+			'transactionHistory.fieldChain' => 'Network',
+			'transactionHistory.fieldTime' => 'Submitted',
+			'transactionHistory.copied' => 'Copied',
+			'transactionHistory.today' => 'Today',
+			'transactionHistory.yesterday' => 'Yesterday',
 			'manageTokens.title' => 'Manage tokens',
 			'manageTokens.searchHint' => 'Search tokens or chains',
 			'manageTokens.empty' => 'No matching assets',

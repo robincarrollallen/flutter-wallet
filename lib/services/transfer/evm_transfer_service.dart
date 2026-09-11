@@ -1,8 +1,11 @@
+import '../../blockchain/chain_registry.dart';
 import '../../domain/wallet.dart';
-import '../../enums/chain_kind.dart';
 import '../evm_transaction_service.dart';
 import '../private_key_resolver.dart';
 import 'chain_transfer_service.dart';
+
+/// 历史页回填状态时的单次查询超时：只够发一轮 `eth_getTransactionReceipt`。
+const _singleQueryTimeout = Duration(seconds: 1);
 
 /// EVM 「Ethereum / Polygon / BSC / Base / Arbitrum」的转账实现
 class EvmTransferService implements ChainTransferService {
@@ -20,6 +23,12 @@ class EvmTransferService implements ChainTransferService {
 
   @override
   bool get supportsToken => true;
+
+  @override
+  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash) {
+    // 单次查询：给一个短到只够发一轮请求的超时，拿不到回执即视为仍在打包中。
+    return _transactions.waitForReceipt(chain.endpoint, transactionHash, timeout: _singleQueryTimeout);
+  }
 
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {

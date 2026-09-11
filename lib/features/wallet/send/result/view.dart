@@ -1,48 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/format/token_amount_formatter.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
 import '../../../../blockchain/listed_asset.dart';
-import '../../../../enums/evm_send_status.dart';
+import '../../../../enums/transaction_status.dart';
 import '../../../../router/routes.dart';
+import 'state.dart';
 
 /// 发送结果页：展示上链状态与交易哈希，支持复制；「完成」回到首页。
-class SendResultPage extends StatelessWidget {
+///
+/// 进页面即开始有界轮询上链状态（见 [SendResultStatusPoller]），状态本身读
+/// [transactionHistoryProvider]——用户停在这一页时能看到「确认中」自己变成「已确认」。
+class SendResultPage extends ConsumerStatefulWidget {
   const SendResultPage({
     super.key,
     required this.asset,
     required this.toAddress,
     required this.amount,
     required this.txHash,
-    this.status = EvmSendStatus.pending,
   });
 
   final ListedAsset asset;
   final String toAddress;
   final String amount;
   final String txHash;
-  final EvmSendStatus status;
+
+  @override
+  ConsumerState<SendResultPage> createState() => _SendResultPageState();
+}
+
+class _SendResultPageState extends ConsumerState<SendResultPage> {
+  /// 轮询目标：链 + 哈希。构造一次复用，避免每帧建新记录导致 family 反复重建。
+  late final ({String chainId, String transactionHash}) _target = (
+    chainId: widget.asset.chain.id,
+    transactionHash: widget.txHash,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    // 首帧之后再起轮询：initState 里 read 一个 autoDispose provider 还没有监听者，会被立刻回收。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(sendResultStatusPollerProvider(_target)).start();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 订阅轮询器，保证它在本页存活期间不被 autoDispose 回收。
+    ref.watch(sendResultStatusPollerProvider(_target));
+    final status = ref.watch(sendResultStatusProvider(_target));
+    final asset = widget.asset;
+    final txHash = widget.txHash;
+    final amount = widget.amount;
     final (icon, color, title, subtitle) = switch (status) {
-      EvmSendStatus.confirmed => (
+      TransactionStatus.confirmed => (
         Icons.check_circle_rounded,
         theme.colorScheme.primary,
         '已确认',
         '交易已上链确认',
       ),
-      EvmSendStatus.failed => (
+      TransactionStatus.failed => (
         Icons.error_rounded,
         theme.colorScheme.error,
         '上链失败',
         '交易已广播但执行失败，gas 可能已消耗',
       ),
-      EvmSendStatus.pending => (
+      TransactionStatus.pending => (
         Icons.hourglass_top_rounded,
         theme.colorScheme.tertiary,
         '确认中',
@@ -125,7 +154,7 @@ class SendResultPage extends StatelessWidget {
   }
 
   void _copy(BuildContext context) {
-    Clipboard.setData(ClipboardData(text: txHash));
+    Clipboard.setData(ClipboardData(text: widget.txHash));
     AppToast.show(context, '已复制');
   }
 }

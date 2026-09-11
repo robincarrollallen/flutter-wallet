@@ -23,9 +23,13 @@ class EvmTransactionService {
   static const int _gasBufferNum = 12;
   static const int _gasBufferDen = 10;
 
-  /// 等待 receipt 的超时时间
-  static const Duration _receiptTimeout = Duration(seconds: 90);
-  /// 等待 receipt 的轮询间隔
+  /// 查询 receipt 的默认超时：只够发一轮请求。
+  ///
+  /// 刻意给得很短——转账不在广播链路里等上链，拿不到回执即视为仍在打包中，
+  /// 由结果页与历史页各自轮询回填。默认值给长了，调用方一旦忘记传就会阻塞用户。
+  static const Duration _receiptTimeout = Duration(seconds: 1);
+
+  /// 单次调用内多轮查询的间隔。默认超时下只会发一轮，这个值仅对显式传长超时的调用方有意义。
   static const Duration _receiptPollInterval = Duration(seconds: 2);
 
   /// eth_feeHistory 回看的区块数：太短受单块抖动影响，太长跟不上拥堵变化
@@ -189,8 +193,12 @@ class EvmTransactionService {
     return (hash: hash, sentAmount: formatUnits(value, token.decimals), status: status);
   }
 
-  /// 构造交易 → 本地签名 → 广播 → 轮询 receipt。原生币与代币共用。
-  Future<({String hash, EvmSendStatus status})> _signAndBroadcast({
+  /// 构造交易 → 本地签名 → 广播。原生币与代币共用。
+  ///
+  /// 广播成功即返回，**不在这里等回执**：等回执要几十秒，这段时间用户只能对着
+  /// 转圈的确认页干等，而交易哈希其实第一时间就拿到了。状态一律先记 pending，
+  /// 由结果页的有界轮询与历史页的下拉刷新去回填。
+  Future<({String hash, TransactionStatus status})> _signAndBroadcast({
     required Chain chain, // 链信息「实例」
     required int evmChainId, // EVM 链的 chainId「数字」
     required ETHPrivateKey signer, // 签名器「实例」
@@ -221,11 +229,13 @@ class EvmTransactionService {
 
     // 发送签名后的交易
     final hash = await _call(chain.endpoint, EvmRpcMethod.sendRawTransaction.wireName, ['0x${evmBytesToHex(raw)}']) as String;
-    return (hash: hash, status: await waitForReceipt(chain.endpoint, hash));
+    return (hash: hash, status: TransactionStatus.pending);
   }
 
-  /// 轮询 [eth_getTransactionReceipt]，直到确认/失败或超时（返回 pending）。
-  Future<EvmSendStatus> waitForReceipt(
+  /// 查询 [eth_getTransactionReceipt]，直到确认/失败或超时（返回 pending）。
+  ///
+  /// 默认超时只够发一轮，即「查一次当前状态」；传长超时才会变成真正的轮询。
+  Future<TransactionStatus> waitForReceipt(
     String endpoint,
     String txHash, {
     Duration timeout = _receiptTimeout,
@@ -236,13 +246,13 @@ class EvmTransactionService {
       final receipt = await _call(endpoint, EvmRpcMethod.getTransactionReceipt.wireName, [txHash]);
       if (receipt is Map) {
         final statusHex = receipt['status'] as String?;
-        if (statusHex == null) return EvmSendStatus.confirmed; // 极老节点无 status，有回执即视为上链
+        if (statusHex == null) return TransactionStatus.confirmed; // 极老节点无 status，有回执即视为上链
         final status = parseEvmHexQuantity(statusHex);
-        return status == BigInt.one ? EvmSendStatus.confirmed : EvmSendStatus.failed;
+        return status == BigInt.one ? TransactionStatus.confirmed : TransactionStatus.failed;
       }
       await Future<void>.delayed(interval);
     }
-    return EvmSendStatus.pending;
+    return TransactionStatus.pending;
   }
 
   /// EOA→EOA 用 21000；合约收款走 eth_estimateGas（失败则明确报错）。

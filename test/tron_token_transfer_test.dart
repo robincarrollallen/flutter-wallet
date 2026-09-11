@@ -230,7 +230,8 @@ void main() {
       expect(BytesUtils.toHexString(call.data!).endsWith(BigInt.from(5000000).toRadixString(16).padLeft(64, '0')), isTrue);
       expect(call.contractAddress, _contract);
       expect(result.sentAmount, '5');
-      expect(result.status, EvmSendStatus.confirmed);
+      // 广播链路不等上链：状态一律先记 pending，由页面轮询回填。
+      expect(result.status, TransactionStatus.pending);
     });
 
     // 与原生转账同一个安全支点：合约调用的收款方与金额都藏在 ABI 编码的 data 里，

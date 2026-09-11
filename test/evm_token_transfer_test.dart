@@ -86,7 +86,8 @@ void main() {
       final result = await _send(node);
 
       expect(result.hash, '0xdeadbeef');
-      expect(result.status, EvmSendStatus.confirmed);
+      // 广播链路不等上链：状态一律先记 pending，由页面轮询回填。
+      expect(result.status, TransactionStatus.pending);
       // 金额按代币的 6 位精度换算，不是链的 18 位。
       expect(result.sentAmount, '0.5');
 

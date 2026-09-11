@@ -14,6 +14,14 @@ class WalletService {
   /// 用于把 [SendTxRequest.tokenIdentifier] 解析成 [Token]。
   final TokenCatalog catalog;
 
+  /// 查询一笔已广播交易的当前上链状态，供交易历史回填 pending 记录
+  Future<TransactionStatus> queryTransactionStatus(String chainId, String transactionHash) async {
+    final chain = SupportedChains.all.where((candidate) => candidate.id == chainId).firstOrNull; // 根据链ID查找链实例
+    final service = chain == null ? null : transferServices[chain.kind]; // 根据链类型查找转账实现方法(walletServiceProvider 注入)
+    if (chain == null || service == null) return TransactionStatus.pending; // 链未知或该链类型没有转账实现时返回 [TransactionStatus.pending]
+    return service.queryStatus(chain, transactionHash);
+  }
+
   /// 发起转账, 返回 (交易哈希, 实际发送金额, 上链状态)
   Future<TransferResult> sendTransaction(SendTxRequest request, Wallet wallet) async {
     final chainId = request.chainId; // 链ID「链唯一标识」

@@ -56,4 +56,7 @@ abstract interface class ChainTransferService {
 
   /// 执行转账。私钥明文由实现方自行解析，仅在本次调用内使用、用完即弃(不得留存到字段、状态或日志中)
   Future<TransferResult> send(TransferRequest request, Wallet wallet);
+
+  /// 查询一笔已广播交易的当前上链状态，供交易历史回填 pending 记录, [TransactionStatus.pending]，由调用方下次刷新时再查，不在此长时间轮询。
+  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash);
 }

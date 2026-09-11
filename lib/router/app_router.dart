@@ -20,6 +20,8 @@ import '../features/wallet/send/coins/view.dart';
 import '../features/wallet/send/confirm/view.dart';
 import '../features/wallet/send/recipient/view.dart';
 import '../features/wallet/send/result/view.dart';
+import '../features/wallet/transaction_history/view.dart';
+import '../features/wallet/transaction_history/pages/detail/view.dart';
 import '../features/wallet/wallet_management/view.dart';
 import '../providers/modules/wallet/wallet_provider.dart';
 import '../widgets/placeholder_screen.dart';
@@ -69,6 +71,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoute.addressManagement,
         redirect: _requireArgs<AddressManagementArgs>,
         builder: (_, state) => AddressManagementScreen(wallet: (state.extra! as AddressManagementArgs).wallet),
+      ),
+      GoRoute(
+        path: AppRoute.transactionHistory,
+        builder: (_, _) => const TransactionHistoryScreen(),
+        routes: [
+          GoRoute(
+            path: AppRoute.transactionDetailSegment,
+            redirect: _requireArgs<TransactionDetailArgs>,
+            builder: (_, state) => TransactionDetailScreen(record: (state.extra! as TransactionDetailArgs).record),
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoute.walletPanel,
@@ -185,7 +198,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                             toAddress: args.toAddress,
                             amount: args.amount,
                             txHash: args.txHash,
-                            status: args.status,
                           );
                         },
                       ),

@@ -1,6 +1,6 @@
 import '../blockchain/listed_asset.dart';
+import '../domain/transaction_record.dart';
 import '../domain/wallet.dart';
-import '../enums/evm_send_status.dart';
 
 /// 各带参页面的路由参数。
 ///
@@ -13,6 +13,13 @@ final class AddressManagementArgs {
   const AddressManagementArgs({required this.wallet});
 
   final Wallet wallet;
+}
+
+/// 交易详情页：展示一条历史记录的全部字段。
+final class TransactionDetailArgs {
+  const TransactionDetailArgs({required this.record});
+
+  final TransactionRecord record;
 }
 
 /// 占位页（尚未实现的入口，如硬件钱包）。
@@ -71,12 +78,10 @@ final class SendResultArgs {
     required this.toAddress,
     required this.amount,
     required this.txHash,
-    this.status = EvmSendStatus.pending,
   });
 
   final ListedAsset asset;
   final String toAddress;
   final String amount;
   final String txHash;
-  final EvmSendStatus status;
 }

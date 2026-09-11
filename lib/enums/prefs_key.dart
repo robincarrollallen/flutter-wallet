@@ -29,6 +29,9 @@ enum PrefsKey {
   /// 搜索历史
   searchHistory('search.history'),
 
+  /// 交易历史（本机发起的交易记录，含上链状态）
+  transactionHistory('transaction.history'),
+
   /// 用户自定义代币
   customTokens('token.custom'),
 

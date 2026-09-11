@@ -42,6 +42,7 @@ class TranslationsZh extends Translations with BaseTranslations<AppLocale, Trans
 	@override String get appTitle => '我的钱包';
 	@override late final _Translations$tabs$zh tabs = _Translations$tabs$zh._(_root);
 	@override late final _Translations$home$zh home = _Translations$home$zh._(_root);
+	@override late final _Translations$transactionHistory$zh transactionHistory = _Translations$transactionHistory$zh._(_root);
 	@override late final _Translations$manageTokens$zh manageTokens = _Translations$manageTokens$zh._(_root);
 	@override late final _Translations$settings$zh settings = _Translations$settings$zh._(_root);
 	@override late final _Translations$currency$zh currency = _Translations$currency$zh._(_root);
@@ -135,6 +136,37 @@ class _Translations$home$zh extends Translations$home$en {
 	@override String get scan => '扫一扫';
 	@override String get tokens => '代币';
 	@override String get manageTokens => '管理代币';
+	@override late final _Translations$home$actions$zh actions = _Translations$home$actions$zh._(_root);
+}
+
+// Path: transactionHistory
+class _Translations$transactionHistory$zh extends Translations$transactionHistory$en {
+	_Translations$transactionHistory$zh._(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => '交易历史';
+	@override String get empty => '暂无交易记录';
+	@override String get emptyHint => '通过本应用发出的交易会出现在这里';
+	@override String get filterAllChains => '全部链';
+	@override String get selectChain => '选择网络';
+	@override String get statusPending => '确认中';
+	@override String get statusConfirmed => '已确认';
+	@override String get statusFailed => '失败';
+	@override String get directionOutgoing => '转出';
+	@override String get directionIncoming => '转入';
+	@override String get detailTitle => '交易详情';
+	@override String get fieldHash => '交易哈希';
+	@override String get fieldStatus => '状态';
+	@override String get fieldAmount => '金额';
+	@override String get fieldFrom => '发送方';
+	@override String get fieldTo => '接收方';
+	@override String get fieldChain => '网络';
+	@override String get fieldTime => '提交时间';
+	@override String get copied => '已复制';
+	@override String get today => '今天';
+	@override String get yesterday => '昨天';
 }
 
 // Path: manageTokens
@@ -278,6 +310,19 @@ class _Translations$walletSource$zh extends Translations$walletSource$en {
 	@override String get hardware => '硬件钱包';
 }
 
+// Path: home.actions
+class _Translations$home$actions$zh extends Translations$home$actions$en {
+	_Translations$home$actions$zh._(TranslationsZh root) : this._root = root, super.internal(root);
+
+	final TranslationsZh _root; // ignore: unused_field
+
+	// Translations
+	@override String get send => '发送';
+	@override String get receive => '接收';
+	@override String get history => '历史';
+	@override String get more => '更多';
+}
+
 // Path: search.tabs
 class _Translations$search$tabs$zh extends Translations$search$tabs$en {
 	_Translations$search$tabs$zh._(TranslationsZh root) : this._root = root, super.internal(root);
@@ -382,6 +427,31 @@ extension on TranslationsZh {
 			'home.scan' => '扫一扫',
 			'home.tokens' => '代币',
 			'home.manageTokens' => '管理代币',
+			'home.actions.send' => '发送',
+			'home.actions.receive' => '接收',
+			'home.actions.history' => '历史',
+			'home.actions.more' => '更多',
+			'transactionHistory.title' => '交易历史',
+			'transactionHistory.empty' => '暂无交易记录',
+			'transactionHistory.emptyHint' => '通过本应用发出的交易会出现在这里',
+			'transactionHistory.filterAllChains' => '全部链',
+			'transactionHistory.selectChain' => '选择网络',
+			'transactionHistory.statusPending' => '确认中',
+			'transactionHistory.statusConfirmed' => '已确认',
+			'transactionHistory.statusFailed' => '失败',
+			'transactionHistory.directionOutgoing' => '转出',
+			'transactionHistory.directionIncoming' => '转入',
+			'transactionHistory.detailTitle' => '交易详情',
+			'transactionHistory.fieldHash' => '交易哈希',
+			'transactionHistory.fieldStatus' => '状态',
+			'transactionHistory.fieldAmount' => '金额',
+			'transactionHistory.fieldFrom' => '发送方',
+			'transactionHistory.fieldTo' => '接收方',
+			'transactionHistory.fieldChain' => '网络',
+			'transactionHistory.fieldTime' => '提交时间',
+			'transactionHistory.copied' => '已复制',
+			'transactionHistory.today' => '今天',
+			'transactionHistory.yesterday' => '昨天',
 			'manageTokens.title' => '管理代币',
 			'manageTokens.searchHint' => '搜索代币或公链',
 			'manageTokens.empty' => '未找到相关资产',

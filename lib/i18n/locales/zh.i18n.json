@@ -18,7 +18,36 @@
     "settings": "设置",
     "scan": "扫一扫",
     "tokens": "代币",
-    "manageTokens": "管理代币"
+    "manageTokens": "管理代币",
+    "actions": {
+      "send": "发送",
+      "receive": "接收",
+      "history": "历史",
+      "more": "更多"
+    }
+  },
+  "transactionHistory": {
+    "title": "交易历史",
+    "empty": "暂无交易记录",
+    "emptyHint": "通过本应用发出的交易会出现在这里",
+    "filterAllChains": "全部链",
+    "selectChain": "选择网络",
+    "statusPending": "确认中",
+    "statusConfirmed": "已确认",
+    "statusFailed": "失败",
+    "directionOutgoing": "转出",
+    "directionIncoming": "转入",
+    "detailTitle": "交易详情",
+    "fieldHash": "交易哈希",
+    "fieldStatus": "状态",
+    "fieldAmount": "金额",
+    "fieldFrom": "发送方",
+    "fieldTo": "接收方",
+    "fieldChain": "网络",
+    "fieldTime": "提交时间",
+    "copied": "已复制",
+    "today": "今天",
+    "yesterday": "昨天"
   },
   "manageTokens": {
     "title": "管理代币",

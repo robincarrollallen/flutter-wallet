@@ -1,8 +1,11 @@
+import '../../blockchain/chain_registry.dart';
 import '../../domain/wallet.dart';
-import '../../enums/chain_kind.dart';
 import '../tron_transaction_service.dart';
 import '../private_key_resolver.dart';
 import 'chain_transfer_service.dart';
+
+/// 历史页回填状态时的单次查询超时：只够发一轮 `wallet/gettransactionbyid`。
+const _singleQueryTimeout = Duration(seconds: 1);
 
 /// Tron 系（目前仅 Shasta 测试网）的转账实现。
 ///
@@ -23,6 +26,12 @@ class TronTransferService implements ChainTransferService {
 
   @override
   bool get supportsToken => true;
+
+  @override
+  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash) {
+    // 单次查询：给一个短到只够发一轮请求的超时，查不到交易即视为仍在打包中。
+    return _transactions.waitForReceipt(chain, transactionHash, timeout: _singleQueryTimeout);
+  }
 
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
