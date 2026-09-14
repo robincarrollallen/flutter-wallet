@@ -1,3 +1,4 @@
+import '../blockchain/address_validation.dart';
 import '../blockchain/chain_registry.dart';
 import '../blockchain/token_catalog.dart';
 import '../dto/request/send_tx_request.dart';
@@ -49,6 +50,17 @@ class WalletService {
     final service = transferServices[chain.kind]; // 根据链类型查找转账实现方法(walletServiceProvider 初始化注入)
     if (service == null) {
       throw UnsupportedError('${chain.name} 转账暂未支持'); // 转账暂未支持抛出异常
+    }
+
+    // 收款地址格式校验。发送页已经校验过一遍，这里**必须再校验一次**：
+    // 那是 UI 的输入提示，而这里是资金出口——绕过 UI 的调用方（脚本、深链、
+    // 以后的 WalletConnect）不该因此就完全没有把关。一笔转到格式非法地址的交易，
+    // 轻则被节点拒收，重则真的把钱转进一个无人持有的地址，而后者不可逆。
+    //
+    // 放在「该链是否支持」之后：不支持的链要报「暂未支持」，先报地址格式会误导人。
+    final addressError = AddressValidation.validate(chain, request.to);
+    if (addressError != null) {
+      throw ArgumentError(addressError);
     }
 
     return service.send(
