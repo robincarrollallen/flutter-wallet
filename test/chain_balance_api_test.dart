@@ -89,8 +89,7 @@ Token _token(String identifier, TokenStandard standard, {String symbol = 'USDC'}
   decimals: 6,
 );
 
-Token _erc20(String identifier, {String symbol = 'USDC'}) =>
-    _token(identifier, TokenStandard.erc20, symbol: symbol);
+Token _erc20(String identifier, {String symbol = 'USDC'}) => _token(identifier, TokenStandard.erc20, symbol: symbol);
 
 /// 把整数编成 32 字节的 uint256 返回值。
 String _uint256(int value) => '0x${value.toRadixString(16).padLeft(64, '0')}';
@@ -114,8 +113,7 @@ void Function(HttpRequest) _rpcBatch(Object? Function(Map<String, dynamic> call)
   r.response
     ..write(
       jsonEncode([
-        for (final call in batch)
-          {'id': (call as Map)['id'], 'result': result(Map<String, dynamic>.from(call))},
+        for (final call in batch) {'id': (call as Map)['id'], 'result': result(Map<String, dynamic>.from(call))},
       ]),
     )
     ..close();
@@ -127,19 +125,23 @@ void main() {
 
   group('Aptos', () {
     test('404 = 账户不存在，按余额 0 处理', () async {
-      final s = await _serve((r) => r.response
-        ..statusCode = HttpStatus.notFound
-        ..write('{"error_code":"account_not_found"}')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..statusCode = HttpStatus.notFound
+          ..write('{"error_code":"account_not_found"}')
+          ..close(),
+      );
 
       expect(await api.fetchNativeBalance(_aptosAt(s), '0x1'), BigInt.zero);
     });
 
     test('429 限流必须抛出，绝不能伪装成余额 0', () async {
-      final s = await _serve((r) => r.response
-        ..statusCode = HttpStatus.tooManyRequests
-        ..write('rate limited')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..statusCode = HttpStatus.tooManyRequests
+          ..write('rate limited')
+          ..close(),
+      );
 
       expect(
         () => api.fetchNativeBalance(_aptosAt(s), '0x1'),
@@ -148,9 +150,11 @@ void main() {
     });
 
     test('正常返回标量余额', () async {
-      final s = await _serve((r) => r.response
-        ..write('"12345"')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..write('"12345"')
+          ..close(),
+      );
 
       expect(await api.fetchNativeBalance(_aptosAt(s), '0x1'), BigInt.from(12345));
     });
@@ -158,18 +162,22 @@ void main() {
 
   group('Tron', () {
     test('未激活账户返回 {}，是真实的 0', () async {
-      final s = await _serve((r) => r.response
-        ..write('{}')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..write('{}')
+          ..close(),
+      );
 
       expect(await api.fetchNativeBalance(_tronAt(s), 'T1'), BigInt.zero);
     });
 
     test('5xx 必须抛出——原实现会被 catch(_) 吞成 0，让总资产凭空缩水', () async {
-      final s = await _serve((r) => r.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('<html>oops</html>')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('<html>oops</html>')
+          ..close(),
+      );
 
       expect(
         () => api.fetchNativeBalance(_tronAt(s), 'T1'),
@@ -178,9 +186,11 @@ void main() {
     });
 
     test('正常返回 balance', () async {
-      final s = await _serve((r) => r.response
-        ..write('{"balance":9000000}')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..write('{"balance":9000000}')
+          ..close(),
+      );
 
       expect(await api.fetchNativeBalance(_tronAt(s), 'T1'), BigInt.from(9000000));
     });
@@ -211,17 +221,18 @@ void main() {
       expect(requestCount, 1, reason: '两个代币应当合并成一次往返');
       expect(received.map((c) => (c as Map)['method']), everyElement('eth_call'));
       // calldata 里带的是 balanceOf 选择器与 owner 地址，to 是各自的合约。
-      expect(((received[0] as Map)['params'] as List)[0], {
-        'to': '0xaaa1',
-        'data': startsWith('0x70a08231'),
-      });
+      expect(((received[0] as Map)['params'] as List)[0], {'to': '0xaaa1', 'data': startsWith('0x70a08231')});
     });
 
     test('无持仓返回编码的 0，是真实余额而非失败', () async {
       final s = await _serve((r) async {
         final batch = jsonDecode(await utf8.decodeStream(r)) as List<dynamic>;
         r.response
-          ..write(jsonEncode([for (final c in batch) {'id': (c as Map)['id'], 'result': _uint256(0)}]))
+          ..write(
+            jsonEncode([
+              for (final c in batch) {'id': (c as Map)['id'], 'result': _uint256(0)},
+            ]),
+          )
           ..close();
       });
 
@@ -233,7 +244,11 @@ void main() {
       final s = await _serve((r) async {
         final batch = jsonDecode(await utf8.decodeStream(r)) as List<dynamic>;
         r.response
-          ..write(jsonEncode([for (final c in batch) {'id': (c as Map)['id'], 'result': '0x'}]))
+          ..write(
+            jsonEncode([
+              for (final c in batch) {'id': (c as Map)['id'], 'result': '0x'},
+            ]),
+          )
           ..close();
       });
 
@@ -269,9 +284,13 @@ void main() {
 
   group('SPL 代币余额', () {
     test('同一 mint 的多个代币账户求和', () async {
-      final s = await _serve(_rpcBatch((_) => {
-        'value': [_splAccount('700000'), _splAccount('300000')],
-      }));
+      final s = await _serve(
+        _rpcBatch(
+          (_) => {
+            'value': [_splAccount('700000'), _splAccount('300000')],
+          },
+        ),
+      );
 
       expect(
         await api.fetchTokenBalance(_solanaAt(s), _token('mint1', TokenStandard.spl), 'SoL1'),
@@ -293,15 +312,17 @@ void main() {
         requestCount++;
         sent = jsonDecode(await utf8.decodeStream(r)) as List<dynamic>;
         r.response
-          ..write(jsonEncode([
-            for (var i = 0; i < sent.length; i++)
-              {
-                'id': (sent[i] as Map)['id'],
-                'result': {
-                  'value': [_splAccount('${(i + 1) * 100}')],
+          ..write(
+            jsonEncode([
+              for (var i = 0; i < sent.length; i++)
+                {
+                  'id': (sent[i] as Map)['id'],
+                  'result': {
+                    'value': [_splAccount('${(i + 1) * 100}')],
+                  },
                 },
-              },
-          ]))
+            ]),
+          )
           ..close();
       });
 
@@ -314,10 +335,12 @@ void main() {
     });
 
     test('RPC 故障上抛，不伪装成 0', () async {
-      final s = await _serve((r) => r.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('oops')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('oops')
+          ..close(),
+      );
 
       expect(
         () => api.fetchTokenBalance(_solanaAt(s), _token('mint1', TokenStandard.spl), 'SoL1'),
@@ -332,13 +355,15 @@ void main() {
       final s = await _serve((r) async {
         sent = jsonDecode(await utf8.decodeStream(r)) as List<dynamic>;
         r.response
-          ..write(jsonEncode([
-            for (final c in sent)
-              {
-                'id': (c as Map)['id'],
-                'result': {'totalBalance': '4500000'},
-              },
-          ]))
+          ..write(
+            jsonEncode([
+              for (final c in sent)
+                {
+                  'id': (c as Map)['id'],
+                  'result': {'totalBalance': '4500000'},
+                },
+            ]),
+          )
           ..close();
       });
 
@@ -361,11 +386,13 @@ void main() {
         bodies.add(body);
         final id = (body as Map)['id'];
         r.response
-          ..write(jsonEncode({
-            'jsonrpc': '2.0',
-            'id': id,
-            'result': {'totalBalance': '${id}00'},
-          }))
+          ..write(
+            jsonEncode({
+              'jsonrpc': '2.0',
+              'id': id,
+              'result': {'totalBalance': '${id}00'},
+            }),
+          )
           ..close();
       });
 
@@ -380,10 +407,7 @@ void main() {
       expect(bodies.every((b) => b is Map), isTrue, reason: '单条请求体必须是对象，不能是数组');
       // 每条按自己的 id 回不同数字，顺序错乱会立刻露馅。
       final ids = [for (final b in bodies) (b as Map)['id'] as int];
-      expect(balances, {
-        '0xa::a::A': BigInt.parse('${ids[0]}00'),
-        '0xb::b::B': BigInt.parse('${ids[1]}00'),
-      });
+      expect(balances, {'0xa::a::A': BigInt.parse('${ids[0]}00'), '0xb::b::B': BigInt.parse('${ids[1]}00')});
     });
 
     test('响应缺 totalBalance 字段时按 0，不抛', () async {
@@ -408,21 +432,22 @@ void main() {
 
       const fa = '0x69091fbab5f7d635ee7ac5098cf0c1efbe31d68fec0f2cd565e8d168daf52832';
       const coin = '0xabc::usdc::USDC';
-      final balances = await api.fetchTokenBalances(
-        _aptosAt(s),
-        [_token(fa, TokenStandard.aptosCoin), _token(coin, TokenStandard.aptosCoin)],
-        '0x1',
-      );
+      final balances = await api.fetchTokenBalances(_aptosAt(s), [
+        _token(fa, TokenStandard.aptosCoin),
+        _token(coin, TokenStandard.aptosCoin),
+      ], '0x1');
 
       expect(balances, {fa: BigInt.from(250000), coin: BigInt.from(250000)});
       expect(paths, ['/v1/accounts/0x1/balance/$fa', '/v1/accounts/0x1/balance/$coin']);
     });
 
     test('404 = 没开过这个资产的 store，按 0 处理', () async {
-      final s = await _serve((r) => r.response
-        ..statusCode = HttpStatus.notFound
-        ..write('{"error_code":"resource_not_found"}')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..statusCode = HttpStatus.notFound
+          ..write('{"error_code":"resource_not_found"}')
+          ..close(),
+      );
 
       expect(
         await api.fetchTokenBalance(_aptosAt(s), _token('0xabc::usdc::USDC', TokenStandard.aptosCoin), '0x1'),
@@ -431,10 +456,12 @@ void main() {
     });
 
     test('429 限流必须上抛', () async {
-      final s = await _serve((r) => r.response
-        ..statusCode = HttpStatus.tooManyRequests
-        ..write('rate limited')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..statusCode = HttpStatus.tooManyRequests
+          ..write('rate limited')
+          ..close(),
+      );
 
       expect(
         () => api.fetchTokenBalance(_aptosAt(s), _token('0xabc::usdc::USDC', TokenStandard.aptosCoin), '0x1'),
@@ -452,10 +479,12 @@ void main() {
       final s = await _serve((r) async {
         sent = jsonDecode(await utf8.decodeStream(r)) as Map<String, dynamic>;
         r.response
-          ..write(jsonEncode({
-            'result': {'result': true},
-            'constant_result': [_uint256(7500000).substring(2)],
-          }))
+          ..write(
+            jsonEncode({
+              'result': {'result': true},
+              'constant_result': [_uint256(7500000).substring(2)],
+            }),
+          )
           ..close();
       });
 
@@ -471,9 +500,11 @@ void main() {
 
     // 合约不存在 / 参数不对时调用根本没执行成功，按 0 展示就是谎报「你没有这个币」。
     test('result.result 为假时抛出，不当作 0', () async {
-      final s = await _serve((r) => r.response
-        ..write('{"result":{"result":false},"message":"contract not found"}')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..write('{"result":{"result":false},"message":"contract not found"}')
+          ..close(),
+      );
 
       expect(
         () => api.fetchTokenBalance(_tronAt(s), _token('TContract', TokenStandard.trc20), tronOwner),
@@ -482,9 +513,11 @@ void main() {
     });
 
     test('constant_result 为空时抛出', () async {
-      final s = await _serve((r) => r.response
-        ..write('{"result":{"result":true},"constant_result":[]}')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..write('{"result":{"result":true},"constant_result":[]}')
+          ..close(),
+      );
 
       expect(
         () => api.fetchTokenBalance(_tronAt(s), _token('TContract', TokenStandard.trc20), tronOwner),

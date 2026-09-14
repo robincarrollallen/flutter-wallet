@@ -48,8 +48,7 @@ class ChainBalanceApi {
   ///
   /// 调用方据此**提前过滤**，而不是先发请求再接错误。它同时挡住目录脏数据：
   /// 一条 standard 与所属链对不上的代币混进批量请求，会让整条链的余额一起失败。
-  static bool supportsTokenBalance(Chain chain, TokenStandard standard) =>
-      tokenStandardOf(chain.kind) == standard;
+  static bool supportsTokenBalance(Chain chain, TokenStandard standard) => tokenStandardOf(chain.kind) == standard;
 
   /// 查询单个代币余额（原始最小单位）。
   ///
@@ -119,9 +118,7 @@ class ChainBalanceApi {
         ),
     ]);
 
-    return {
-      for (var i = 0; i < tokens.length; i++) tokens[i].identifier: decodeUint256(results[i] as String? ?? ''),
-    };
+    return {for (var i = 0; i < tokens.length; i++) tokens[i].identifier: decodeUint256(results[i] as String? ?? '')};
   }
 
   /// SPL：每个代币一条 `getTokenAccountsByOwner`，按 mint 过滤，交给 [_rpcMany] 合并。

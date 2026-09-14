@@ -136,11 +136,7 @@ void main() {
     });
 
     test('费率取自链参数：账户创建费可被改动', () {
-      final fee = _estimate(
-        staked: 600,
-        activated: false,
-        rates: const TronFeeRates(createNewAccountFeeSun: 5000000),
-      );
+      final fee = _estimate(staked: 600, activated: false, rates: const TronFeeRates(createNewAccountFeeSun: 5000000));
       expect(fee.feeSun, BigInt.from(5000000));
     });
   });

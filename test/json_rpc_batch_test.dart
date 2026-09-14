@@ -94,10 +94,12 @@ void main() {
   test('HTTP 非 2xx 抛出', () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     addTearDown(server.close);
-    server.listen((r) => r.response
-      ..statusCode = HttpStatus.tooManyRequests
-      ..write('rate limited')
-      ..close());
+    server.listen(
+      (r) => r.response
+        ..statusCode = HttpStatus.tooManyRequests
+        ..write('rate limited')
+        ..close(),
+    );
 
     await expectLater(
       jsonRpcBatch('http://${server.address.host}:${server.port}', [(method: 'eth_call', params: const [])]),

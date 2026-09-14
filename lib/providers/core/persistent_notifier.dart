@@ -92,6 +92,7 @@ mixin PersistentNotifier<T> on Notifier<T> {
         _corrupted = true;
       }
     }
+
     /// 监听 state 变化，自动落盘
     listenSelf((_, next) {
       _prefs.setString(persistKey.value, jsonEncode(toJson(next)));

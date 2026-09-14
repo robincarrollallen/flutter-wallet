@@ -48,11 +48,7 @@ List<TransactionRecord> mergeTransactions(
 }
 
 /// 按钱包 / 链筛选。两个条件都为 null 表示不限。
-List<TransactionRecord> filterTransactions(
-  Iterable<TransactionRecord> records, {
-  String? walletId,
-  String? chainId,
-}) {
+List<TransactionRecord> filterTransactions(Iterable<TransactionRecord> records, {String? walletId, String? chainId}) {
   return List.unmodifiable(
     records.where((record) {
       if (walletId != null && record.walletId != walletId) return false;

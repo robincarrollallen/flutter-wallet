@@ -16,9 +16,5 @@ abstract interface class ChainTransactionHistoryService {
   bool get supportsHistory;
 
   /// 拉取 [address] 在 [chain] 上的交易历史。[walletId] 只用于回填到记录上。
-  Future<List<TransactionRecord>> fetch({
-    required Chain chain,
-    required String address,
-    required String walletId,
-  });
+  Future<List<TransactionRecord>> fetch({required Chain chain, required String address, required String walletId});
 }

@@ -16,8 +16,10 @@ typedef ChainIconsState = ({ChainIcons icons, DateTime? at, Set<String> ids});
 /// 各链自己的图标：平台 id -> 图标 URL。
 class ChainIconsNotifier extends Notifier<ChainIconsState> with PersistentNotifier<ChainIconsState> {
   static const _ttl = Duration(days: 7); // 缓存过期时长
-  static final _supportedPlatformIds =
-      SupportedChains.all.map((c) => c.coinGeckoPlatformId).whereType<String>().toSet(); // 需要图标的平台 id 合集(只取用到的平台，其余 400 多个不进缓存)
+  static final _supportedPlatformIds = SupportedChains.all
+      .map((c) => c.coinGeckoPlatformId)
+      .whereType<String>()
+      .toSet(); // 需要图标的平台 id 合集(只取用到的平台，其余 400 多个不进缓存)
 
   @override
   PrefsKey get persistKey => PrefsKey.chainIcons; // 定义持久化标识<persistKey>(重写)
@@ -51,7 +53,7 @@ class ChainIconsNotifier extends Notifier<ChainIconsState> with PersistentNotifi
   @override
   ChainIconsState build() {
     ref.keepAlive();
-    
+
     final restored = restore((icons: const {}, at: null, ids: const {})); // 同步读盘：这一行返回时旧图标已经在手上了。
 
     if (_isStale(restored)) unawaited(_refresh()); // 失效（或从没存过）才发请求，且刻意不 await——build 不会停在这里等网络。
@@ -60,7 +62,10 @@ class ChainIconsNotifier extends Notifier<ChainIconsState> with PersistentNotifi
   }
 
   bool _isStale(ChainIconsState cached) =>
-      _isExpired(cached.at) || _supportedPlatformIds.any((id) => !cached.ids.contains(id)); // 是否持久化数据失效(1. 时间过期, 2. 允许链的 CoinGecko ID 集合是否与缓存的 ID 合集一致)
+      _isExpired(cached.at) ||
+      _supportedPlatformIds.any(
+        (id) => !cached.ids.contains(id),
+      ); // 是否持久化数据失效(1. 时间过期, 2. 允许链的 CoinGecko ID 集合是否与缓存的 ID 合集一致)
 
   bool _isExpired(DateTime? at) => at == null || DateTime.now().difference(at) >= _ttl; // 缓存是否过期
 

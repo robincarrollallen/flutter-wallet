@@ -50,8 +50,7 @@ class _FakeSecureStoragePlatform extends FlutterSecureStoragePlatform with MockP
   }
 
   @override
-  Future<bool> containsKey({required String key, required Map<String, String> options}) async =>
-      store.containsKey(key);
+  Future<bool> containsKey({required String key, required Map<String, String> options}) async => store.containsKey(key);
 
   @override
   Future<void> delete({required String key, required Map<String, String> options}) async {
@@ -190,9 +189,7 @@ void main() {
 
       await expectLater(
         service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(
-          isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed),
-        ),
+        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)),
       );
 
       expect(registry.wallets.map((w) => w.id), ['old']);
@@ -206,9 +203,7 @@ void main() {
 
       await expectLater(
         service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(
-          isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed),
-        ),
+        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)),
       );
 
       expect(registry.wallets, isEmpty);
@@ -230,9 +225,7 @@ void main() {
 
       await expectLater(
         service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(
-          isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed),
-        ),
+        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)),
       );
       expect(registry.wallets, isEmpty);
     });
@@ -295,9 +288,7 @@ void main() {
 
       await expectLater(
         service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(
-          isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed),
-        ),
+        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)),
       );
 
       // 没有标记的密钥永远清不掉，所以宁可整笔提交失败，也不能留下这种残留。
@@ -324,10 +315,7 @@ void main() {
       final (service, registry, platform) = _build();
       platform.throwOnWrite = true;
 
-      await expectLater(
-        service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(isA<WalletCommitException>()),
-      );
+      await expectLater(service.commit(wallet: _wallet('w1'), mnemonic: 'seed'), throwsA(isA<WalletCommitException>()));
 
       platform.throwOnWrite = false;
       await service.commit(wallet: _wallet('w1'), mnemonic: 'seed');
@@ -413,11 +401,10 @@ void main() {
       registry.listTrusted = false;
 
       expect(await service.purgeOrphanSecrets(), 0);
-      expect(
-        platform.store,
-        {'wallet.ghost.mnemonic': 'orphan seed', 'wallet.ghost.pending': 'at'},
-        reason: '空列表此时是「不知道」而非「确实没有」，连标记都不该动',
-      );
+      expect(platform.store, {
+        'wallet.ghost.mnemonic': 'orphan seed',
+        'wallet.ghost.pending': 'at',
+      }, reason: '空列表此时是「不知道」而非「确实没有」，连标记都不该动');
     });
 
     test('不触碰不属于本类键格式的数据', () async {
@@ -531,11 +518,7 @@ void main() {
 
       expect(reinstalled.read(walletListProvider), isEmpty, reason: '前置条件：钱包列表确实恢复成空');
       expect(await reinstalled.read(walletCommitServiceProvider).purgeOrphanSecrets(), 0);
-      expect(
-        platform.store['wallet.w1.mnemonic'],
-        'real money seed',
-        reason: '助记词必须活着——这是用户找回资产的唯一凭据',
-      );
+      expect(platform.store['wallet.w1.mnemonic'], 'real money seed', reason: '助记词必须活着——这是用户找回资产的唯一凭据');
     });
 
     // 两道防线各挡一种失败：标记因撤除失败而残留时，列表不可信这一层仍要拦住删除。

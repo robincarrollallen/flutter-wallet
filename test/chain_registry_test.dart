@@ -53,10 +53,7 @@ void main() {
 
   group('派生方案', () {
     test('EVM 多链共用同一派生方案，去重后只派生一次', () {
-      final evmSchemes = SupportedChains.all
-          .where((c) => c.kind == ChainKind.evm)
-          .map((c) => c.derivation)
-          .toSet();
+      final evmSchemes = SupportedChains.all.where((c) => c.kind == ChainKind.evm).map((c) => c.derivation).toSet();
       expect(evmSchemes.length, 1);
     });
 

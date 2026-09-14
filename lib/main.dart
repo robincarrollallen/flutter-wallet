@@ -13,7 +13,8 @@ import 'i18n/translations.g.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 手动把 Flutter 引擎与 Dart 层之间的绑定初始化好
-  final sharedPreferences = await SharedPreferences.getInstance(); // 同步拿到 prefs 实例，注入到 provider，供各 Notifier 的 build() 同步读取。
+  final sharedPreferences =
+      await SharedPreferences.getInstance(); // 同步拿到 prefs 实例，注入到 provider，供各 Notifier 的 build() 同步读取。
 
   // 显式持有容器：runApp 之前就要用它做启动对账，之后再交给 UncontrolledProviderScope。
   final container = ProviderContainer(

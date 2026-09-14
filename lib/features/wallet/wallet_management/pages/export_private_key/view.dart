@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../../blockchain/chain_registry.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';

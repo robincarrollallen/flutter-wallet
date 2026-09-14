@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
+
 import '../blockchain/chain_registry.dart';
 
 import 'mnemonic_service.dart';

@@ -129,11 +129,7 @@ class TronFeeCalculator {
   /// 恒 2 字节、`refBlockHash` 恒 8 字节、两个时间戳都是当前毫秒（varint 长度稳定）、
   /// 地址恒 21 字节。唯一随输入变化的是 [amountSun] 的 varint 长度，而这里用的
   /// 就是真实金额。于是本地结果与节点构造的一致，还省一次网络往返、且能离线测。
-  static int bandwidthFor({
-    required TronAddress owner,
-    required TronAddress to,
-    required BigInt amountSun,
-  }) {
+  static int bandwidthFor({required TronAddress owner, required TronAddress to, required BigInt amountSun}) {
     final contract = TransferContract(ownerAddress: owner, toAddress: to, amount: amountSun);
     // 时间戳只影响 varint 长度，取当前时刻即与真实交易同量级。
     final now = BigInt.from(DateTime.now().millisecondsSinceEpoch);
@@ -168,9 +164,7 @@ class TronFeeCalculator {
     DateTime? fetchedAt,
   }) {
     final covered = (freeBandwidth + stakedBandwidth) >= BigInt.from(bandwidthNeeded);
-    final bandwidthFee = covered
-        ? BigInt.zero
-        : BigInt.from(bandwidthNeeded) * BigInt.from(rates.sunPerBandwidthByte);
+    final bandwidthFee = covered ? BigInt.zero : BigInt.from(bandwidthNeeded) * BigInt.from(rates.sunPerBandwidthByte);
 
     // 只烧差额，不是整笔——这是能量与带宽最容易搞混的地方。
     final shortfall = BigInt.from(energyNeeded) - energyAvailable;
@@ -196,11 +190,7 @@ class TronFeeCalculator {
   ///
   /// [parameter] 为 `transfer(address,uint256)` 的 ABI 参数十六进制（不含选择器），
   /// 与发给节点的 `parameter` 字段同一份。
-  static int bandwidthForToken({
-    required TronAddress owner,
-    required TronAddress contract,
-    required String parameter,
-  }) {
+  static int bandwidthForToken({required TronAddress owner, required TronAddress contract, required String parameter}) {
     // 选择器 4 字节 + 参数：链上 data 是二者拼接后的字节。
     const transferSelector = 'a9059cbb';
     final data = BytesUtils.fromHexString('$transferSelector$parameter');
@@ -212,7 +202,10 @@ class TronFeeCalculator {
       expiration: now + BigInt.from(60000),
       timestamp: now,
       contract: [
-        TransactionContract(type: call.contractType, parameter: Any(typeUrl: call.typeURL, value: call)),
+        TransactionContract(
+          type: call.contractType,
+          parameter: Any(typeUrl: call.typeURL, value: call),
+        ),
       ],
     );
     return raw.toBuffer().length + _protobufOverhead + _resultFieldBytes + _signatureBytes;
@@ -240,9 +233,7 @@ class TronFeeCalculator {
     //
     // 激活场景刻意只看质押那档：免费额度不能用于创建账户
     // （java-tron 的 consumeBandwidthForCreateNewAccount 只走 useAccountNet）。
-    final covered = recipientActivated
-        ? (freeBandwidth + stakedBandwidth) >= needed
-        : stakedBandwidth >= needed;
+    final covered = recipientActivated ? (freeBandwidth + stakedBandwidth) >= needed : stakedBandwidth >= needed;
 
     final activationFee = recipientActivated ? BigInt.zero : BigInt.from(rates.createNewAccountFeeSun);
 

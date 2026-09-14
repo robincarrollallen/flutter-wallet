@@ -1,4 +1,5 @@
 import 'package:flutter/painting.dart';
+
 import '../../../enums/import_kind.dart';
 
 /// 钱包品牌数据：决定卡片里展示哪些 logo。

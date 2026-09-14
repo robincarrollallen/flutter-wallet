@@ -13,7 +13,7 @@ String walletSourceLabel(WalletSource source, Translations t) => switch (source)
 
   /// 私钥导入
   WalletSource.importedPrivateKey => t.walletSource.importedPrivateKey,
-  
+
   /// 硬件钱包
   WalletSource.hardware => t.walletSource.hardware,
 };

@@ -90,8 +90,9 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String, S
   final baseFuture = switch (token) {
     // BTC 走 UTXO 路径：余额是集合的投影，还要带回三口径明细。
     // 地址传成单元素列表——数据层按集合设计，以后加找零链这里改一行就够。
-    null when chain.kind == ChainKind.bitcoin =>
-      const BalanceRepository(ChainBalanceApi()).getBitcoinBalance(chain, [address], ownTxids),
+    null when chain.kind == ChainKind.bitcoin => const BalanceRepository(
+      ChainBalanceApi(),
+    ).getBitcoinBalance(chain, [address], ownTxids),
     null => const BalanceRepository(ChainBalanceApi()).getBalance(chain, address),
     _ => _tokenBalance(ref, chain, token, address),
   };

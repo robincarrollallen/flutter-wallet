@@ -55,8 +55,7 @@ void main() {
 
     test('超出上限时丢弃最旧的', () {
       final existing = [
-        for (var index = 0; index < 5; index++)
-          _record(hash: '0x$index', submittedAt: DateTime(2026, 9, index + 1)),
+        for (var index = 0; index < 5; index++) _record(hash: '0x$index', submittedAt: DateTime(2026, 9, index + 1)),
       ];
 
       final merged = mergeTransactions(existing, const [], maximum: 3);
@@ -102,7 +101,10 @@ void main() {
   test('pendingRecordsToRefresh 只取 pending 且有条数上限', () {
     final records = [
       for (var index = 0; index < 30; index++)
-        _record(hash: '0xp$index', submittedAt: DateTime(2026, 9, 1).add(Duration(minutes: index))),
+        _record(
+          hash: '0xp$index',
+          submittedAt: DateTime(2026, 9, 1).add(Duration(minutes: index)),
+        ),
       _record(hash: '0xdone', status: TransactionStatus.confirmed),
     ];
 

@@ -27,9 +27,7 @@ class TotalAssetsCard extends ConsumerWidget {
     final t = context.t;
     final wallet = ref.watch(activeWalletProvider);
     // 总资产只算当前选中钱包的跨链合计；无钱包时显示 0。
-    final total = wallet == null
-        ? const AsyncValue.data(WalletTotal.empty)
-        : ref.watch(walletTotalProvider(wallet.id));
+    final total = wallet == null ? const AsyncValue.data(WalletTotal.empty) : ref.watch(walletTotalProvider(wallet.id));
     final hidden = ref.watch(balanceHiddenProvider);
 
     return Card(

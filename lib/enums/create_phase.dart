@@ -7,5 +7,5 @@ enum CreatePhase {
   success,
 
   /// 失败
-  failed
+  failed,
 }

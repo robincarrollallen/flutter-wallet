@@ -97,9 +97,7 @@ void main() {
 
     test('与 encodeBalanceOf 共用同一份编码', () {
       const owner = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed';
-      final bytes = [
-        for (var i = 2; i < owner.length; i += 2) int.parse(owner.substring(i, i + 2), radix: 16),
-      ];
+      final bytes = [for (var i = 2; i < owner.length; i += 2) int.parse(owner.substring(i, i + 2), radix: 16)];
 
       expect(encodeBalanceOf(owner), '0x70a08231${encodeAddressArgument(bytes)}');
     });

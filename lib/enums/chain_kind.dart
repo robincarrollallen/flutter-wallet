@@ -5,7 +5,7 @@ enum ChainKind {
 
   /// 比特币
   bitcoin,
-  
+
   /// 索拉纳
   solana,
 
@@ -14,7 +14,7 @@ enum ChainKind {
 
   /// Sui
   sui,
-  
+
   /// Aptos
-  aptos
+  aptos,
 }

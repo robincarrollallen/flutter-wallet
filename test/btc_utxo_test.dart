@@ -90,11 +90,7 @@ void main() {
 
     // 一条脏数据不该让整条链的余额变成错误态。
     test('非 Map 元素逐条跳过', () {
-      final utxos = BitcoinUtxoApi.parseUtxos([
-        _utxoJson('aa', 0, 100, confirmed: true),
-        'garbage',
-        42,
-      ], 'tb1q');
+      final utxos = BitcoinUtxoApi.parseUtxos([_utxoJson('aa', 0, 100, confirmed: true), 'garbage', 42], 'tb1q');
       expect(utxos, hasLength(1));
       expect(utxos.single.txid, 'aa');
     });
@@ -120,20 +116,23 @@ void main() {
     });
 
     test('自己的未确认找零：同时计入 pending 与 spendable', () {
-      final set = UtxoSet([
-        _utxo('aa', 70000, confirmed: true),
-        _utxo('mine', 25000, confirmed: false),
-      ], ownTxids: const {'mine'});
+      final set = UtxoSet(
+        [_utxo('aa', 70000, confirmed: true), _utxo('mine', 25000, confirmed: false)],
+        ownTxids: const {'mine'},
+      );
       expect(set.pending, BigInt.from(25000));
       expect(set.spendable, BigInt.from(95000), reason: '父交易是自己签的，花它只是再挂一节 mempool 链');
     });
 
     test('两种未确认混在一起时只放行自己的那笔', () {
-      final set = UtxoSet([
-        _utxo('aa', 70000, confirmed: true),
-        _utxo('mine', 25000, confirmed: false),
-        _utxo('zz', 40000, confirmed: false),
-      ], ownTxids: const {'mine'});
+      final set = UtxoSet(
+        [
+          _utxo('aa', 70000, confirmed: true),
+          _utxo('mine', 25000, confirmed: false),
+          _utxo('zz', 40000, confirmed: false),
+        ],
+        ownTxids: const {'mine'},
+      );
       expect(set.pending, BigInt.from(65000));
       expect(set.spendable, BigInt.from(95000));
       expect(set.total, BigInt.from(135000));
@@ -160,10 +159,10 @@ void main() {
     test('待确认支出：被花掉的输出从列表消失，total 立刻减少', () {
       final before = UtxoSet([_utxo('aa', 70000, confirmed: true), _utxo('bb', 30000, confirmed: true)]);
       // 花掉 bb，找零 25000 回到自己手上（手续费 5000）。
-      final after = UtxoSet([
-        _utxo('aa', 70000, confirmed: true),
-        _utxo('mine', 25000, confirmed: false),
-      ], ownTxids: const {'mine'});
+      final after = UtxoSet(
+        [_utxo('aa', 70000, confirmed: true), _utxo('mine', 25000, confirmed: false)],
+        ownTxids: const {'mine'},
+      );
 
       expect(before.total - after.total, BigInt.from(5000), reason: '差额正是手续费，而不是整笔支出');
       expect(after.confirmed, BigInt.from(70000), reason: 'bb 已被花掉，不再计入已确认');
@@ -221,10 +220,12 @@ void main() {
     });
 
     test('5xx 必须上抛，不伪装成空集合', () async {
-      final s = await _serve((r) => r.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('oops')
-        ..close());
+      final s = await _serve(
+        (r) => r.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('oops')
+          ..close(),
+      );
 
       expect(
         () => api.fetchUtxos(_bitcoinAt(s), const ['tb1qxyz']),

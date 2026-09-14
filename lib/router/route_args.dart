@@ -73,12 +73,7 @@ final class SendConfirmArgs {
 
 /// 发送流程终点：上链结果。
 final class SendResultArgs {
-  const SendResultArgs({
-    required this.asset,
-    required this.toAddress,
-    required this.amount,
-    required this.txHash,
-  });
+  const SendResultArgs({required this.asset, required this.toAddress, required this.amount, required this.txHash});
 
   final ListedAsset asset;
   final String toAddress;

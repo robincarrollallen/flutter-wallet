@@ -38,13 +38,7 @@ final tronFeeProvider = FutureProvider.autoDispose.family<TronFeeEstimate, TronF
   if (token == null) {
     throw StateError('代币目录中找不到 $identifier（${chain.name}）');
   }
-  return service.estimateTokenFee(
-    chain: chain,
-    token: token,
-    from: key.from,
-    to: key.to,
-    amount: key.amount,
-  );
+  return service.estimateTokenFee(chain: chain, token: token, from: key.from, to: key.to, amount: key.amount);
 }, retry: _noRetry);
 
 /// 关掉自动重试：报价只是展示，失败就显示 `--`，不值得在后台反复重试。

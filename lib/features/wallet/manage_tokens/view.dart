@@ -110,10 +110,7 @@ class _ManageTile extends ConsumerWidget {
         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: Switch(
-        value: visible,
-        onChanged: (_) => ref.read(hiddenAssetsProvider.notifier).toggle(asset.key),
-      ),
+      trailing: Switch(value: visible, onChanged: (_) => ref.read(hiddenAssetsProvider.notifier).toggle(asset.key)),
       onTap: () => ref.read(hiddenAssetsProvider.notifier).toggle(asset.key),
     );
   }

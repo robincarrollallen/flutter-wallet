@@ -65,7 +65,7 @@ class Chain {
 
   /// CoinGecko asset_platforms 的平台 id，用于取该链自己的图标(如 Base / Arbitrum 都有 ETH)
   final String? coinGeckoPlatformId;
-  
+
   /// 该链的节点是否接受批量 JSON-RPC（一个请求体里发多条调用)「Sui 公共节点明确拒绝批量请求」
   final bool supportsRpcBatch;
 
@@ -80,6 +80,7 @@ class DerivationScheme {
 
   /// 币种，决定 coin_type 与地址编码所用的网络参数
   final Bip44Coins coin;
+
   /// BTC 脚本类型，决定走 BIP44/84/86；非 BTC 链为空
   final BtcScriptType? btcScriptType;
 
@@ -90,7 +91,7 @@ class DerivationScheme {
 
   /// 重写 hashCode 方法, 让这个相等性能在 Map / Set / contains 里正确工作
   @override
-    int get hashCode => Object.hash(coin, btcScriptType);
+  int get hashCode => Object.hash(coin, btcScriptType);
 }
 
 /// 全部受支持链（均为测试网）。

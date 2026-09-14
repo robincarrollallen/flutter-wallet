@@ -48,11 +48,7 @@ class TronHttpService with TronServiceProvider {
   ///
   /// 三段缺一不可的理由同 [rest_client.dart] 里的 `_send`：只包最后一段的话，
   /// connect 卡住或服务端接了不回都会无限挂起。
-  Future<({int statusCode, String body})> _send(
-    Uri uri,
-    TronRequestDetails params,
-    Duration deadline,
-  ) async {
+  Future<({int statusCode, String body})> _send(Uri uri, TronRequestDetails params, Duration deadline) async {
     try {
       final request = params.requestMethod.isGet
           ? await sharedHttpClient.getUrl(uri).timeout(deadline)

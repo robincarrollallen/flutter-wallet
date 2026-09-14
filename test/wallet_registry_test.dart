@@ -18,13 +18,13 @@ class _FakeStore extends FlutterSecureStoragePlatform with MockPlatformInterface
   @override
   Future<String?> read({required String key, required Map<String, String> options}) async => store[key];
   @override
-  Future<bool> containsKey({required String key, required Map<String, String> options}) async =>
-      store.containsKey(key);
+  Future<bool> containsKey({required String key, required Map<String, String> options}) async => store.containsKey(key);
   @override
   Future<void> delete({required String key, required Map<String, String> options}) async {
     if (throwOnDelete) throw Exception('secure storage delete failed');
     store.remove(key);
   }
+
   @override
   Future<Map<String, String>> readAll({required Map<String, String> options}) async => {...store};
   @override

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
+
 import '../blockchain/chain_registry.dart';
 
 /// 助记词相关能力的统一封装: 集中 blockchain_utils 的调用, 隔离第三方库细节,便于将来替换与单测
@@ -105,6 +106,7 @@ class DerivedWallet {
 
   /// chainId -> 该链地址
   final Map<String, String> addresses;
+
   /// 主私钥，仅私钥导入钱包需要（无助记词，签名/导出只能靠已存私钥; 助记词派生（deriveWallet）为 null——私钥一律按需现场重派生，不预存。
   final String? primaryPrivateKey;
 

@@ -47,7 +47,10 @@ class RemoteTokensNotifier extends Notifier<RemoteTokensState> with PersistentNo
   @override
   Map<String, dynamic> toJson(RemoteTokensState state) => state.at == null
       ? const {}
-      : {'at': state.at!.millisecondsSinceEpoch, 'data': [for (final t in state.tokens) t.toJson()]};
+      : {
+          'at': state.at!.millisecondsSinceEpoch,
+          'data': [for (final t in state.tokens) t.toJson()],
+        };
 
   @override
   RemoteTokensState fromJson(Map<String, dynamic> json, RemoteTokensState fallback) {

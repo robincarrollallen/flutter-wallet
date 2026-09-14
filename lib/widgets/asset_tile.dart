@@ -118,12 +118,7 @@ class _AssetAmount extends ConsumerWidget {
   ///
   /// BTC 有待确认金额时再补第三行。刻意做成条件渲染而不是常驻占位：常态下
   /// BTC 那一行的高度与其他链完全一致，列表不会因为一个永远空着的位置而参差。
-  Widget _amount(
-    BuildContext context,
-    String amount,
-    double fiatValue, {
-    UtxoBreakdown? utxo,
-  }) {
+  Widget _amount(BuildContext context, String amount, double fiatValue, {UtxoBreakdown? utxo}) {
     final theme = Theme.of(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

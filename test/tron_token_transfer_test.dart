@@ -77,9 +77,7 @@ class _FakeNode with TronServiceProvider {
         ],
       },
       'wallet/triggerconstantcontract' => {
-        'result': revert
-            ? {'result': true, 'message': 'REVERT opcode executed'}
-            : {'result': true},
+        'result': revert ? {'result': true, 'message': 'REVERT opcode executed'} : {'result': true},
         'energy_used': revert ? 1984 : energyUsed,
         'constant_result': [''],
       },
@@ -159,8 +157,7 @@ class _FakeBalances implements ChainBalanceApi {
   Future<BigInt> fetchNativeBalance(Chain chain, String address) async => BigInt.parse(trxBalance);
 
   @override
-  Future<BigInt> fetchTokenBalance(Chain chain, Token token, String address) async =>
-      BigInt.parse(tokenBalance);
+  Future<BigInt> fetchTokenBalance(Chain chain, Token token, String address) async => BigInt.parse(tokenBalance);
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -169,18 +166,15 @@ class _FakeBalances implements ChainBalanceApi {
 TronTransactionService _service(_FakeNode node, {_FakeBalances balances = const _FakeBalances()}) =>
     TronTransactionService(provider: TronProvider(node), balances: balances);
 
-Future<TransferResult> _send(
-  _FakeNode node, {
-  String amount = '5',
-  _FakeBalances balances = const _FakeBalances(),
-}) => _service(node, balances: balances).sendToken(
-  chain: _chain,
-  token: _usdt,
-  privateKey: _privateKey,
-  fromAddress: _owner.toAddress(),
-  to: _recipient.toAddress(),
-  amount: amount,
-);
+Future<TransferResult> _send(_FakeNode node, {String amount = '5', _FakeBalances balances = const _FakeBalances()}) =>
+    _service(node, balances: balances).sendToken(
+      chain: _chain,
+      token: _usdt,
+      privateKey: _privateKey,
+      fromAddress: _owner.toAddress(),
+      to: _recipient.toAddress(),
+      amount: amount,
+    );
 
 void main() {
   group('estimateTokenFee', () {
@@ -227,7 +221,10 @@ void main() {
       final signed = Transaction.deserialize(BytesUtils.fromHexString(node.broadcastPayload!));
       final call = signed.rawData.contract.single.parameter.value as TriggerSmartContract;
       // USDT 是 6 位精度：5 USDT = 5_000_000。
-      expect(BytesUtils.toHexString(call.data!).endsWith(BigInt.from(5000000).toRadixString(16).padLeft(64, '0')), isTrue);
+      expect(
+        BytesUtils.toHexString(call.data!).endsWith(BigInt.from(5000000).toRadixString(16).padLeft(64, '0')),
+        isTrue,
+      );
       expect(call.contractAddress, _contract);
       expect(result.sentAmount, '5');
       // 广播链路不等上链：状态一律先记 pending，由页面轮询回填。
@@ -251,7 +248,11 @@ void main() {
     test('代币余额不足即报错，且不构造交易', () async {
       final node = _FakeNode();
       await expectLater(
-        _send(node, amount: '5', balances: const _FakeBalances(tokenBalance: '1000000')),
+        _send(
+          node,
+          amount: '5',
+          balances: const _FakeBalances(tokenBalance: '1000000'),
+        ),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('USDT 余额不足'))),
       );
       expect(node.calls, isNot(contains('wallet/triggersmartcontract')));

@@ -99,11 +99,7 @@ class _FakeTronService with TronServiceProvider {
         'contract': [
           {
             'parameter': {
-              'value': {
-                'amount': amount.toInt(),
-                'owner_address': request['owner_address'],
-                'to_address': to,
-              },
+              'value': {'amount': amount.toInt(), 'owner_address': request['owner_address'], 'to_address': to},
               'type_url': 'type.googleapis.com/protocol.TransferContract',
             },
             'type': 'TransferContract',
@@ -154,11 +150,7 @@ class _FakeBalances implements ChainBalanceApi {
 TronTransactionService _service(_FakeTronService node) =>
     TronTransactionService(provider: TronProvider(node), balances: _FakeBalances(node.balance));
 
-Future<TransferResult> _send(
-  _FakeTronService node, {
-  String amount = '1.5',
-  String? from,
-}) => _service(node).sendNative(
+Future<TransferResult> _send(_FakeTronService node, {String amount = '1.5', String? from}) => _service(node).sendNative(
   chain: _chain,
   privateKey: _privateKey,
   fromAddress: from ?? _owner.toAddress(),
@@ -168,12 +160,9 @@ Future<TransferResult> _send(
 
 void main() {
   group('TronTransactionService.estimateNativeFee', () {
-    Future<TronFeeEstimate> estimate(_FakeTronService node) => _service(node).estimateNativeFee(
-      chain: _chain,
-      from: _owner.toAddress(),
-      to: _recipient.toAddress(),
-      amount: '1.5',
-    );
+    Future<TronFeeEstimate> estimate(_FakeTronService node) =>
+        _service(node)
+            .estimateNativeFee(chain: _chain, from: _owner.toAddress(), to: _recipient.toAddress(), amount: '1.5');
 
     test('带宽充足且收款方已激活时免费', () async {
       final fee = await estimate(_FakeTronService(freeBandwidth: 600));
@@ -335,15 +324,14 @@ void main() {
       return (signed.rawData.contract.single.parameter.value as TransferContract).amount;
     }
 
-    Future<TransferResult> sendMax(_FakeTronService node) =>
-        _service(node).sendNative(
-          chain: _chain,
-          privateKey: _privateKey,
-          fromAddress: _owner.toAddress(),
-          to: _recipient.toAddress(),
-          amount: formatUnits(BigInt.parse(node.balance), _chain.decimals), // 全额
-          deductFeeFromAmount: true,
-        );
+    Future<TransferResult> sendMax(_FakeTronService node) => _service(node).sendNative(
+      chain: _chain,
+      privateKey: _privateKey,
+      fromAddress: _owner.toAddress(),
+      to: _recipient.toAddress(),
+      amount: formatUnits(BigInt.parse(node.balance), _chain.decimals), // 全额
+      deductFeeFromAmount: true,
+    );
 
     test('MAX：带宽充足（费用 0）时不改金额，全额发出', () async {
       final node = _FakeTronService(balance: '10000000', freeBandwidth: 600);
@@ -357,12 +345,8 @@ void main() {
       final node = _FakeTronService(balance: '10000000', freeBandwidth: 0);
       // 费用不写死：带宽随金额的 varint 长度浮动（10 TRX 比 1 TRX 多一个字节），
       // 写死数字会让这条测试在换金额时莫名其妙地红。按同一入参现算才站得住。
-      final fee = await _service(node).estimateNativeFee(
-        chain: _chain,
-        from: _owner.toAddress(),
-        to: _recipient.toAddress(),
-        amount: '10',
-      );
+      final fee = await _service(node)
+          .estimateNativeFee(chain: _chain, from: _owner.toAddress(), to: _recipient.toAddress(), amount: '10');
       expect(fee.feeSun, greaterThan(BigInt.zero));
 
       final result = await sendMax(node);

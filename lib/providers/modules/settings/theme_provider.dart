@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../enums/app_theme_name.dart';
 import '../../../enums/prefs_key.dart';
 import '../../core/persistent_notifier.dart';
@@ -12,7 +13,8 @@ class Appearance {
   final AppThemeName themeName; // 选中的配色（亮色 / 暗色），驱动 MaterialApp 的 theme / darkTheme 取向
   final ThemeMode themeMode; // 显示模式（跟随系统 / 白天 / 黑夜），驱动 MaterialApp 的 themeMode
 
-  Appearance copyWith({AppThemeName? themeName, ThemeMode? themeMode}) => Appearance(themeName: themeName ?? this.themeName, themeMode: themeMode ?? this.themeMode);
+  Appearance copyWith({AppThemeName? themeName, ThemeMode? themeMode}) =>
+      Appearance(themeName: themeName ?? this.themeName, themeMode: themeMode ?? this.themeMode);
 }
 
 /// 外观（主题 + 模式）状态，用 PersistentNotifier 持久化两个字段。

@@ -318,8 +318,7 @@ class _RenameDialogState extends State<_RenameDialog> {
 
 /// 详情页一行「左标签 + 右值」，用于卡片内的基础信息列表。
 class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, this.value, this.valueWidget})
-    : assert(value != null || valueWidget != null);
+  const _DetailRow({required this.label, this.value, this.valueWidget}) : assert(value != null || valueWidget != null);
 
   final String label;
   final String? value;

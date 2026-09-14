@@ -227,9 +227,8 @@ class _AssetList extends ConsumerWidget {
       return Center(
         child: Text(
           '未找到相关资产',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
         ),
       );
     }

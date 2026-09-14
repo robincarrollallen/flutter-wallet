@@ -15,6 +15,7 @@ class CreateWalletState {
 
   /// 创建钱包阶段状态 [生成中 / 成功 / 失败]
   final CreatePhase phase;
+
   /// 创建成功后新钱包的 id
   final String? walletId;
 

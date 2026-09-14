@@ -11,12 +11,7 @@ Iterable<Chain> get _nonEvmChains => SupportedChains.all.where((c) => c.kind != 
 void main() {
   group('老字段 address → addresses 迁移', () {
     test('只有老字段时写入全部 EVM 链，非 EVM 仍为空', () {
-      final wallet = Wallet.fromJson({
-        'id': 'w1',
-        'name': '测试钱包',
-        'address': _legacyAddress,
-        'source': 'mnemonic',
-      });
+      final wallet = Wallet.fromJson({'id': 'w1', 'name': '测试钱包', 'address': _legacyAddress, 'source': 'mnemonic'});
 
       for (final chain in _evmChains) {
         expect(wallet.addressFor(chain), _legacyAddress, reason: '${chain.id} 应拿到老主地址');
@@ -53,22 +48,13 @@ void main() {
     });
 
     test('toJson 不再写出 address', () {
-      final wallet = Wallet(
-        id: 'w1',
-        name: '测试钱包',
-        addresses: {SupportedChains.ethereumSepolia.id: _sepoliaAddress},
-      );
+      final wallet = Wallet(id: 'w1', name: '测试钱包', addresses: {SupportedChains.ethereumSepolia.id: _sepoliaAddress});
 
       expect(wallet.toJson().containsKey('address'), isFalse);
     });
 
     test('老 JSON 往返后 EVM 地址仍在，且不再依赖 address 键', () {
-      final first = Wallet.fromJson({
-        'id': 'w1',
-        'name': '测试钱包',
-        'address': _legacyAddress,
-        'source': 'mnemonic',
-      });
+      final first = Wallet.fromJson({'id': 'w1', 'name': '测试钱包', 'address': _legacyAddress, 'source': 'mnemonic'});
       final stored = first.toJson();
       expect(stored.containsKey('address'), isFalse);
 

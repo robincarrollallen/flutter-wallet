@@ -18,19 +18,20 @@ Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) asy
   final requestId = ++_nextJsonRpcRequestId; // 自增请求 ID
   final decoded = await _post(url, {'jsonrpc': '2.0', 'id': requestId, 'method': method, 'params': params}, method);
 
-  if (decoded is! Map<String, dynamic>) { // 如果响应体不是 JSON 对象则抛出异常
+  if (decoded is! Map<String, dynamic>) {
+    // 如果响应体不是 JSON 对象则抛出异常
     throw Exception('RPC invalid response [$method] $url: expected JSON object');
   }
 
   final responseId = decoded['id']; // 获取响应 ID
-  if (!_isMatchingRpcId(responseId, requestId)) { // 如果响应 ID 不匹配则抛出异常
-    throw Exception(
-      'RPC id mismatch [$method] $url: expected=$requestId, got=$responseId',
-    );
+  if (!_isMatchingRpcId(responseId, requestId)) {
+    // 如果响应 ID 不匹配则抛出异常
+    throw Exception('RPC id mismatch [$method] $url: expected=$requestId, got=$responseId');
   }
 
   final error = decoded['error']; // 获取错误信息
-  if (error != null) { // 如果错误信息不为空则抛出异常
+  if (error != null) {
+    // 如果错误信息不为空则抛出异常
     throw Exception('RPC error [$method] $url: ${_formatRpcError(error)}');
   }
   return decoded['result']; // 返回结果
@@ -108,7 +109,8 @@ Future<Object?> _post(String url, Object payload, String label) async {
     final response = await request.close().timeout(kRemoteTimeout); // 发送请求
     final text = await response.transform(utf8.decoder).join().timeout(kRemoteTimeout); // 获取响应体
 
-    if (response.statusCode < 200 || response.statusCode >= 300) { // 如果响应状态码不在 200-299 范围内则抛出异常
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      // 如果响应状态码不在 200-299 范围内则抛出异常
       throw Exception(
         'RPC HTTP error [$label] $url: status=${response.statusCode}, '
         'body=${previewBody(text)}',
@@ -142,4 +144,3 @@ String _formatRpcError(Object error) {
   }
   return error.toString();
 }
-

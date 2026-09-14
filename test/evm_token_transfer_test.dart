@@ -69,14 +69,9 @@ class _FakeNode {
 String get _from => ETHPrivateKey.fromBytes(_privateKey).publicKey().toAddress().address;
 
 Future<TransferResult> _send(_FakeNode node, {String amount = '0.5'}) {
-  return EvmTransactionService(call: node.call).sendToken(
-    chain: _chain,
-    token: _usdc,
-    privateKey: _privateKey,
-    fromAddress: _from,
-    to: _recipient,
-    amount: amount,
-  );
+  return EvmTransactionService(
+    call: node.call,
+  ).sendToken(chain: _chain, token: _usdc, privateKey: _privateKey, fromAddress: _from, to: _recipient, amount: amount);
 }
 
 void main() {

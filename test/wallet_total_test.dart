@@ -70,11 +70,7 @@ class _FakeApi implements CoinGeckoApi {
 Future<ProviderContainer> _container(_FakeBalances balances) async {
   // 用真实的 walletListProvider，靠预置的 prefs 还原出一个钱包，
   // 免得为测试再造一套 Notifier 替身。
-  final wallet = Wallet(
-    id: _walletId,
-    name: 'W',
-    addresses: {for (final c in _chains) c.id: 'addr-${c.id}'},
-  );
+  final wallet = Wallet(id: _walletId, name: 'W', addresses: {for (final c in _chains) c.id: 'addr-${c.id}'});
   SharedPreferences.setMockInitialValues({
     'wallet.list': jsonEncode({
       'wallets': [wallet.toJson()],
