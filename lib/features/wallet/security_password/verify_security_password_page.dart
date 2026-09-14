@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
-import '../../../data/datasource/local/security_password_storage.dart';
+import '../../../providers/core/service_provider.dart';
 import '../wallet_management/widgets/panel/view.dart';
 
 /// 校验安全码页面：输入正确后 pop(true)，否则提示错误。
@@ -38,7 +38,7 @@ class _VerifySecurityPasswordPageState extends ConsumerState<VerifySecurityPassw
       _submitting = true;
     });
 
-    final ok = await ref.read(securityPasswordStorageProvider).verify(password);
+    final ok = await ref.read(securityPasswordServiceProvider).verify(password);
 
     if (!mounted) return;
     if (ok) {

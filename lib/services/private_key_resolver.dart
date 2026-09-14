@@ -73,6 +73,23 @@ class PrivateKeyResolver {
     }
     return PrivateKeyService.decodeToBytes(privateKey);
   }
+
+  /// 取出该钱包的助记词，供「手动备份」页展示。
+  ///
+  /// 单独开这个方法，是为了让备份页不必自己去打安全存储——密钥明文的每一个出口
+  /// 都应当经过这一层，否则「谁能读到助记词」这个问题在代码里就没有唯一答案。
+  ///
+  /// 返回的 `String` 与 [resolveExportKey] 一样无法清零，调用方要尽量缩短它的存活时间。
+  Future<String> resolveMnemonic(Wallet wallet) async {
+    if (!wallet.hasMnemonic) {
+      throw StateError('该钱包没有助记词');
+    }
+    final mnemonic = await _storage.readMnemonic(wallet.id);
+    if (mnemonic == null || mnemonic.isEmpty) {
+      throw StateError('缺少助记词');
+    }
+    return mnemonic;
+  }
 }
 
 /// 把私钥字节就地清零。签名结束后立刻调用（放 `finally`，异常路径也要清）。

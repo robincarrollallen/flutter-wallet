@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
-import '../../../data/datasource/local/security_password_storage.dart';
+import '../../../providers/core/service_provider.dart';
 import '../wallet_management/widgets/panel/view.dart';
 
 /// 设置安全码页面：输入并确认两次，一致后写入安全存储。
@@ -45,7 +45,7 @@ class _SetSecurityPasswordPageState extends ConsumerState<SetSecurityPasswordPag
       _submitting = true;
     });
 
-    await ref.read(securityPasswordStorageProvider).setPassword(password);
+    await ref.read(securityPasswordServiceProvider).setPassword(password);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('安全码设置成功')));

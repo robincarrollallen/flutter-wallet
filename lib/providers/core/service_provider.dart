@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasource/local/secure_wallet_storage.dart';
+import '../../data/datasource/local/security_password_storage.dart';
 import '../../blockchain/chain_registry.dart';
 import '../../services/evm_transaction_service.dart';
 import '../../services/history/transaction_history_service.dart';
@@ -11,6 +12,7 @@ import '../../services/transfer/tron_transfer_service.dart';
 import '../../services/tron_transaction_service.dart';
 import '../../services/wallet_commit_service.dart';
 import '../../services/private_key_resolver.dart';
+import '../../services/security_password_service.dart';
 import '../../services/wallet_service.dart';
 import '../modules/asset/token_catalog_provider.dart';
 import '../modules/wallet/wallet_provider.dart';
@@ -23,6 +25,11 @@ import '../modules/wallet/wallet_provider.dart';
 /// 导出私钥 / 签名等流程的私钥解析入口。
 final privateKeyResolverProvider = Provider<PrivateKeyResolver>(
   (ref) => PrivateKeyResolver(ref.watch(secureWalletStorageProvider)),
+);
+
+/// 安全码的设置与校验。UI 一律走这里，不直接打安全存储。
+final securityPasswordServiceProvider = Provider<SecurityPasswordService>(
+  (ref) => SecurityPasswordService(ref.watch(securityPasswordStorageProvider)),
 );
 
 /// 转账编排入口。接入新链时在 map 里加一行即可。

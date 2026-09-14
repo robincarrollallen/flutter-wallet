@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../domain/wallet.dart';
-import '../../../../../data/datasource/local/secure_wallet_storage.dart';
+import '../../../../../providers/core/service_provider.dart';
 import '../../widgets/panel/view.dart';
 import '../../../../../core/navigation/panel_routes.dart';
 import '../verify_mnemonic/view.dart';
@@ -39,7 +39,7 @@ class _ManualBackupPageState extends ConsumerState<ManualBackupPage> {
       _failed = false;
     });
     try {
-      final mnemonic = await ref.read(secureWalletStorageProvider).readMnemonic(widget.wallet.id);
+      final mnemonic = await ref.read(privateKeyResolverProvider).resolveMnemonic(widget.wallet);
       if (!mounted) return;
       setState(() {
         _mnemonic = mnemonic;
