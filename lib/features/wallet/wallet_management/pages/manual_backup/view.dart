@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../../core/utils/secret_reveal.dart';
+import '../../../../../widgets/secret_guard.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../domain/wallet.dart';
@@ -24,11 +29,23 @@ class _ManualBackupPageState extends ConsumerState<ManualBackupPage> {
   bool _loading = false;
   bool _failed = false;
 
+  /// 自动收起明文的计时器。见 [kSecretRevealLifetime]。
+  Timer? _hideTimer;
+
   @override
   void dispose() {
+    _hideTimer?.cancel();
     // 主动断开对助记词明文的引用，缩短其在内存中的存活时间。
     _mnemonic = null;
     super.dispose();
+  }
+
+  /// 到时自动收起明文，把它留在屏幕上的时间变成一个确定的上界。
+  void _scheduleHide() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(kSecretRevealLifetime, () {
+      if (mounted) setState(() => _mnemonic = null);
+    });
   }
 
   /// 点击展示：从安全存储一次性读取助记词到本地状态（不进 Provider 缓存）。
@@ -45,6 +62,7 @@ class _ManualBackupPageState extends ConsumerState<ManualBackupPage> {
         _mnemonic = mnemonic;
         _loading = false;
       });
+      _scheduleHide();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -101,7 +119,7 @@ class _ManualBackupPageState extends ConsumerState<ManualBackupPage> {
                 if (_failed)
                   const Center(child: Text('该钱包没有可备份的助记词或读取失败'))
                 else if (revealed)
-                  _MnemonicGrid(mnemonic: mnemonic)
+                  SecretGuard(child: _MnemonicGrid(mnemonic: mnemonic))
                 else
                   _HiddenPlaceholder(loading: _loading, onReveal: _reveal),
               ],

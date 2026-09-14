@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../../core/utils/secure_clipboard.dart';
+import '../../../../../core/utils/secret_reveal.dart';
+import '../../../../../widgets/secret_guard.dart';
 
 import '../../../../../blockchain/chain_registry.dart';
 
@@ -29,11 +34,26 @@ class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> {
   bool _loading = false;
   bool _failed = false;
 
+  /// 自动收起明文的计时器。见 [kSecretRevealLifetime]。
+  Timer? _hideTimer;
+
   @override
   void dispose() {
+    _hideTimer?.cancel();
     // 主动断开对私钥明文的引用，缩短其在内存中的存活时间。
     _privateKey = null;
     super.dispose();
+  }
+
+  /// 到时自动收起明文。
+  ///
+  /// 用户看完一眼往往就把手机放下了，页面却会一直亮着私钥。定时收起把「明文在
+  /// 屏幕上停留多久」从「用户记得退出」变成一个确定的上界；想再看点一次即可。
+  void _scheduleHide() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(kSecretRevealLifetime, () {
+      if (mounted) setState(() => _privateKey = null);
+    });
   }
 
   /// 点击展示：按需取出当前链的私钥明文到本地状态（不进 Provider 缓存）。
@@ -53,6 +73,7 @@ class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> {
         _privateKey = pk;
         _loading = false;
       });
+      _scheduleHide();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -209,14 +230,17 @@ class _RevealedContent extends StatelessWidget {
             color: theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8.s),
           ),
-          child: SelectableText(privateKey, style: theme.textTheme.bodyMedium),
+          child: SecretGuard(child: SelectableText(privateKey, style: theme.textTheme.bodyMedium)),
         ),
         SizedBox(height: 16.s),
         // 复制按钮。
         OutlinedButton.icon(
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: privateKey));
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('私钥已复制')));
+          onPressed: () async {
+            await copySensitiveToClipboard(privateKey);
+            if (!context.mounted) return;
+            // 明确告知会自动清除：用户才知道不必自己去清，也不会以为粘贴板坏了。
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text('私钥已复制，${kSensitiveClipboardLifetime.inSeconds} 秒后自动从剪贴板清除')));
           },
           icon: Icon(Icons.copy_rounded, size: 18.s),
           label: const Text('复制私钥'),
