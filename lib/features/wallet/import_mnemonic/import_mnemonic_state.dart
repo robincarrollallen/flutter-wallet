@@ -12,24 +12,23 @@ import 'import_mnemonic_logic.dart';
 import '../../../enums/secret_type.dart';
 
 /// 页面 UI 状态（不可变）。
+///
+/// **刻意不持有助记词/私钥明文。** 用户输入的密钥只存在于页面的
+/// `TextEditingController` 里，提交时作为参数一次性传进来、用完即弃。
+///
+/// 理由不是「会落盘」——这个 provider 是 autoDispose 且非 PersistentNotifier，
+/// 从不写磁盘；而是 Riverpod 的 `ProviderObserver` / DevTools 会把每次状态变更
+/// 打出来。密钥躺在一个可观测容器里，任何人日后加一个日志型 observer 就会直接
+/// 把助记词写进日志。对照 `create_wallet_state.dart`：那边一直是对的，
+/// 助记词只是局部变量。
 class ImportMnemonicState {
-  const ImportMnemonicState({this.mnemonic = '', this.error, this.submitting = false});
+  const ImportMnemonicState({this.error, this.submitting = false});
 
-  final String mnemonic;
   final MnemonicError? error;
   final bool submitting;
 
-  int get wordCount => ImportMnemonicLogic.wordCount(mnemonic);
-
-  /// 当前正在输入的单词对应的 BIP39 候选词（用于键盘上方候选栏）。
-  List<String> get suggestions => ImportMnemonicLogic.suggestions(mnemonic);
-
-  /// 输入达到合法词数即可点击导入。
-  bool get canSubmit => !submitting && ImportMnemonicLogic.validate(mnemonic) == null;
-
-  ImportMnemonicState copyWith({String? mnemonic, MnemonicError? error, bool clearError = false, bool? submitting}) {
+  ImportMnemonicState copyWith({MnemonicError? error, bool clearError = false, bool? submitting}) {
     return ImportMnemonicState(
-      mnemonic: mnemonic ?? this.mnemonic,
       error: clearError ? null : (error ?? this.error),
       submitting: submitting ?? this.submitting,
     );
@@ -45,14 +44,19 @@ class ImportMnemonicNotifier extends Notifier<ImportMnemonicState> {
   @override
   ImportMnemonicState build() => const ImportMnemonicState();
 
-  /// 输入变化：实时更新并清除上一次的错误。
-  void onMnemonicChanged(String value) {
-    state = state.copyWith(mnemonic: value, clearError: true);
+  /// 输入变化：清除上一次的错误。
+  ///
+  /// **不接收输入内容**——密钥留在页面的 controller 里，不进状态。
+  void onInputChanged() {
+    if (state.error != null) state = state.copyWith(clearError: true);
   }
 
   /// 提交导入。校验通过则写入钱包列表并选中，返回 true。
-  Future<bool> submit() async {
-    final error = ImportMnemonicLogic.validate(state.mnemonic);
+  ///
+  /// [secret] 是用户输入的助记词或私钥，由页面在点击时一次性传入。
+  /// 它是方法的局部变量，不会进入 [state]——见 [ImportMnemonicState] 的注释。
+  Future<bool> submit(String secret) async {
+    final error = ImportMnemonicLogic.validate(secret);
     if (error != null) {
       state = state.copyWith(error: error);
       return false;
@@ -61,11 +65,11 @@ class ImportMnemonicNotifier extends Notifier<ImportMnemonicState> {
     state = state.copyWith(submitting: true, clearError: true);
 
     // 按类型在后台 isolate 派生（BIP44 重运算 / 私钥派生均避免阻塞 UI）。
-    final bool isPrivateKey = ImportMnemonicLogic.detectType(state.mnemonic) == SecretType.privateKey;
+    final bool isPrivateKey = ImportMnemonicLogic.detectType(secret) == SecretType.privateKey;
     // 私钥：保留大小写原样；助记词：规整为小写单空格。
     final String normalized = isPrivateKey
-        ? PrivateKeyService.normalize(state.mnemonic)
-        : ImportMnemonicLogic.normalize(state.mnemonic);
+        ? PrivateKeyService.normalize(secret)
+        : ImportMnemonicLogic.normalize(secret);
 
     final DerivedWallet derived;
     try {

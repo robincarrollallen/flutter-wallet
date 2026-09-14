@@ -50,15 +50,23 @@ class _ImportMnemonicViewState extends ConsumerState<ImportMnemonicView> {
     super.dispose();
   }
 
+  /// 输入变化：只负责重建本页与清掉上一次的错误。
+  ///
+  /// 输入内容**不往状态里送**——密钥只留在 [_controller] 这一个持有者里，
+  /// 理由见 [ImportMnemonicState] 的注释。
+  void _onChanged(String _) {
+    setState(() {});
+    ref.read(importMnemonicProvider.notifier).onInputChanged();
+  }
+
   /// 点击候选词：替换末尾正在敲的单词为完整词，光标移到末尾，保持键盘不收起。
   void _applySuggestion(String word) {
-    final notifier = ref.read(importMnemonicProvider.notifier);
     final text = ImportMnemonicLogic.applySuggestion(_controller.text, word);
     _controller.value = TextEditingValue(
       text: text,
       selection: TextSelection.collapsed(offset: text.length),
     );
-    notifier.onMnemonicChanged(text);
+    _onChanged(text);
   }
 
   @override
@@ -68,8 +76,13 @@ class _ImportMnemonicViewState extends ConsumerState<ImportMnemonicView> {
     final theme = Theme.of(context);
     final t = context.t;
 
+    // 密钥在点击这一刻才从 controller 取出，作为参数交给 notifier，用完即弃。
+    final secret = _controller.text;
+    final wordCount = ImportMnemonicLogic.wordCount(secret);
+    final canSubmit = !state.submitting && ImportMnemonicLogic.validate(secret) == null;
+
     Future<void> onImport() async {
-      final ok = await notifier.submit();
+      final ok = await notifier.submit(_controller.text);
       if (ok && context.mounted) {
         // 导入成功后清空导入相关路由（助记词页 + 选择页），回到首页。
         context.go(AppRoute.root);
@@ -90,7 +103,7 @@ class _ImportMnemonicViewState extends ConsumerState<ImportMnemonicView> {
                   TextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    onChanged: notifier.onMnemonicChanged,
+                    onChanged: _onChanged,
                     autofocus: true,
                     maxLines: 5,
                     decoration: InputDecoration(
@@ -98,7 +111,7 @@ class _ImportMnemonicViewState extends ConsumerState<ImportMnemonicView> {
                       hintText: t.import.mnemonic.hint,
                       helperText: t.import.mnemonic.helper,
                       errorText: state.error == null ? null : _errorText(t, state.error!),
-                      counterText: state.wordCount > 0 ? t.import.mnemonic.wordCount(n: state.wordCount) : null,
+                      counterText: wordCount > 0 ? t.import.mnemonic.wordCount(n: wordCount) : null,
                     ),
                   ),
                   SizedBox(height: 12.s),
@@ -116,7 +129,7 @@ class _ImportMnemonicViewState extends ConsumerState<ImportMnemonicView> {
                   ),
                   SizedBox(height: 24.s),
                   FilledButton(
-                    onPressed: state.canSubmit ? onImport : null,
+                    onPressed: canSubmit ? onImport : null,
                     child: state.submitting
                         ? SizedBox(width: 18.s, height: 18.s, child: const CircularProgressIndicator(strokeWidth: 2))
                         : Text(t.import.mnemonic.submit),
@@ -125,7 +138,7 @@ class _ImportMnemonicViewState extends ConsumerState<ImportMnemonicView> {
               ),
             ),
           ),
-          _SuggestionBar(suggestions: state.suggestions, onTap: _applySuggestion),
+          _SuggestionBar(suggestions: ImportMnemonicLogic.suggestions(secret), onTap: _applySuggestion),
         ],
       ),
     );
