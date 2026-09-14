@@ -5,16 +5,19 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 ///
 /// 底层使用 flutter_secure_storage：
 /// - iOS / macOS：Keychain（本机加密，受设备解锁保护）
-/// - Android：Keystore 派生密钥 + EncryptedSharedPreferences
+/// - Android：Keystore 保管密钥（RSA-OAEP 包装）+ AES/GCM 加密数据
 ///
 /// 这些数据**绝不能**进入 Riverpod 状态、日志或 SharedPreferences。
 /// 仅在签名、备份等必要场景按钱包 id 临时读取。
 class SecureWalletStorage {
+  /// 不传 `aOptions`：Android 侧的默认值就是上面那套强加密。
+  /// 曾经显式传的 `encryptedSharedPreferences: true` 已被上游弃用——
+  /// Google 弃掉了 Jetpack Security，该参数如今会被忽略、v11 将移除，
+  /// 已存的数据会在首次访问时自动迁移到新的加密方式。
   SecureWalletStorage([FlutterSecureStorage? storage])
     : _storage =
           storage ??
           const FlutterSecureStorage(
-            aOptions: AndroidOptions(encryptedSharedPreferences: true),
             iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
           );
 

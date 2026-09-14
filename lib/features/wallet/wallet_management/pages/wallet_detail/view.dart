@@ -318,7 +318,7 @@ class _RenameDialogState extends State<_RenameDialog> {
 
 /// 详情页一行「左标签 + 右值」，用于卡片内的基础信息列表。
 class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, this.value, this.valueWidget, this.selectable = false})
+  const _DetailRow({required this.label, this.value, this.valueWidget})
     : assert(value != null || valueWidget != null);
 
   final String label;
@@ -326,7 +326,6 @@ class _DetailRow extends StatelessWidget {
 
   /// 自定义右值组件（提供时优先于 [value]，如金额 AmountText）。
   final Widget? valueWidget;
-  final bool selectable;
 
   @override
   Widget build(BuildContext context) {
@@ -341,13 +340,11 @@ class _DetailRow extends StatelessWidget {
           Expanded(
             child:
                 valueWidget ??
-                (selectable
-                    ? SelectableText(value!, textAlign: TextAlign.right, style: theme.textTheme.bodyMedium)
-                    : Text(
-                        value!,
-                        textAlign: TextAlign.right,
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                      )),
+                Text(
+                  value!,
+                  textAlign: TextAlign.right,
+                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
           ),
         ],
       ),

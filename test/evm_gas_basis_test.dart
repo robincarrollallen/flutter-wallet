@@ -10,11 +10,10 @@ import 'package:wallet/services/evm_transaction_service.dart';
 const _chain = SupportedChains.ethereumSepolia;
 const _from = '0x1111111111111111111111111111111111111111';
 
-/// 假节点：baseFee / 小费固定，gasLimit 可逐次改，并能整体切到「网络故障」。
+/// 假节点：baseFee / 小费 / gasLimit 全部固定，并能整体切到「网络故障」。
 class _FakeNode {
-  _FakeNode({this.gasEstimate = '0xfde8'});
-
-  String gasEstimate;
+  /// `eth_estimateGas` 的固定返回（0xfde8 = 65000）。
+  static const gasEstimate = '0xfde8';
 
   /// true 时所有 RPC 抛异常，模拟网络抖动。
   bool down = false;

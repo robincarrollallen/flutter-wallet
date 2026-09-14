@@ -5,15 +5,16 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 ///
 /// 与助记词 / 私钥一样，落在 flutter_secure_storage：
 /// - iOS / macOS：Keychain
-/// - Android：Keystore 派生密钥 + EncryptedSharedPreferences
+/// - Android：Keystore 保管密钥（RSA-OAEP 包装）+ AES/GCM 加密数据
 ///
 /// 安全码是 App 全局唯一的，用于导出私钥 / 备份等敏感操作前的二次校验。
 class SecurityPasswordStorage {
+  /// 不传 `aOptions` 的理由同 [SecureWalletStorage]：默认值即强加密，
+  /// 而 `encryptedSharedPreferences` 已被上游弃用且会被忽略。
   SecurityPasswordStorage([FlutterSecureStorage? storage])
     : _storage =
           storage ??
           const FlutterSecureStorage(
-            aOptions: AndroidOptions(encryptedSharedPreferences: true),
             iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
           );
 

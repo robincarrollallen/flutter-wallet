@@ -5,8 +5,7 @@ import 'token.dart';
 ///
 /// 数据从哪来（远程 / 自定义 / 以后链上发现）由 [merge] 决定；查询方只读这一份。
 class TokenCatalog {
-  const TokenCatalog({required this.chains, required Map<String, List<Token>> tokensByChain})
-    : _tokensByChain = tokensByChain;
+  const TokenCatalog({required this.chains, required this._tokensByChain});
 
   /// 目录覆盖的链，顺序与合并时传入的 [chains] 一致。
   final List<Chain> chains;
