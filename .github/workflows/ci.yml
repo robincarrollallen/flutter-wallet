@@ -1,10 +1,12 @@
 name: CI
 
+# main 必须在列——只守 release 的话，改动要等到合并前夕才第一次被验证，
+# 而那时往往已经积了几十个提交，红了也难定位是哪一个带来的。
 on:
   push:
-    branches: [release]
+    branches: [main, release]
   pull_request:
-    branches: [release]
+    branches: [main, release]
 
 # 同一分支上新的 push 取消仍在跑的旧任务，省 runner 时间。
 concurrency:
@@ -20,7 +22,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           # 与本地开发版本一致，避免 CI 因 SDK 漂移而红/绿不一致。
-          flutter-version: 3.38.3
+          # 必须 >= pubspec 里声明的 flutter 下限（当前 3.47.0），否则 pub get 直接报版本不匹配。
+          flutter-version: 3.47.2
           channel: stable
           cache: true
 
@@ -33,11 +36,11 @@ jobs:
       - name: 格式检查
         run: dart format --output=none --set-exit-if-changed lib test
 
-      # 项目当前基线为 0 error，允许 warning/info（多为上游 deprecated API）。
-      # 注意 flutter analyze 默认「有任何 diagnostic 就退出码 1」，必须显式关掉这两个开关，
-      # 否则 4 条 deprecated info 也会让 CI 红。清理掉既有 5 项后可去掉这两个 flag 收紧。
+      # 基线已收紧到 0 diagnostic（原先容忍的 5 项 warning/info 已全部清掉），
+      # 所以不再需要 --no-fatal-infos / --no-fatal-warnings：任何新增的
+      # warning 或 info 都会让 CI 红，避免告警重新堆积成「反正一直有几条」的背景噪音。
       - name: 静态分析
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: flutter analyze
 
       - name: 分层约束
         run: ./tool/check_layers.sh
