@@ -61,14 +61,22 @@ class SendResultStatusPoller {
     }
     _polls++;
 
+    // 失效高度存在历史记录里：判定「交易已过期」要靠它，没有它就只能一直等下去。
+    final record = _ref
+        .read(transactionHistoryProvider)
+        .where((record) => record.identity == '$chainId:$transactionHash')
+        .firstOrNull;
+
     final TransactionStatus status;
     try {
-      status = await _ref.read(walletServiceProvider).queryTransactionStatus(chainId, transactionHash);
+      status = await _ref
+          .read(walletServiceProvider)
+          .queryTransactionStatus(chainId, transactionHash, validUntilBlock: record?.validUntilBlock);
     } catch (_) {
       // 节点抖动不该中断轮询，也不该惊动用户——这一轮跳过，等下一轮。
       return;
     }
-    if (status == TransactionStatus.pending) return;
+    if (!status.isFinal) return;
 
     stop(); // 终态不会再变，没必要继续查。
     _ref.read(transactionHistoryProvider.notifier).updateStatus(chainId, transactionHash, status);
@@ -76,13 +84,9 @@ class SendResultStatusPoller {
 }
 
 /// 按「链 + 哈希」建轮询器。autoDispose：结果页销毁后连同轮询器一起回收。
-final sendResultStatusPollerProvider =
-    Provider.autoDispose.family<SendResultStatusPoller, ({String chainId, String transactionHash})>((ref, target) {
-      final poller = SendResultStatusPoller(
-        ref,
-        chainId: target.chainId,
-        transactionHash: target.transactionHash,
-      );
+final sendResultStatusPollerProvider = Provider.autoDispose
+    .family<SendResultStatusPoller, ({String chainId, String transactionHash})>((ref, target) {
+      final poller = SendResultStatusPoller(ref, chainId: target.chainId, transactionHash: target.transactionHash);
       ref.onDispose(poller.stop);
       return poller;
     });

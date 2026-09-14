@@ -154,6 +154,7 @@ class _Translations$transactionHistory$zh extends Translations$transactionHistor
 	@override String get statusPending => '确认中';
 	@override String get statusConfirmed => '已确认';
 	@override String get statusFailed => '失败';
+	@override String get statusExpired => '未上链';
 	@override String get directionOutgoing => '转出';
 	@override String get directionIncoming => '转入';
 	@override String get detailTitle => '交易详情';
@@ -439,6 +440,7 @@ extension on TranslationsZh {
 			'transactionHistory.statusPending' => '确认中',
 			'transactionHistory.statusConfirmed' => '已确认',
 			'transactionHistory.statusFailed' => '失败',
+			'transactionHistory.statusExpired' => '未上链',
 			'transactionHistory.directionOutgoing' => '转出',
 			'transactionHistory.directionIncoming' => '转入',
 			'transactionHistory.detailTitle' => '交易详情',

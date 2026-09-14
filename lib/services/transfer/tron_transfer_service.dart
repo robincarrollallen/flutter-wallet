@@ -12,8 +12,7 @@ const _singleQueryTimeout = Duration(seconds: 1);
 /// 与 [EvmTransferService] 同构：只负责「解析签名私钥 + 分派」，
 /// 交易构造、签名与广播下沉在 [TronTransactionService]。
 class TronTransferService implements ChainTransferService {
-  const TronTransferService(this._keyResolver, {TronTransactionService transactions = const TronTransactionService()})
-    : _transactions = transactions;
+  const TronTransferService(this._keyResolver, {this._transactions = const TronTransactionService()});
 
   final PrivateKeyResolver _keyResolver; // 私钥解析器
   final TronTransactionService _transactions; // 波场交易服务
@@ -28,7 +27,8 @@ class TronTransferService implements ChainTransferService {
   bool get supportsToken => true;
 
   @override
-  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash) {
+  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash, {int? validUntilBlock}) {
+    // Tron 的过期由节点自己处理（交易带 expiration），这里拿不到高度口径，忽略之。
     // 单次查询：给一个短到只够发一轮请求的超时，查不到交易即视为仍在打包中。
     return _transactions.waitForReceipt(chain, transactionHash, timeout: _singleQueryTimeout);
   }

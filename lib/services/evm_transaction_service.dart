@@ -1,4 +1,5 @@
 import 'package:on_chain/ethereum/ethereum.dart';
+
 import '../blockchain/units.dart';
 import '../blockchain/chain_registry.dart';
 import '../blockchain/token.dart';
@@ -11,7 +12,7 @@ import 'transfer/transfer_result.dart';
 
 /// EVM 转账实现：取 nonce / 估费 / 估 gas → 构造交易 → 本地签名 → 广播 → 轮询 receipt
 class EvmTransactionService {
-  const EvmTransactionService({JsonRpcCaller call = jsonRpcCall}) : _call = call;
+  const EvmTransactionService({this._call = jsonRpcCall});
 
   /// 调用 JSON-RPC 的接口，用于与链上交互(测试注入, 生产默认使用[jsonRpcCall])
   final JsonRpcCaller _call;
@@ -23,13 +24,10 @@ class EvmTransactionService {
   static const int _gasBufferNum = 12;
   static const int _gasBufferDen = 10;
 
-  /// 查询 receipt 的默认超时：只够发一轮请求。
-  ///
-  /// 刻意给得很短——转账不在广播链路里等上链，拿不到回执即视为仍在打包中，
-  /// 由结果页与历史页各自轮询回填。默认值给长了，调用方一旦忘记传就会阻塞用户。
+  /// 查询 receipt 的默认超时：只够发一轮请求的超时，查不到回执即视为仍在打包中
   static const Duration _receiptTimeout = Duration(seconds: 1);
 
-  /// 单次调用内多轮查询的间隔。默认超时下只会发一轮，这个值仅对显式传长超时的调用方有意义。
+  /// 单次调用内多轮查询的间隔。默认超时下只会发一轮，这个值仅对显式传长超时的调用方有意义
   static const Duration _receiptPollInterval = Duration(seconds: 2);
 
   /// eth_feeHistory 回看的区块数：太短受单块抖动影响，太长跟不上拥堵变化
@@ -60,8 +58,7 @@ class EvmTransactionService {
 
     // 交易序号：与 nonce 同口径，pending「含未上链的发出交易」避免未确认转出仍被算作可用余额
     final nonceHex =
-        await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending'])
-            as String;
+        await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending']) as String;
     final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed); // 获取并计算手续费「实例」(按档位)
     var gasLimit = await _resolveGasLimit(chain.endpoint, from.address, to, value, chain.symbol); // 估算 gas 用量
     var feeCap = fee.capGasPrice * gasLimit; // 计算手续费上限[wei]
@@ -109,7 +106,8 @@ class EvmTransactionService {
       gasLimit: gasLimit,
       fee: fee,
     );
-    return (hash: hash, sentAmount: formatUnits(value, chain.decimals), status: status);
+    // EVM 没有确定的失效高度：交易可能在内存池里待很久后仍被打包。
+    return (hash: hash, sentAmount: formatUnits(value, chain.decimals), status: status, validUntilBlock: null);
   }
 
   /// 发送 ERC-20 代币转账，返回 (交易哈希, 实际发送金额, 上链状态)
@@ -144,10 +142,9 @@ class EvmTransactionService {
     // 代币余额：不足时直接报错，绝不静默改小金额（与原生币手输金额同一原则）。
     final tokenBalance = decodeUint256(
       await _call(chain.endpoint, EvmRpcMethod.call.wireName, [
-            {'to': contract, 'data': encodeBalanceOf(from.address)},
-            'latest',
-          ])
-          as String,
+        {'to': contract, 'data': encodeBalanceOf(from.address)},
+        'latest',
+      ]) as String,
     );
     // 如果转出金额大于代币余额，则抛出异常
     if (value > tokenBalance) {
@@ -159,8 +156,7 @@ class EvmTransactionService {
 
     // 交易序号：与 nonce 同口径，pending「含未上链的发出交易」避免未确认转出仍被算作可用余额
     final nonceHex =
-        await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending'])
-            as String;
+        await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending']) as String;
     final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed); // 获取并计算手续费「实例」(按档位)
     final gasLimit = await resolveTokenGasLimit(chain, from: from.address, contract: contract, data: data); // 估算 gas 用量
     final feeCap = fee.capGasPrice * gasLimit; // 计算手续费上限[wei]
@@ -190,14 +186,11 @@ class EvmTransactionService {
       gasLimit: gasLimit,
       fee: fee,
     );
-    return (hash: hash, sentAmount: formatUnits(value, token.decimals), status: status);
+    // EVM 没有确定的失效高度：交易可能在内存池里待很久后仍被打包。
+    return (hash: hash, sentAmount: formatUnits(value, token.decimals), status: status, validUntilBlock: null);
   }
 
-  /// 构造交易 → 本地签名 → 广播。原生币与代币共用。
-  ///
-  /// 广播成功即返回，**不在这里等回执**：等回执要几十秒，这段时间用户只能对着
-  /// 转圈的确认页干等，而交易哈希其实第一时间就拿到了。状态一律先记 pending，
-  /// 由结果页的有界轮询与历史页的下拉刷新去回填。
+  /// 构造交易 → 本地签名 → 广播「广播成功即返回, 状态一律先记 pending」(原生币与代币共用)
   Future<({String hash, TransactionStatus status})> _signAndBroadcast({
     required Chain chain, // 链信息「实例」
     required int evmChainId, // EVM 链的 chainId「数字」
@@ -228,22 +221,21 @@ class EvmTransactionService {
     final raw = unsigned.copyWith(signature: signature).signedSerialized(); // 签名后的交易
 
     // 发送签名后的交易
-    final hash = await _call(chain.endpoint, EvmRpcMethod.sendRawTransaction.wireName, ['0x${evmBytesToHex(raw)}']) as String;
+    final hash =
+        await _call(chain.endpoint, EvmRpcMethod.sendRawTransaction.wireName, ['0x${evmBytesToHex(raw)}']) as String;
     return (hash: hash, status: TransactionStatus.pending);
   }
 
-  /// 查询 [eth_getTransactionReceipt]，直到确认/失败或超时（返回 pending）。
-  ///
-  /// 默认超时只够发一轮，即「查一次当前状态」；传长超时才会变成真正的轮询。
+  /// 查询 [eth_getTransactionReceipt]，直到确认/失败或超时「返回pending」(默认超时只够发一轮, 传长超时才会变成真正的轮询)
   Future<TransactionStatus> waitForReceipt(
-    String endpoint,
-    String txHash, {
-    Duration timeout = _receiptTimeout,
-    Duration interval = _receiptPollInterval,
+    String endpoint, // 网络请求地址
+    String transactionHash, { // 转账Hash
+    Duration timeout = _receiptTimeout, // 超时时间
+    Duration interval = _receiptPollInterval, // 轮询间隔
   }) async {
-    final deadline = DateTime.now().add(timeout);
+    final deadline = DateTime.now().add(timeout); // 设置轮询截止时间
     while (DateTime.now().isBefore(deadline)) {
-      final receipt = await _call(endpoint, EvmRpcMethod.getTransactionReceipt.wireName, [txHash]);
+      final receipt = await _call(endpoint, EvmRpcMethod.getTransactionReceipt.wireName, [transactionHash]); // 查询交易回执
       if (receipt is Map) {
         final statusHex = receipt['status'] as String?;
         if (statusHex == null) return TransactionStatus.confirmed; // 极老节点无 status，有回执即视为上链
@@ -300,12 +292,7 @@ class EvmTransactionService {
     required BigInt value,
     String? data,
   }) async {
-    final params = <String, Object?>{
-      'from': from,
-      'to': to,
-      'value': '0x${value.toRadixString(16)}',
-      'data': ?data,
-    };
+    final params = <String, Object?>{'from': from, 'to': to, 'value': '0x${value.toRadixString(16)}', 'data': ?data};
     final gasHex = await _call(endpoint, EvmRpcMethod.estimateGas.wireName, [params]) as String;
     final buffered = (parseEvmHexQuantity(gasHex) * BigInt.from(_gasBufferNum)) ~/ BigInt.from(_gasBufferDen);
     return buffered < _nativeEoaGasLimit ? _nativeEoaGasLimit : buffered;
@@ -339,13 +326,11 @@ class EvmTransactionService {
   Future<Map<int, BigInt>> _fetchTips(String endpoint) async {
     final percentiles = FeeSpeed.values.map((speed) => speed.rewardPercentile).toList();
     try {
-      final history =
-          await _call(endpoint, EvmRpcMethod.feeHistory.wireName, [
-                '0x${_feeHistoryBlocks.toRadixString(16)}',
-                'latest',
-                percentiles,
-              ])
-              as Map;
+      final history = await _call(endpoint, EvmRpcMethod.feeHistory.wireName, [
+        '0x${_feeHistoryBlocks.toRadixString(16)}',
+        'latest',
+        percentiles,
+      ]) as Map;
       // reward: 每个区块一行，行内按 percentiles 顺序给出对应分位的小费。
       final rewards = (history['reward'] as List).cast<List<Object?>>();
       if (rewards.isEmpty) throw const FormatException('reward 为空');

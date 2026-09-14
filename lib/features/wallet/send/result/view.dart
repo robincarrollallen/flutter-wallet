@@ -59,23 +59,23 @@ class _SendResultPageState extends ConsumerState<SendResultPage> {
     final txHash = widget.txHash;
     final amount = widget.amount;
     final (icon, color, title, subtitle) = switch (status) {
-      TransactionStatus.confirmed => (
-        Icons.check_circle_rounded,
-        theme.colorScheme.primary,
-        '已确认',
-        '交易已上链确认',
-      ),
-      TransactionStatus.failed => (
-        Icons.error_rounded,
-        theme.colorScheme.error,
-        '上链失败',
-        '交易已广播但执行失败，gas 可能已消耗',
-      ),
+      TransactionStatus.confirmed => (Icons.check_circle_rounded, theme.colorScheme.primary, '已确认', '交易已上链确认'),
+      TransactionStatus.failed => (Icons.error_rounded, theme.colorScheme.error, '上链失败', '交易已广播但执行失败，gas 可能已消耗'),
       TransactionStatus.pending => (
         Icons.hourglass_top_rounded,
         theme.colorScheme.tertiary,
         '确认中',
         '已广播，等待网络确认（可稍后在区块浏览器查看）',
+      ),
+      // 与「上链失败」分开说，因为两者的资金结局完全不同：这里交易根本没上链，
+      // 手续费一分没扣、钱也没转出去。措辞必须先把这件事说清楚，
+      // 否则用户会以为钱卡在半路，或者以为手续费白花了。
+      // 也不能引导他去区块浏览器——那个哈希在链上压根不存在，只会更慌。
+      TransactionStatus.expired => (
+        Icons.schedule_rounded,
+        theme.colorScheme.error,
+        '未能上链',
+        '网络繁忙，交易在生效期内未被打包。资金未转出、手续费未扣除，可重新发起',
       ),
     };
 

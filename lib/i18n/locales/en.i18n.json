@@ -35,6 +35,7 @@
     "statusPending": "Pending",
     "statusConfirmed": "Confirmed",
     "statusFailed": "Failed",
+    "statusExpired": "Not on chain",
     "directionOutgoing": "Sent",
     "directionIncoming": "Received",
     "detailTitle": "Transaction details",

@@ -13,9 +13,10 @@ import 'transfer/transfer_result.dart';
 /// Tron 转账：让节点补齐区块引用 → **回解校验** → 本地签名 → 广播 → 轮询回执(只做链上交互，不认识钱包与私钥来源)
 class TronTransactionService {
   /// [provider] / [balances] 只为测试留的注入口，生产代码用默认值即可。
-  const TronTransactionService({TronProvider? provider, ChainBalanceApi balances = const ChainBalanceApi()})
-    : _injected = provider,
-      _balances = balances;
+  // _injected 仍走初始化列表：它的参数名是 provider，与字段名对不上，
+  // 写成 initializing formal 会把公开参数名改成 injected，属于 API 变更。
+  const TronTransactionService({TronProvider? provider, this._balances = const ChainBalanceApi()})
+    : _injected = provider;
 
   final TronProvider? _injected;
 
@@ -257,6 +258,8 @@ class TronTransactionService {
       sentAmount: formatUnits(value, chain.decimals),
       // 广播成功即返回，不在这里等上链：状态先记 pending，由结果页与历史页回填。
       status: TransactionStatus.pending,
+      // 这条链没有确定的失效高度，交易可能在内存池/节点里待很久后仍被打包。
+      validUntilBlock: null,
     );
   }
 
@@ -342,6 +345,8 @@ class TronTransactionService {
       sentAmount: formatUnits(value, token.decimals),
       // 同 [sendNative]：广播成功即返回，上链状态交给页面轮询回填。
       status: TransactionStatus.pending,
+      // 这条链没有确定的失效高度，交易可能在内存池/节点里待很久后仍被打包。
+      validUntilBlock: null,
     );
   }
 
@@ -401,11 +406,11 @@ class TronTransactionService {
   /// 查询 `wallet/gettransactionbyid`，直到确认/失败或超时（返回 pending）。
   ///
   /// 广播返回 result:true 只代表节点收下了，不代表已上链——与 EVM 那边先拿到
-  /// txHash 再查 receipt 是同一回事。刚广播时查不到交易（返回 null）属正常。
+  /// 交易哈希再查 receipt 是同一回事。刚广播时查不到交易（返回 null）属正常。
   /// 默认超时只够发一轮，即「查一次当前状态」；传长超时才会变成真正的轮询。
   Future<TransactionStatus> waitForReceipt(
     Chain chain,
-    String txId, {
+    String transactionId, {
     TronProvider? provider,
     Duration timeout = _receiptTimeout,
     Duration interval = _receiptPollInterval,
@@ -413,7 +418,7 @@ class TronTransactionService {
     final rpc = provider ?? _providerFor(chain);
     final deadline = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(deadline)) {
-      final receipt = await rpc.request(TronRequestGetTransactionById(value: txId));
+      final receipt = await rpc.request(TronRequestGetTransactionById(value: transactionId));
       if (receipt != null) return _statusOf(receipt);
       await Future<void>.delayed(interval);
     }
@@ -428,9 +433,7 @@ class TronTransactionService {
   /// 这里以 `contractRet` 为准，两个字段任一表示失败就算失败。
   static TransactionStatus _statusOf(TronGetTransactionByIdResponse receipt) {
     final failed = receipt.ret.any(
-      (r) =>
-          r.ret == TronResultCode.failed ||
-          (r.contractRet != null && r.contractRet != TronContractResult.success),
+      (r) => r.ret == TronResultCode.failed || (r.contractRet != null && r.contractRet != TronContractResult.success),
     );
     return failed ? TransactionStatus.failed : TransactionStatus.confirmed;
   }

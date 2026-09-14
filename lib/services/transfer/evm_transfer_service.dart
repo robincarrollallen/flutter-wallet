@@ -9,8 +9,7 @@ const _singleQueryTimeout = Duration(seconds: 1);
 
 /// EVM 「Ethereum / Polygon / BSC / Base / Arbitrum」的转账实现
 class EvmTransferService implements ChainTransferService {
-  const EvmTransferService(this._keyResolver, {EvmTransactionService transactions = const EvmTransactionService()})
-    : _transactions = transactions;
+  const EvmTransferService(this._keyResolver, {this._transactions = const EvmTransactionService()});
 
   final PrivateKeyResolver _keyResolver; // 私钥解析器
   final EvmTransactionService _transactions; // EVM 交易服务
@@ -25,7 +24,8 @@ class EvmTransferService implements ChainTransferService {
   bool get supportsToken => true;
 
   @override
-  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash) {
+  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash, {int? validUntilBlock}) {
+    // EVM 没有确定的失效高度：交易可能在内存池里待很久后仍被打包，忽略 validUntilBlock。
     // 单次查询：给一个短到只够发一轮请求的超时，拿不到回执即视为仍在打包中。
     return _transactions.waitForReceipt(chain.endpoint, transactionHash, timeout: _singleQueryTimeout);
   }
@@ -49,7 +49,7 @@ class EvmTransferService implements ChainTransferService {
           speed: request.speed,
         );
       }
-      
+
       /// 如果代币实例不为空，则发送代币
       return await _transactions.sendToken(
         chain: request.chain,

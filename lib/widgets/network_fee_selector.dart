@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../blockchain/units.dart';
+import '../core/format/amount_formatter.dart';
 import '../core/format/token_amount_formatter.dart';
 import '../core/responsive/screen_adapter.dart';
-import '../domain/evm_fee.dart';
+import '../domain/fee_quote.dart';
 import '../enums/fee_speed.dart';
 
 /// 预估网络费选择器：一行按钮，展示当前档位与该档位的预计费用，
 /// 点击弹出底部弹窗切换 快速 / 普通 / 缓慢。
 ///
 /// 只负责展示与选择，报价来源与选中值都由外部持有：
-/// [quotes] 是各档位的链上报价，行内展示 [EvmFeeQuote.expectedFee]（预计实付），
-/// 弹窗里补充 [EvmFeeQuote.maxFee]（出价上限，baseFee 涨到顶格时的最坏情况）。
+/// [quotes] 是各档位的链上报价，行内展示 [FeeQuote.expectedFee]（预计实付），
+/// 弹窗里补充 [FeeQuote.maxFee]（出价上限，EVM 上是 baseFee 涨到顶格时的最坏情况；
+/// 费用在签名时就确定的链——如 Solana——两者相等，此时不再重复显示上限）。
 /// [quotes] 为 null（没有缓存、首次查询还没回来）时费用位显示 `--`；
 /// [stale] 为 true 表示展示的是落盘的旧报价，追加「更新中」提示——
 /// baseFee 每 12 秒一变，旧数字必须让用户看得出是旧的。
@@ -32,7 +34,7 @@ class NetworkFeeSelector extends StatelessWidget {
   });
 
   /// 各档位报价；null 表示还没有任何可展示的数据。
-  final Map<FeeSpeed, EvmFeeQuote>? quotes;
+  final Map<FeeSpeed, FeeQuote>? quotes;
 
   /// 报价是否已过新鲜期（展示的是落盘旧值，后台正在刷新）。
   final bool stale;
@@ -57,7 +59,9 @@ class NetworkFeeSelector extends StatelessWidget {
     final shown = formatTokenAmount(exact);
     if (fiatPrice <= 0) return '$shown $symbol';
     final fiat = (double.tryParse(exact) ?? 0) * fiatPrice;
-    return '$shown $symbol（$currencySymbol${fiat.toStringAsFixed(2)}）';
+    // 走 formatFiatFee 而不是直接 toStringAsFixed(2)：Solana 这类链的手续费不足一分，
+    // 舍成 `$0.00` 会被当成「价格没取到」。
+    return '$shown $symbol（${formatFiatFee(fiat, symbol: currencySymbol)}）';
   }
 
   /// 某档位的预计实付文案。没有数据时给占位。
@@ -101,9 +105,13 @@ class NetworkFeeSelector extends StatelessWidget {
   }
 
   /// 出价上限说明：链上按 baseFee + 小费实扣，上限只在 baseFee 暴涨时才会用满。
+  ///
+  /// 上限与预计实付相等时返回 null——那说明这条链的费用没有浮动空间（Solana 即如此），
+  /// 再把同一个数字换个措辞说一遍，只会让用户以为要付两笔。
   String? _capNoteOf(FeeSpeed target) {
     final quote = quotes?[target];
-    return quote == null ? null : '上限 ${_format(quote.maxFee)}';
+    if (quote == null || quote.maxFee == quote.expectedFee) return null;
+    return '上限 ${_format(quote.maxFee)}';
   }
 
   @override

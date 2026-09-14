@@ -4,7 +4,6 @@ import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/token_catalog.dart';
 import 'package:wallet/domain/wallet.dart';
 import 'package:wallet/dto/request/send_tx_request.dart';
-import 'package:wallet/enums/transaction_status.dart';
 import 'package:wallet/services/transfer/chain_transfer_service.dart';
 import 'package:wallet/services/wallet_service.dart';
 
@@ -13,7 +12,7 @@ final _sepoliaUsdc = BundledTokenCatalog.all.firstWhere((t) => t.chainId == Supp
 
 /// 只记录收到的请求，不真的上链。
 class _RecordingTransfer implements ChainTransferService {
-  _RecordingTransfer(this.kind, {this.supportsToken = true});
+  _RecordingTransfer(this.kind);
 
   @override
   final ChainKind kind;
@@ -21,8 +20,10 @@ class _RecordingTransfer implements ChainTransferService {
   @override
   bool get supportsNative => true;
 
+  // 这个假实现只服务分发测试，两种转账都放行；
+  // 「不支持代币」那条路径由 send_logic_test 覆盖，不必在这里再留一个没人用的开关。
   @override
-  final bool supportsToken;
+  bool get supportsToken => true;
 
   TransferRequest? received;
 
@@ -32,11 +33,11 @@ class _RecordingTransfer implements ChainTransferService {
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
     received = request;
-    return (hash: '0xabc', sentAmount: request.amount, status: TransactionStatus.confirmed);
+    return (hash: '0xabc', sentAmount: request.amount, status: TransactionStatus.confirmed, validUntilBlock: null);
   }
 
   @override
-  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash) async {
+  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash, {int? validUntilBlock}) async {
     statusQueriedFor = transactionHash;
     return TransactionStatus.confirmed;
   }

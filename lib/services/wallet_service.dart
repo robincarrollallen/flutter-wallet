@@ -15,11 +15,21 @@ class WalletService {
   final TokenCatalog catalog;
 
   /// 查询一笔已广播交易的当前上链状态，供交易历史回填 pending 记录
-  Future<TransactionStatus> queryTransactionStatus(String chainId, String transactionHash) async {
+  ///
+  /// [validUntilBlock] 原样来自那条历史记录，用于判定「交易已过期、永远不会上链」，
+  /// 只有给得出这个数的链（目前是 Solana）才会用到。
+  Future<TransactionStatus> queryTransactionStatus(
+    String chainId,
+    String transactionHash, {
+    int? validUntilBlock,
+  }) async {
     final chain = SupportedChains.all.where((candidate) => candidate.id == chainId).firstOrNull; // 根据链ID查找链实例
     final service = chain == null ? null : transferServices[chain.kind]; // 根据链类型查找转账实现方法(walletServiceProvider 注入)
-    if (chain == null || service == null) return TransactionStatus.pending; // 链未知或该链类型没有转账实现时返回 [TransactionStatus.pending]
-    return service.queryStatus(chain, transactionHash);
+    // 链未知或该链类型没有转账实现时返回 [TransactionStatus.pending]
+    if (chain == null || service == null) {
+      return TransactionStatus.pending;
+    }
+    return service.queryStatus(chain, transactionHash, validUntilBlock: validUntilBlock);
   }
 
   /// 发起转账, 返回 (交易哈希, 实际发送金额, 上链状态)

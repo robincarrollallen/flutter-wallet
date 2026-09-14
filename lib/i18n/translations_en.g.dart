@@ -209,6 +209,9 @@ class Translations$transactionHistory$en {
 	/// en: 'Failed'
 	String get statusFailed => 'Failed';
 
+	/// en: 'Not on chain'
+	String get statusExpired => 'Not on chain';
+
 	/// en: 'Sent'
 	String get directionOutgoing => 'Sent';
 
@@ -653,6 +656,7 @@ extension on Translations {
 			'transactionHistory.statusPending' => 'Pending',
 			'transactionHistory.statusConfirmed' => 'Confirmed',
 			'transactionHistory.statusFailed' => 'Failed',
+			'transactionHistory.statusExpired' => 'Not on chain',
 			'transactionHistory.directionOutgoing' => 'Sent',
 			'transactionHistory.directionIncoming' => 'Received',
 			'transactionHistory.detailTitle' => 'Transaction details',

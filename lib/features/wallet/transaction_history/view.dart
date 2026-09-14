@@ -331,6 +331,9 @@ class _TransactionRow extends StatelessWidget {
   return switch (status) {
     TransactionStatus.confirmed => (t.transactionHistory.statusConfirmed, scheme.primary),
     TransactionStatus.failed => (t.transactionHistory.statusFailed, scheme.error),
+    // 与 failed 同为 error 色（两者都不是成功），但文案分开：过期是「没上链、没扣费」，
+    // 失败是「上了链、扣了费」，详情页要让用户分得清自己的钱到底怎么了。
+    TransactionStatus.expired => (t.transactionHistory.statusExpired, scheme.error),
     TransactionStatus.pending => (t.transactionHistory.statusPending, scheme.tertiary),
   };
 }

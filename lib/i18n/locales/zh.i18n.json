@@ -35,6 +35,7 @@
     "statusPending": "确认中",
     "statusConfirmed": "已确认",
     "statusFailed": "失败",
+    "statusExpired": "未上链",
     "directionOutgoing": "转出",
     "directionIncoming": "转入",
     "detailTitle": "交易详情",

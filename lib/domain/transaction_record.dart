@@ -19,6 +19,7 @@ class TransactionRecord {
     required this.amount,
     required this.submittedAt,
     this.tokenIdentifier,
+    this.validUntilBlock,
     this.status = TransactionStatus.pending,
     this.direction = TransactionDirection.outgoing,
   });
@@ -50,6 +51,12 @@ class TransactionRecord {
   /// 本机提交这笔交易的时刻（不是上链时刻——上链时刻要查链才知道）。
   final DateTime submittedAt;
 
+  /// 这笔交易最晚能在哪个区块高度上链，过了就永远不会上链了。
+  ///
+  /// 只有给得出这个数的链才有值（目前是 Solana 的 `lastValidBlockHeight`），其余为 null。
+  /// 回填状态时靠它把「还在等」和「已经死透」区分开，见 [TransactionStatus.expired]。
+  final int? validUntilBlock;
+
   /// 上链状态，广播时先记下，之后可由 [copyWith] 回填。
   final TransactionStatus status;
 
@@ -73,6 +80,7 @@ class TransactionRecord {
       toAddress: toAddress,
       amount: amount,
       submittedAt: submittedAt,
+      validUntilBlock: validUntilBlock,
       status: status ?? this.status,
       direction: direction,
     );
@@ -88,6 +96,7 @@ class TransactionRecord {
     'toAddress': toAddress,
     'amount': amount,
     'submittedAt': submittedAt.toIso8601String(),
+    if (validUntilBlock != null) 'validUntilBlock': validUntilBlock,
     'status': status.name,
     'direction': direction.name,
   };
@@ -124,6 +133,8 @@ class TransactionRecord {
       toAddress: toAddress,
       amount: amount,
       submittedAt: submittedAt,
+      // 本次之前落盘的记录没有这个字段，读成 null 即可——那些链本来也判不了过期。
+      validUntilBlock: json['validUntilBlock'] as int?,
       status: TransactionStatus.values.asNameMap()[json['status']] ?? TransactionStatus.pending,
       direction: TransactionDirection.values.asNameMap()[json['direction']] ?? TransactionDirection.outgoing,
     );

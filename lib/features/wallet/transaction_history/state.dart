@@ -25,10 +25,9 @@ class TransactionHistoryFilterNotifier extends Notifier<TransactionHistoryFilter
   void selectChain(String? chainId) => state = TransactionHistoryFilter(chainId: chainId);
 }
 
-final transactionHistoryFilterProvider =
-    NotifierProvider<TransactionHistoryFilterNotifier, TransactionHistoryFilter>(
-      TransactionHistoryFilterNotifier.new,
-    );
+final transactionHistoryFilterProvider = NotifierProvider<TransactionHistoryFilterNotifier, TransactionHistoryFilter>(
+  TransactionHistoryFilterNotifier.new,
+);
 
 /// 当前钱包的全部历史记录，未按链筛选。链选择器的选项从这里取。
 final walletTransactionHistoryProvider = Provider<List<TransactionRecord>>((ref) {
@@ -77,7 +76,16 @@ class TransactionHistoryRefresher {
     final queried = await Future.wait(
       pending.map((record) async {
         try {
-          return (record: record, status: await walletService.queryTransactionStatus(record.chainId, record.transactionHash));
+          return (
+            record: record,
+            status: await walletService.queryTransactionStatus(
+              record.chainId,
+              record.transactionHash,
+              // 给得出失效高度的链（Solana），据此把死透的交易判成 expired，
+              // 而不是让它在列表里永远显示「确认中」。
+              validUntilBlock: record.validUntilBlock,
+            ),
+          );
         } catch (_) {
           // 节点抖动不该让记录状态发生任何变化，跳过这条。
           return (record: record, status: TransactionStatus.pending);
@@ -102,6 +110,4 @@ class TransactionHistoryRefresher {
   }
 }
 
-final transactionHistoryRefresherProvider = Provider<TransactionHistoryRefresher>(
-  TransactionHistoryRefresher.new,
-);
+final transactionHistoryRefresherProvider = Provider<TransactionHistoryRefresher>(TransactionHistoryRefresher.new);

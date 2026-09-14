@@ -4,7 +4,9 @@ import '../../data/datasource/local/secure_wallet_storage.dart';
 import '../../blockchain/chain_registry.dart';
 import '../../services/evm_transaction_service.dart';
 import '../../services/history/transaction_history_service.dart';
+import '../../services/solana_transaction_service.dart';
 import '../../services/transfer/evm_transfer_service.dart';
+import '../../services/transfer/solana_transfer_service.dart';
 import '../../services/transfer/tron_transfer_service.dart';
 import '../../services/tron_transaction_service.dart';
 import '../../services/wallet_commit_service.dart';
@@ -28,7 +30,11 @@ final walletServiceProvider = Provider<WalletService>((ref) {
   final keyResolver = ref.watch(privateKeyResolverProvider);
 
   return WalletService(
-    transferServices: {ChainKind.evm: EvmTransferService(keyResolver), ChainKind.tron: TronTransferService(keyResolver)},
+    transferServices: {
+      ChainKind.evm: EvmTransferService(keyResolver),
+      ChainKind.tron: TronTransferService(keyResolver),
+      ChainKind.solana: SolanaTransferService(keyResolver),
+    },
     catalog: ref.watch(tokenCatalogProvider),
   );
 });
@@ -51,3 +57,6 @@ final evmTransactionServiceProvider = Provider<EvmTransactionService>((ref) => c
 
 /// Tron 链上读写（带宽 / 能量估算、发交易）。
 final tronTransactionServiceProvider = Provider<TronTransactionService>((ref) => const TronTransactionService());
+
+/// Solana 链上读写（费用与租金豁免估算、发交易）。
+final solanaTransactionServiceProvider = Provider<SolanaTransactionService>((ref) => const SolanaTransactionService());

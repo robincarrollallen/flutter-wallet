@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../blockchain/units.dart';
+import '../../../../core/format/amount_formatter.dart';
 import '../../../../core/format/token_amount_formatter.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
@@ -11,11 +12,13 @@ import '../../../../widgets/network_fee_selector.dart';
 import '../../../../enums/fee_speed.dart';
 import '../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../providers/modules/transaction/evm_fee_provider.dart';
+import '../../../../providers/modules/transaction/solana_fee_provider.dart';
 import '../../../../providers/modules/transaction/tron_fee_provider.dart';
 import '../../../../providers/core/service_provider.dart';
 import '../../../../providers/modules/market/currency_provider.dart';
 import '../../../../providers/modules/transaction/recent_address_provider.dart';
 import '../../../../providers/modules/transaction/transaction_history_provider.dart';
+import '../../../../domain/fee_quote.dart';
 import '../../../../domain/transaction_record.dart';
 import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../dto/request/send_tx_request.dart';
@@ -63,19 +66,20 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
 
     setState(() => _submitting = true);
     try {
-      final result = await ref.read(walletServiceProvider)
-        .sendTransaction(
-          SendTxRequest(
-            from: from,
-            to: widget.toAddress,
-            amount: widget.amount,
-            chainId: widget.asset.chain.id,
-            tokenIdentifier: widget.asset.token?.identifier,
-            deductFeeFromAmount: _deductsFee,
-            speed: _feeSpeed,
-          ),
-          wallet,
-        );
+      final result = await ref
+          .read(walletServiceProvider)
+          .sendTransaction(
+            SendTxRequest(
+              from: from,
+              to: widget.toAddress,
+              amount: widget.amount,
+              chainId: widget.asset.chain.id,
+              tokenIdentifier: widget.asset.token?.identifier,
+              deductFeeFromAmount: _deductsFee,
+              speed: _feeSpeed,
+            ),
+            wallet,
+          );
       if (!mounted) return; // 确保当前 Widget 仍然存在于页面树（未被销毁）
       // 记入「最近使用」，供下次发送时快速选择。
       ref.read(recentAddressesProvider.notifier).record(widget.asset.chain.id, widget.toAddress);
@@ -93,6 +97,8 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
               toAddress: widget.toAddress,
               amount: result.sentAmount,
               submittedAt: DateTime.now(),
+              // 带上失效高度，历史页回填时才判得出这笔是「还在等」还是「已经过期」。
+              validUntilBlock: result.validUntilBlock,
               status: result.status,
             ),
           );
@@ -198,6 +204,13 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       // feeSun 以 TRX 计价，与本方法「原生币计价」的约定一致。
       return ref.watch(tronFeeProvider(_tronFeeKey(asset, from))).value?.feeSun;
     }
+    if (asset.chain.kind == ChainKind.solana) {
+      // 同 Tron：solanaFeeProvider 不轮询也不落盘，拿到即新鲜。
+      // 这条分支是 MAX 全额转出能正确扣费的关键——缺了它会落到下面的 EVM 分支拿到
+      // null，于是确认页显示全额、链上却照扣手续费。
+      // 取**当前档位**的报价：优先费随档位变，拿别的档去算 MAX 会差出那笔优先费。
+      return ref.watch(solanaFeeProvider(_solanaFeeKey(asset, from))).value?.quoteFor(_feeSpeed).maxFee;
+    }
     final view = ref.watch(evmFeeProvider(_feeKey(asset, from)));
     return view.stale ? null : view.quotes?[_feeSpeed]?.maxFee;
   }
@@ -209,11 +222,29 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   /// 直接 return，压根不查）、档位解释「小费 / 区块中位小费 / 优先被打包」全是
   /// EIP-1559 概念，而 Tron 按带宽计费、**加价也不会更快**，且 `TronTransferService`
   /// 根本忽略 speed。所以 Tron 走自己的单值行 [_tronFeeRow]。
+  ///
+  /// **Solana 也有三档**，但分的不是同一样东西：它的签名费固定（5000 lamport × 签名数，
+  /// 加价也不会更快），可竞价的只有优先费（优先单价 × 计算单元）。档位取的是近期区块
+  /// 优先费的分位数，所以「按近期区块中位小费出价」这套解释对它同样成立，
+  /// 直接复用 [_feeSelector] 那个选择器。链不拥堵时三档都是 0 优先费、显示同一个数，
+  /// 那是**事实**——此时确实加价也没用。
   Widget _feeRow(ListedAsset asset, String from) => switch (asset.chain.kind) {
-    ChainKind.evm => _feeSelector(asset, from),
+    ChainKind.evm || ChainKind.solana => _feeSelector(asset, from),
     ChainKind.tron => _tronFeeRow(asset, from),
     _ => const _DetailRow(label: '网络费', value: '由网络决定'),
   };
+
+  /// 当前链的三档报价；该链没有分档模型或报价还没到时返回 null。
+  Map<FeeSpeed, FeeQuote>? _quotesOf(ListedAsset asset, String from) {
+    if (from.isEmpty) return null;
+    if (asset.chain.kind == ChainKind.solana) {
+      return ref.watch(solanaFeeProvider(_solanaFeeKey(asset, from))).value?.quotes;
+    }
+    return ref.watch(evmFeeProvider(_feeKey(asset, from))).quotes;
+  }
+
+  SolanaFeeKey _solanaFeeKey(ListedAsset asset, String from) =>
+      (chainId: asset.chain.id, from: from, to: widget.toAddress, amount: widget.amount);
 
   /// Tron 的费用行：单一数值，不可切换（这条链没有档位可选）。
   ///
@@ -235,20 +266,20 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
 
     final price = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.price ?? 0.0;
     final fee = formatUnits(estimate.feeSun, asset.chain.decimals);
+    // 与费用选择器同一口径：不足一分的费用显示 `<$0.01`，不舍成会被误解的 `$0.00`。
     final fiat = price <= 0
         ? ''
-        : '（${ref.watch(currencySymbolProvider)}${(double.parse(fee) * price).toStringAsFixed(2)}）';
+        : '（${formatFiatFee(double.parse(fee) * price, symbol: ref.watch(currencySymbolProvider))}）';
     return _DetailRow(label: '网络费', value: '≈ ${formatTokenAmount(fee)} ${asset.chain.symbol}$fiat');
   }
 
-  TronFeeKey _tronFeeKey(ListedAsset asset, String from) =>
-      (
-        chainId: asset.chain.id,
-        from: from,
-        to: widget.toAddress,
-        amount: widget.amount,
-        tokenIdentifier: asset.token?.identifier,
-      );
+  TronFeeKey _tronFeeKey(ListedAsset asset, String from) => (
+    chainId: asset.chain.id,
+    from: from,
+    to: widget.toAddress,
+    amount: widget.amount,
+    tokenIdentifier: asset.token?.identifier,
+  );
 
   /// 收款方账户未激活的提示；无需提示时返回 null。
   ///
@@ -261,6 +292,63 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   /// 金额只取 [TronFeeEstimate.activationFeeSun] 而非 `feeSun`：后者在带宽也不足时
   /// 还混着带宽欠费（1 TRX 激活 + 0.1 TRX 带宽 = 1.1），拿总额去说「为其激活」
   /// 会把这笔说大。
+  /// 本次发送注定会在链上失败的原因；没有则返回 null。发送键据此禁用。
+  ///
+  /// 目前两条，都是「链上必然拒绝」而非「可能有风险」——只有这种确定性的失败才配
+  /// 禁用按钮。不确定的一律放行，由各链的交易服务在发送那一刻的链上数据前把关。
+  String? _blockingShortfall(ListedAsset asset, String from) =>
+      _feeShortfall(asset, from) ?? _rentShortfall(asset, from);
+
+  /// Solana 的租金豁免校验：不满足时返回提示文案，满足或无从判断时返回 null。
+  ///
+  /// Solana 要求每个账户余额不低于租金豁免线，否则账户会被链上回收。两种必然失败：
+  /// - 转入后收款方仍达不到豁免线 → 收款账户创建不出来；
+  /// - 转出后自己只剩一点点（不是转空）→ 自己的账户被回收。
+  ///
+  /// 与服务层 `SolanaTransactionService._verifyRentExempt` 是同一套规则的两处实现：
+  /// 这里让按钮提前变灰并说明原因，那里用发送那一刻的链上数据兜底。**两处都要有**——
+  /// 只有这里会被过期几秒的报价骗到，只有那里则要用户点下去才知道发不出。
+  String? _rentShortfall(ListedAsset asset, String from) {
+    // 代币的租金是另一本账（ATA 账户），SPL 转账尚未接入，这里只管原生 SOL。
+    if (asset.chain.kind != ChainKind.solana || asset.token != null || from.isEmpty) return null;
+    final estimate = ref.watch(solanaFeeProvider(_solanaFeeKey(asset, from))).value;
+    if (estimate == null) return null;
+
+    // 用 MAX 扣费后的实际发送额，而不是用户输入值——否则全额转出会按未扣费的金额判。
+    final BigInt amount;
+    try {
+      amount = parseUnits(_sendableAmount(asset, from), asset.chain.decimals);
+    } on FormatException {
+      return null;
+    }
+
+    if (estimate.shortfallFor(amount) > BigInt.zero) {
+      final minimum = formatTokenAmount(
+        formatUnits(estimate.rentExemptMinimum - estimate.recipientBalance, asset.chain.decimals),
+      );
+      return '收款方是新账户，Solana 要求账户余额不低于租金豁免线，'
+          '本次至少需转 $minimum ${asset.chain.symbol}';
+    }
+
+    // 发送方转出后的余额：0 是合法的（账户清空并回收，这是 MAX 的正常结果），
+    // 卡在 0 与豁免线之间才是要拦的——那会让账户被动消失。
+    final balance = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.amount;
+    if (balance == null) return null;
+    final BigInt remaining;
+    try {
+      // 用当前档位的费用：优先费随档位变，拿错档会让这条判断在边界上判反。
+      remaining = parseUnits(balance, asset.chain.decimals) - amount - estimate.quoteFor(_feeSpeed).expectedFee;
+    } on FormatException {
+      return null;
+    }
+    if (remaining > BigInt.zero && remaining < estimate.rentExemptMinimum) {
+      final line = formatTokenAmount(formatUnits(estimate.rentExemptMinimum, asset.chain.decimals));
+      return '转出后余额将低于租金豁免线（$line ${asset.chain.symbol}），账户可能被链上回收。'
+          '请减少转出金额，或改用「最大」全额转出';
+    }
+    return null;
+  }
+
   String? _activationNotice(ListedAsset asset, String from) {
     if (asset.chain.kind != ChainKind.tron || from.isEmpty) return null;
     final estimate = ref.watch(tronFeeProvider(_tronFeeKey(asset, from))).value;
@@ -274,10 +362,12 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   Widget _feeSelector(ListedAsset asset, String from) {
     // 手续费按原生币折算，所以取的是原生币单价（第三个键位为 null），与 asset 是不是代币无关。
     final price = from.isEmpty ? 0.0 : ref.watch(balanceProvider((asset.chain.id, from, null))).value?.price ?? 0.0;
-    final view = ref.watch(evmFeeProvider(_feeKey(asset, from)));
+    // stale 只有 EVM 才有：它的 baseFee 每 12 秒一变、报价会落盘，所以要标「更新中」。
+    // Solana 的报价不落盘也不轮询，拿到即新鲜，恒为 false。
+    final stale = asset.chain.kind == ChainKind.evm && ref.watch(evmFeeProvider(_feeKey(asset, from))).stale;
     return NetworkFeeSelector(
-      quotes: view.quotes,
-      stale: view.stale,
+      quotes: _quotesOf(asset, from),
+      stale: stale,
       speed: _feeSpeed,
       onSpeedChanged: (speed) => setState(() => _feeSpeed = speed),
       decimals: asset.chain.decimals,
@@ -293,7 +383,6 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     return message.startsWith(prefix) ? message.substring(prefix.length) : message;
   }
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -302,8 +391,9 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     final from = wallet?.addressFor(asset.chain) ?? '';
     // MAX 场景展示扣除网络费用后的发送上限，与实际上链金额保持一致。
     final sendable = _sendableAmount(asset, from);
-    // 代币转账：原生币不够付 gas 就别让用户白等一次链上报错。
-    final shortfall = _feeShortfall(asset, from);
+    // 注定失败的转账（代币的 gas 不够 / Solana 的租金豁免不满足）：
+    // 别让用户白等一次链上报错，直接禁用发送键并说明原因。
+    final shortfall = _blockingShortfall(asset, from);
     // Tron：收款方未激活会被额外扣账户创建费，发送前必须让用户看到。
     final activationNotice = _activationNotice(asset, from);
     // MAX 且费用未就绪：此时展示的是全额，而链上会扣——先挡住，别让用户确认一个
@@ -385,7 +475,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                         ],
                       ),
                     ),
-                    // —— 原生币不足以付 gas：说明原因并禁用发送 —— //
+                    // —— 注定失败的转账（gas 不够 / 租金豁免不满足）：说明原因并禁用发送 —— //
                     if (shortfall != null) ...[
                       SizedBox(height: 16.s),
                       Text(

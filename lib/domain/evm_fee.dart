@@ -1,4 +1,5 @@
 import '../enums/fee_speed.dart';
+import 'fee_quote.dart';
 
 /// 某个档位下的 EVM 费率（每 gas 单价），EIP-1559 与 legacy 二选一。
 class EvmFeeRate {
@@ -31,7 +32,7 @@ class EvmFeeRate {
 }
 
 /// 一个档位的完整报价：费率 × gasLimit。
-class EvmFeeQuote {
+class EvmFeeQuote implements FeeQuote {
   const EvmFeeQuote({required this.speed, required this.rate, required this.gasLimit});
 
   final FeeSpeed speed;
@@ -39,9 +40,11 @@ class EvmFeeQuote {
   final BigInt gasLimit;
 
   /// 预计实付（展示用）。
+  @override
   BigInt get expectedFee => rate.effectiveGasPrice * gasLimit;
 
   /// 费用上限（余额校验 / MAX 扣减用）。
+  @override
   BigInt get maxFee => rate.capGasPrice * gasLimit;
 }
 

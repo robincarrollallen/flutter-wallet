@@ -28,7 +28,7 @@ class _Cap implements ChainTransferService {
   }
 
   @override
-  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash) {
+  Future<TransactionStatus> queryStatus(Chain chain, String transactionHash, {int? validUntilBlock}) {
     throw UnimplementedError();
   }
 }
