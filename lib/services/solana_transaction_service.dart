@@ -1,11 +1,28 @@
-import 'package:on_chain/solana/solana.dart';
+// hide TokenStandard：on_chain 的 Metaplex 里也有一个同名枚举，与本仓库的
+// `enums/token_standard.dart`（经 blockchain/token.dart 传入）撞名。本文件要的是后者。
+import 'package:on_chain/solana/solana.dart' hide TokenStandard;
 
 import '../blockchain/chain_registry.dart';
 import '../blockchain/units.dart';
 import '../data/datasource/remote/solana_service.dart';
 import '../domain/solana_fee.dart';
 import '../enums/fee_speed.dart';
+import '../blockchain/token.dart';
 import 'transfer/transfer_result.dart';
+
+/// 一笔 SPL 转账要用到的两个代币账户，以及发送方的代币余额。
+///
+/// SPL 的余额不在钱包地址上，而在「钱包地址 + mint」派生出的关联代币账户（ATA）里。
+/// 这一步把「转给谁」翻译成「写哪个账户」，估费与发送都要先过这里。
+typedef _TokenAccounts =
+    ({
+      SolAddress mint,
+      SolAddress source, // 发送方 ATA
+      SolAddress destination, // 收款方 ATA
+      bool sourceExists, // 发送方 ATA 是否已存在（不存在即它从没持有过这个币）
+      BigInt sourceBalance, // 发送方代币余额（source 不存在时为 0）
+      bool createsDestination, // 本次是否要顺带创建收款方 ATA
+    });
 
 /// Solana 转账：取最新 blockhash → 本地构造交易 → 本地签名 → 广播 → 查签名状态。
 /// 只做链上交互，不认识钱包与私钥来源。
@@ -26,8 +43,14 @@ class SolanaTransactionService {
   static const Duration _receiptPollInterval = Duration(seconds: 1);
 
   /// 租金豁免按「0 字节数据的账户」算——原生 SOL 转账的收款方就是这样一个纯余额账户，
-  /// 不存任何数据。SPL 代币账户要按 165 字节算，那是另一条路径的事。
+  /// 不存任何数据。SPL 代币账户另算，见 [_tokenAccountDataSize]。
   static const int _plainAccountDataSize = 0;
+
+  /// SPL 代币账户（ATA）的数据长度，新建 ATA 的租金豁免线按它算。
+  ///
+  /// 取 `on_chain` 里的布局跨度而不是写死 165：这个数是 SPL Token 账户结构决定的，
+  /// 让定义结构的那一方去算，改了也不会两处对不上。
+  static final int _tokenAccountDataSize = SolanaTokenAccountUtils.accountSize;
 
   /// 本次交易声明的计算单元上限。
   ///
@@ -38,6 +61,15 @@ class SolanaTransactionService {
   /// 取 600 留一点余量——声明少了交易会因超限直接失败，而多声明这 150 CU 的代价
   /// 在任何现实价位下都不到 1 lamport，两头的代价完全不对等。
   static const int _computeUnitLimit = 600;
+
+  /// SPL 代币转账的计算单元上限，同样按实际用量留余量（理由见 [_computeUnitLimit]）。
+  ///
+  /// transferChecked 实测约 4500 CU，加两条 ComputeBudget 各 150，取 6000。
+  static const int _tokenComputeUnitLimit = 6000;
+
+  /// 上一条再加一条「创建收款方 ATA」指令时的上限。
+  /// 创建 ATA 约 20000 CU（要给新账户分配空间并初始化），取 30000。
+  static const int _tokenWithAtaComputeUnitLimit = 30000;
 
   SolanaProvider _providerFor(Chain chain) => _injected ?? solanaProviderFor(chain);
 
@@ -293,6 +325,306 @@ class SolanaTransactionService {
           layout: SystemTransferLayout(lamports: lamports),
           from: owner,
           to: recipient,
+        ),
+      ],
+    );
+  }
+
+  // ───────────────────────── SPL 代币转账 ─────────────────────────
+
+  /// 派生两个 ATA 地址并查清它们在链上的状态。
+  ///
+  /// ATA 地址是**本地派生**的（`owner + tokenProgram + mint` 三个种子做 PDA），不发请求；
+  /// 发请求的只有后面那两次 `getAccountInfo`，且并发发出。
+  ///
+  /// 发送方那次用 `getAccountInfo` 而不是 `getTokenAccountBalance`：账户不存在时后者是
+  /// RPC 报错，要靠 catch 才能和网络故障区分开——而账户数据里本来就带着余额，
+  /// 一次 `getAccountInfo` 就同时回答了「在不在」和「有多少」，还少一次往返。
+  Future<_TokenAccounts> _resolveTokenAccounts({
+    required SolanaProvider provider,
+    required Token token,
+    required SolAddress owner,
+    required SolAddress recipient,
+  }) async {
+    final mint = SolAddress(token.identifier.trim());
+    final source = _associatedTokenAccountOf(mint: mint, owner: owner);
+    final destination = _associatedTokenAccountOf(mint: mint, owner: recipient);
+
+    final (sourceInfo, destinationInfo) = await (
+      provider.request(SolanaRequestGetAccountInfo(account: source)),
+      provider.request(SolanaRequestGetAccountInfo(account: destination)),
+    ).wait;
+
+    return (
+      mint: mint,
+      source: source,
+      destination: destination,
+      sourceExists: sourceInfo != null,
+      sourceBalance: sourceInfo == null
+          ? BigInt.zero
+          : SolanaTokenAccount.fromBuffer(data: sourceInfo.toBytesData(), address: source).amount,
+      createsDestination: destinationInfo == null,
+    );
+  }
+
+  /// 派生 `(owner, mint)` 的关联代币账户地址。
+  ///
+  /// `allowOwnerOffCurve` 保持默认的 false：曲线外的地址通常是某个程序的 PDA
+  /// （常见的误操作是把一个代币账户地址当成钱包地址粘进来），给它派生 ATA 再转过去，
+  /// 钱大概率再也取不出来。宁可在这里报错也不放行。
+  SolAddress _associatedTokenAccountOf({required SolAddress mint, required SolAddress owner}) {
+    try {
+      return AssociatedTokenAccountProgramUtils.associatedTokenAccount(mint: mint, owner: owner).address;
+    } on SolanaPluginException {
+      throw Exception('该地址不能作为代币收款地址，请确认填的是钱包地址而不是代币账户地址');
+    }
+  }
+
+  /// 估算一笔 SPL 代币转账的三档费用，并带回「要不要为收款方建 ATA」及那笔租金。
+  ///
+  /// 与 [estimateNativeFee] 同构：自取 blockhash，供确认页的估费 provider 直接调用。
+  Future<SolanaFeeEstimate> estimateTokenFee({
+    required Chain chain,
+    required Token token,
+    required String from,
+    required String to,
+    required String amount,
+  }) async {
+    final provider = _providerFor(chain);
+    final owner = SolAddress(from.trim());
+    final recipient = SolAddress(to.trim());
+
+    final (blockhash, accounts) = await (
+      provider.request(const SolanaRequestGetLatestBlockhash()),
+      _resolveTokenAccounts(provider: provider, token: token, owner: owner, recipient: recipient),
+    ).wait;
+
+    return _estimateTokenWith(
+      provider: provider,
+      token: token,
+      accounts: accounts,
+      owner: owner,
+      recipient: recipient,
+      value: parseUnits(amount, token.decimals),
+      blockhash: blockhash.blockhash,
+    );
+  }
+
+  /// 代币估费本体。[accounts] 由调用方给，[sendToken] 才能与自己的校验共用同一次查询。
+  ///
+  /// 与原生路径 [_estimateWith] 的三处实质差异，都不是可省的细节：
+  /// - 计算单元上限随「要不要建 ATA」变，而它直接决定优先费；
+  /// - 要建 ATA 时多问一次 165 字节的租金豁免线，那笔钱由发送方垫付；
+  /// - 优先费要按**本次真正会写入的账户**问行情（Solana 的费率市场是按账户分别竞价的），
+  ///   代币转账写的是两个 ATA，不是钱包地址本身——拿钱包地址去问，问的是另一本账。
+  Future<SolanaFeeEstimate> _estimateTokenWith({
+    required SolanaProvider provider,
+    required Token token,
+    required _TokenAccounts accounts,
+    required SolAddress owner,
+    required SolAddress recipient,
+    required BigInt value,
+    required SolAddress blockhash,
+  }) async {
+    final computeUnitLimit = accounts.createsDestination ? _tokenWithAtaComputeUnitLimit : _tokenComputeUnitLimit;
+    final message = _buildTokenTransaction(
+      token: token,
+      accounts: accounts,
+      owner: owner,
+      recipient: recipient,
+      value: value,
+      blockhash: blockhash,
+      computeUnitPrice: BigInt.zero,
+      computeUnitLimit: computeUnitLimit,
+    ).serializeMessageString(encoding: TransactionSerializeEncoding.base64);
+
+    // 不建 ATA 时租金恒为 0，就不必为它发一轮请求——但仍要摆成一个 Future，
+    // 好和另外两个一起进 `.wait`（记录字面量不支持 if 元素）。
+    final ataRentRequest = accounts.createsDestination
+        ? provider.request(SolanaRequestGetMinimumBalanceForRentExemption(size: _tokenAccountDataSize))
+        : Future.value(BigInt.zero);
+
+    final (fee, recentFees, ataRent) = await (
+      provider.request(SolanaRequestGetFeeForMessage(encodedMessage: message)),
+      provider.request(
+        SolanaRequestGetRecentPrioritizationFees(addresses: [owner, accounts.source, accounts.destination]),
+      ),
+      ataRentRequest,
+    ).wait;
+
+    return SolanaFeeEstimate(
+      baseFeeLamports: fee ?? _lamportsPerSignature,
+      computeUnitLimit: computeUnitLimit,
+      priceByPercentile: pricePercentiles(
+        recentFees.map((sample) => sample.prioritizationFee).toList(),
+        FeeSpeed.values.map((speed) => speed.rewardPercentile),
+      ),
+      // 收款方 SOL 账户的租金账与代币转账无关（转的是代币，对方 SOL 余额不变），
+      // 传 0 让 shortfallFor / createsRecipient 天然失效——约定见 SolanaFeeEstimate 类注释。
+      rentExemptMinimum: BigInt.zero,
+      recipientBalance: BigInt.zero,
+      ataRentLamports: ataRent,
+    );
+  }
+
+  /// 发送 SPL 代币，返回 (交易签名, 实际发送金额, 上链状态, 交易失效高度)。
+  ///
+  /// **没有 `deductFeeFromAmount`**：网络费与 ATA 租金都以 SOL 支付，而转出的是代币，
+  /// 两本账不通，费用根本无从「从转出额里扣」。代币的 MAX 就是代币余额本身，
+  /// SOL 够不够付费用是另一条独立的校验（第 5 步）。这与 EVM / Tron 的代币路径一致。
+  Future<TransferResult> sendToken({
+    required Chain chain,
+    required Token token,
+    required List<int> privateKey,
+    required String fromAddress,
+    required String to,
+    required String amount,
+    FeeSpeed speed = FeeSpeed.defaultSpeed,
+  }) async {
+    if (token.standard != TokenStandard.spl) {
+      throw UnsupportedError('${token.symbol} 不是 SPL 代币，无法在 ${chain.name} 上转账');
+    }
+
+    final provider = _providerFor(chain);
+
+    // 1. 私钥 → 地址，与钱包地址核对（同 sendNative：base58 大小写敏感，不可 lowerCase）。
+    final signer = SolanaPrivateKey.fromSeed(privateKey);
+    final owner = signer.publicKey().toAddress();
+    if (owner.address != fromAddress.trim()) {
+      throw Exception('签名地址与钱包地址不一致');
+    }
+
+    // 2. 金额按 **token.decimals** 换算，不是 chain.decimals。
+    //    SOL 是 9 位而多数 SPL 代币是 6 位，用错这一个数会差出一千倍。
+    final value = parseUnits(amount, token.decimals);
+    if (value <= BigInt.zero) throw Exception('转账金额必须大于 0');
+
+    final recipient = SolAddress(to.trim());
+
+    // 3. blockhash / 两个 ATA 的状态 / 发送方 SOL 余额，三件事互不依赖，并发取。
+    //    blockhash 取一次，估费与第 7 步的签名共用（同 sendNative）。
+    final (latest, accounts, solBalance) = await (
+      provider.request(const SolanaRequestGetLatestBlockhash()),
+      _resolveTokenAccounts(provider: provider, token: token, owner: owner, recipient: recipient),
+      provider.request(SolanaRequestGetBalance(account: owner)),
+    ).wait;
+
+    // 4. 代币账户与代币余额校验。
+    if (!accounts.sourceExists) {
+      throw Exception('你还没有 ${token.symbol} 代币账户，无法转出');
+    }
+    if (value > accounts.sourceBalance) {
+      throw Exception(
+        '${token.symbol} 余额不足：本次需 ${formatUnits(value, token.decimals)}，'
+        '可用 ${formatUnits(accounts.sourceBalance, token.decimals)}',
+      );
+    }
+
+    final estimate = await _estimateTokenWith(
+      provider: provider,
+      token: token,
+      accounts: accounts,
+      owner: owner,
+      recipient: recipient,
+      value: value,
+      blockhash: latest.blockhash,
+    );
+
+    // 5. SOL 余额校验：网络费与 ATA 租金都从 SOL 里出，与代币余额是两本账，必须单独校验。
+    //    比的是「费用 + 租金」的合计——只比费用，会在要建 ATA 时把需求少算几百倍。
+    //
+    //    **刻意不做原生路径的 `_verifyRentExempt`**：那条管的是「转出后自己的 SOL 余额
+    //    卡在 0 与豁免线之间」，而这里转出的是代币，SOL 只减少费用那一点点，
+    //    落进那个区间的前提是余额本来就已经在豁免线附近——那属于用户的 SOL 账户状态，
+    //    不是这笔代币转账造成的，拦在这里只会让人摸不着头脑。
+    final cost = estimate.lamportsCostFor(speed);
+    if (cost > solBalance) {
+      final rentNote = estimate.createsTokenAccount
+          ? '（含为收款方创建代币账户的租金 ${formatUnits(estimate.ataRentLamports, chain.decimals)}）'
+          : '';
+      throw Exception(
+        '${chain.symbol} 不足以支付网络费：需约 ${formatUnits(cost, chain.decimals)} ${chain.symbol}$rentNote，'
+        '可用 ${formatUnits(solBalance, chain.decimals)}',
+      );
+    }
+
+    // 6. 本地构造 + 签名 + 广播。交易完全在本地构造，节点只提供 blockhash，
+    //    改不了转给谁、转多少——与 sendNative 同理，这里没有 Tron 那种回解校验的缺口。
+    final transaction = _buildTokenTransaction(
+      token: token,
+      accounts: accounts,
+      owner: owner,
+      recipient: recipient,
+      value: value,
+      blockhash: latest.blockhash,
+      computeUnitPrice: estimate.priceFor(speed),
+      computeUnitLimit: estimate.computeUnitLimit,
+    );
+    transaction.sign([signer]);
+
+    final signature = await provider.request(
+      SolanaRequestSendTransaction(
+        encodedTransaction: transaction.serializeString(
+          encoding: TransactionSerializeEncoding.base64,
+          verifySignatures: true,
+        ),
+        encoding: SolanaRequestEncoding.base64,
+        commitment: Commitment.confirmed,
+      ),
+    );
+
+    return (
+      hash: signature,
+      // 按 token.decimals 格式化：与第 2 步同一口径，用 chain.decimals 会显示成千分之一。
+      sentAmount: formatUnits(value, token.decimals),
+      status: TransactionStatus.pending,
+      validUntilBlock: latest.lastValidBlockHeight,
+    );
+  }
+
+  /// 组装一笔 SPL 代币转账交易（未签名）。估费与发送共用，保证两者算的是同一笔。
+  ///
+  /// 指令顺序要求：两条 ComputeBudget 在最前（理由同 [_buildTransaction]），
+  /// 创建 ATA 必须排在转账**之前**——否则转账会写进一个还不存在的账户，整笔失败。
+  SolanaTransaction _buildTokenTransaction({
+    required Token token,
+    required _TokenAccounts accounts,
+    required SolAddress owner,
+    required SolAddress recipient,
+    required BigInt value,
+    required SolAddress blockhash,
+    required BigInt computeUnitPrice,
+    required int computeUnitLimit,
+  }) {
+    return SolanaTransaction(
+      payerKey: owner,
+      recentBlockhash: blockhash,
+      instructions: [
+        ComputeBudgetProgram.setComputeUnitLimit(
+          layout: ComputeBudgetSetComputeUnitLimitLayout(units: computeUnitLimit),
+        ),
+        ComputeBudgetProgram.setComputeUnitPrice(
+          layout: ComputeBudgetSetComputeUnitPriceLayout(microLamports: computeUnitPrice),
+        ),
+        // Idempotent 变体：估费与广播之间若有人抢先把这个 ATA 建好了（收款方自己收了
+        // 另一笔、或用户连点两次），普通的 create 会因「账户已存在」让整笔交易失败，
+        // 而 idempotent 版本此时直接跳过。多付的代价只有那点 CU。
+        if (accounts.createsDestination)
+          AssociatedTokenAccountProgram.associatedTokenAccountIdempotent(
+            payer: owner,
+            associatedToken: accounts.destination,
+            owner: recipient,
+            mint: accounts.mint,
+          ),
+        // transferChecked 而非 transfer：它把 decimals 一并写进指令，由链上比对 mint 的
+        // 真实精度。万一代币目录里的 decimals 与链上不符，这笔交易会**失败**，
+        // 而不是照着错的精度把金额转错几个数量级——那是不可逆的。
+        SPLTokenProgram.transferChecked(
+          layout: SPLTokenTransferCheckedLayout(amount: value, decimals: token.decimals),
+          source: accounts.source,
+          mint: accounts.mint,
+          destination: accounts.destination,
+          owner: owner,
         ),
       ],
     );

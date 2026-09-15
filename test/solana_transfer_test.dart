@@ -6,9 +6,7 @@ import 'package:on_chain/solana/solana.dart';
 import 'package:wallet/blockchain/chain_registry.dart';
 import 'package:wallet/blockchain/units.dart';
 import 'package:wallet/enums/fee_speed.dart';
-import 'package:wallet/blockchain/bundled_token_catalog.dart';
 import 'package:wallet/data/datasource/local/secure_wallet_storage.dart';
-import 'package:wallet/domain/wallet.dart';
 import 'package:wallet/services/private_key_resolver.dart';
 import 'package:wallet/services/solana_transaction_service.dart';
 import 'package:wallet/services/transfer/chain_transfer_service.dart';
@@ -466,24 +464,11 @@ void main() {
     // 构造不触发任何平台调用；下面的用例也都在解析私钥之前就返回了。
     final service = SolanaTransferService(PrivateKeyResolver(SecureWalletStorage()));
 
-    test('声明支持原生币、不支持代币', () {
+    test('原生币与 SPL 代币都声明支持', () {
       expect(service.kind, ChainKind.solana);
       expect(service.supportsNative, isTrue);
-      // SPL 转账要先处理 ATA，尚未接入——发送页据此把代币挡在入口外。
-      expect(service.supportsToken, isFalse);
-    });
-
-    test('收到代币转账请求时拒绝，不会当成原生 SOL 发出去', () async {
-      // 用目录里真实的那个 SPL 代币，而不是手搓一个——手搓容易和目录的约定漂移。
-      final token = BundledTokenCatalog.all.firstWhere((t) => t.chainId == _chain.id);
-
-      await expectLater(
-        service.send(
-          TransferRequest(chain: _chain, from: _owner.address, to: _recipient.address, amount: '1', token: token),
-          const Wallet(id: 'w1', name: '测试钱包'),
-        ),
-        throwsA(isA<UnsupportedError>()),
-      );
+      // 发送页按这个标志决定要不要把该链的代币列进可选资产。
+      expect(service.supportsToken, isTrue);
     });
   });
 }

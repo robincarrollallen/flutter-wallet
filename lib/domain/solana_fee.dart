@@ -27,17 +27,28 @@ class SolanaFeeQuote implements FeeQuote {
   BigInt get maxFee => expectedFee;
 }
 
-/// 一次 Solana 原生转账的费用基准与租金豁免快照。
+/// 一次 Solana 转账（原生 SOL 或 SPL 代币）的费用基准与租金快照。
 ///
 /// 与 [EvmGasBasis] 同一角色：存三档共享的原始数据，档位差异由 [quoteFor] 现算。
+///
+/// **两条路径共用一个类，靠字段取值区分**：
+/// - 原生 SOL：[rentExemptMinimum] / [recipientBalance] 是收款方 **SOL 账户**的租金账，
+///   [ataRentLamports] 恒为 0。
+/// - SPL 代币：转账不改变收款方的 SOL 余额，那本租金账无从谈起，因此前两项一律传 0
+///   —— 这样 [shortfallFor] 天然返回 0、[createsRecipient] 天然为 false，
+///   原生路径的租金判断对代币自动失效，不需要调用方再加一层 if。代币这边要付的租金
+///   是另一回事：收款方没有该代币的关联账户（ATA）时要现建一个，见 [ataRentLamports]。
 class SolanaFeeEstimate {
-  const SolanaFeeEstimate({
+  /// 不是 const 构造：`BigInt.zero` 不是编译期常量，做不了 const 默认值。
+  /// 本类的字段清一色是 BigInt，调用方本来也构造不出 const 实例，没有损失。
+  SolanaFeeEstimate({
     required this.baseFeeLamports,
     required this.computeUnitLimit,
     required this.priceByPercentile,
     required this.rentExemptMinimum,
     required this.recipientBalance,
-  });
+    BigInt? ataRentLamports,
+  }) : ataRentLamports = ataRentLamports ?? BigInt.zero;
 
   /// 签名费，由 `getFeeForMessage` 实查（不写死 5000：每签名费是链上可调参数）。
   final BigInt baseFeeLamports;
@@ -57,6 +68,16 @@ class SolanaFeeEstimate {
   /// 收款方当前余额。为 0 表示这个地址在链上还不存在。
   final BigInt recipientBalance;
 
+  /// 本次要为收款方创建关联代币账户（ATA）所需的租金；不需创建（含原生路径）时为 0。
+  ///
+  /// **这笔钱不是网络费，也不退还**：它被存进新建的 ATA 里，作为那个账户的租金豁免余额，
+  /// 由发送方垫付。所以它刻意不进 [SolanaFeeQuote.expectedFee]——混进去会让三档费用
+  /// 凭空高出几百倍，用户会以为手续费涨了。要「总共要花多少 SOL」时用 [lamportsCostFor]。
+  ///
+  /// 金额实查 `getMinimumBalanceForRentExemption(165)` 而不写死：ATA 固定 165 字节，
+  /// 但每字节的租金是链上可调参数，各网并不一致。
+  final BigInt ataRentLamports;
+
   /// 某档的优先单价（micro-lamport / 计算单元）。查不到该分位按 0 计——
   /// 不拥堵时不付优先费是正确行为，不该拿别的分位来顶。
   BigInt priceFor(FeeSpeed speed) => priceByPercentile[speed.rewardPercentile] ?? BigInt.zero;
@@ -73,6 +94,17 @@ class SolanaFeeEstimate {
 
   /// 收款方是否是一个尚未上链的新账户。
   bool get createsRecipient => recipientBalance == BigInt.zero;
+
+  /// 本次是否要为收款方新建一个代币账户（ATA）——确认页据此决定要不要提示那笔租金。
+  bool get createsTokenAccount => ataRentLamports > BigInt.zero;
+
+  /// 本次一共要花掉多少 SOL：网络费 + ATA 租金（没有租金时就等于网络费）。
+  ///
+  /// 要传档位而不是做成 getter：优先费随档位变，拿错档在余额刚好够的边界上会判反。
+  ///
+  /// 「发送方 SOL 够不够」必须用这个数去比，而不是用 [SolanaFeeQuote.maxFee]——
+  /// 后者不含租金，收款方要建 ATA 时会把需求少算几百倍，于是确认页放行、链上失败。
+  BigInt lamportsCostFor(FeeSpeed speed) => quoteFor(speed).maxFee + ataRentLamports;
 
   /// 若本次转入 [amount] 后收款方仍达不到豁免线，返回还差多少 lamport；够则返回 0。
   ///

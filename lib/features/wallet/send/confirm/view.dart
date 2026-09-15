@@ -181,7 +181,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   /// 不确定就放行，最终由各链的交易服务在链上数据前把关。
   String? _feeShortfall(ListedAsset asset, String from) {
     if (asset.token == null || from.isEmpty) return null;
-    final fee = _freshMaxFee(asset, from);
+    final fee = _nativeCostOf(asset, from);
     final nativeBalance = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.amount;
     if (fee == null || nativeBalance == null) return null;
     try {
@@ -192,6 +192,20 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     // 「需约」是网络费，截断展示；「可用」是余额，与确认页金额一样给全精度。
     return '${asset.chain.symbol} 不足以支付网络费：需约 ${formatTokenAmount(formatUnits(fee, asset.chain.decimals))} '
         '${asset.chain.symbol}，可用 $nativeBalance';
+  }
+
+  /// 本次转账会花掉的原生币总额：网络费，**外加** Solana 代币转账可能要垫付的 ATA 租金。
+  ///
+  /// 与 [_freshMaxFee] 分开而不是合并：那个的约定是「网络费」，要拿去算 MAX 的可发送额，
+  /// 把租金掺进去会让原生 SOL 的 MAX 少发一大截。这个的约定是「一共要花多少」，
+  /// 只给 [_feeShortfall] 判「原生币够不够」用。两个问题不同，答案也不同。
+  BigInt? _nativeCostOf(ListedAsset asset, String from) {
+    if (asset.chain.kind == ChainKind.solana) {
+      // 为收款方创建代币账户的租金也从 SOL 里出，漏掉它会在「刚好不够」时放行一笔
+      // 注定失败的交易——而那笔租金比网络费本身大几百倍，漏算不是小数点的事。
+      return ref.watch(solanaFeeProvider(_solanaFeeKey(asset, from))).value?.lamportsCostFor(_feeSpeed);
+    }
+    return _freshMaxFee(asset, from);
   }
 
   /// 本次转账的费用上限（以**原生币**计价）；报价缺失或已过期时返回 null。
@@ -243,8 +257,13 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     return ref.watch(evmFeeProvider(_feeKey(asset, from))).quotes;
   }
 
-  SolanaFeeKey _solanaFeeKey(ListedAsset asset, String from) =>
-      (chainId: asset.chain.id, from: from, to: widget.toAddress, amount: widget.amount);
+  SolanaFeeKey _solanaFeeKey(ListedAsset asset, String from) => (
+    chainId: asset.chain.id,
+    from: from,
+    to: widget.toAddress,
+    amount: widget.amount,
+    tokenIdentifier: asset.token?.identifier,
+  );
 
   /// Tron 的费用行：单一数值，不可切换（这条链没有档位可选）。
   ///
@@ -309,7 +328,9 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   /// 这里让按钮提前变灰并说明原因，那里用发送那一刻的链上数据兜底。**两处都要有**——
   /// 只有这里会被过期几秒的报价骗到，只有那里则要用户点下去才知道发不出。
   String? _rentShortfall(ListedAsset asset, String from) {
-    // 代币的租金是另一本账（ATA 账户），SPL 转账尚未接入，这里只管原生 SOL。
+    // 代币的租金是另一本账：SPL 转账不改变收款方的 SOL 余额，这里两条判断都无从谈起
+    // （估费那边也已把 rentExemptMinimum / recipientBalance 置 0 让它们天然失效）。
+    // 代币那笔 ATA 租金走的是 [_feeShortfall]（能不能付）与 [_activationNotice]（提前告知）。
     if (asset.chain.kind != ChainKind.solana || asset.token != null || from.isEmpty) return null;
     final estimate = ref.watch(solanaFeeProvider(_solanaFeeKey(asset, from))).value;
     if (estimate == null) return null;
@@ -349,12 +370,38 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     return null;
   }
 
+  /// 「这笔转账会为收款方新建一个账户，并为此多花一笔钱」的提示；无需提示时返回 null。
+  ///
+  /// 两条链各有一套，但对用户是同一件事，所以合在一处、显示在同一个位置。
   String? _activationNotice(ListedAsset asset, String from) {
-    if (asset.chain.kind != ChainKind.tron || from.isEmpty) return null;
+    if (from.isEmpty) return null;
+    return switch (asset.chain.kind) {
+      ChainKind.tron => _tronActivationNotice(asset, from),
+      ChainKind.solana => _splAccountNotice(asset, from),
+      _ => null,
+    };
+  }
+
+  String? _tronActivationNotice(ListedAsset asset, String from) {
     final estimate = ref.watch(tronFeeProvider(_tronFeeKey(asset, from))).value;
     if (estimate == null || !estimate.activatesRecipient) return null;
     final activation = formatTokenAmount(formatUnits(estimate.activationFeeSun, asset.chain.decimals));
     return '收款方账户尚未激活，网络费中已包含 $activation ${asset.chain.symbol} 激活费';
+  }
+
+  /// SPL：收款方没有这个币的代币账户（ATA）时，本次会顺带创建一个，租金由发送方垫付。
+  ///
+  /// 措辞与 Tron 那条刻意不同——那笔激活费**已含在**上方网络费里，而这笔租金**没有**
+  /// （它不是网络费，见 `SolanaFeeEstimate.ataRentLamports`），所以这里要说「另需」。
+  /// 也必须说明不退还：这笔钱是存进新账户里的，用户看到余额少了一块会来问。
+  String? _splAccountNotice(ListedAsset asset, String from) {
+    final token = asset.token;
+    if (token == null) return null;
+    final estimate = ref.watch(solanaFeeProvider(_solanaFeeKey(asset, from))).value;
+    if (estimate == null || !estimate.createsTokenAccount) return null;
+    final rent = formatTokenAmount(formatUnits(estimate.ataRentLamports, asset.chain.decimals));
+    return '收款方还没有 ${token.symbol} 代币账户，本次将为其创建，'
+        '另需 $rent ${asset.chain.symbol} 租金（存入该账户，不退还）';
   }
 
   /// 网络费选择器：展示所选档位的预计实付，点击可切换档位。

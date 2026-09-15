@@ -25,10 +25,8 @@ class SolanaTransferService implements ChainTransferService {
   @override
   bool get supportsNative => true;
 
-  /// SPL 代币转账尚未接入：它要先确认收款方的关联代币账户（ATA）是否存在，
-  /// 不存在还得在同一笔交易里创建，与原生转账不是一条路径。留待单独实现。
   @override
-  bool get supportsToken => false;
+  bool get supportsToken => true;
 
   @override
   Future<TransactionStatus> queryStatus(Chain chain, String transactionHash, {int? validUntilBlock}) {
@@ -45,15 +43,22 @@ class SolanaTransferService implements ChainTransferService {
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
     final token = request.token;
-    // 提前挡住：发送页已按 supportsToken 过滤过，走到这里说明调用方绕过了闸门。
-    // 放行会让一笔 SPL 转账被当成原生 SOL 转账发出去——金额语义完全不同。
-    if (token != null) {
-      throw UnsupportedError('${request.chain.name} 代币转账暂未支持');
-    }
-
     final privateKey = await _keyResolver.resolveSigningKeyBytes(wallet, request.chain); // 获取私钥明文
 
     try {
+      // 代币转账不接 deductFeeFromAmount：费用以 SOL 支付、转出的是代币，
+      // 两本账不通，扣无可扣。代币的 MAX 就是代币余额本身（与 EVM / Tron 一致）。
+      if (token != null) {
+        return await _transactions.sendToken(
+          chain: request.chain,
+          token: token,
+          privateKey: privateKey,
+          fromAddress: request.from,
+          to: request.to,
+          amount: request.amount,
+          speed: request.speed,
+        );
+      }
       return await _transactions.sendNative(
         chain: request.chain,
         privateKey: privateKey,
