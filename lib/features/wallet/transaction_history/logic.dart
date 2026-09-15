@@ -4,7 +4,10 @@ import '../../../domain/transaction_record.dart';
 
 /// 本地保留的交易记录上限。超出后丢弃最旧的——历史越久价值越低，
 /// 而 SharedPreferences 存的是单个 JSON 字符串，不设上限迟早撑爆。
-const int maximumTransactionHistoryCount = 200;
+///
+/// 这个数同时也是「能往回翻多深」：翻页拉回来的都是更旧的记录，上限卡在哪儿，
+/// 用户就只能翻到哪儿——再往前翻，新拉的那页会在 merge 时立刻被截掉。
+const int maximumTransactionHistoryCount = 500;
 
 /// 按提交时刻倒序（最新在前）。时刻相同的按 identity 兜底，保证排序稳定。
 List<TransactionRecord> sortByTimeDescending(Iterable<TransactionRecord> records) {

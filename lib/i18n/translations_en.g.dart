@@ -203,6 +203,12 @@ class Translations$transactionHistory$en {
 	/// en: 'Clear filters'
 	String get clearFilters => 'Clear filters';
 
+	/// en: 'Load more'
+	String get loadMore => 'Load more';
+
+	/// en: 'No more transactions'
+	String get noMoreRecords => 'No more transactions';
+
 	/// en: 'All networks'
 	String get filterAllChains => 'All networks';
 
@@ -681,6 +687,8 @@ extension on Translations {
 			'transactionHistory.emptyFiltered' => 'No matching transactions',
 			'transactionHistory.emptyFilteredHint' => 'Try another network or type',
 			'transactionHistory.clearFilters' => 'Clear filters',
+			'transactionHistory.loadMore' => 'Load more',
+			'transactionHistory.noMoreRecords' => 'No more transactions',
 			'transactionHistory.filterAllChains' => 'All networks',
 			'transactionHistory.selectChain' => 'Select network',
 			'transactionHistory.filterAllDirections' => 'All types',

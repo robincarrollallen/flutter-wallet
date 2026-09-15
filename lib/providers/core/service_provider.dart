@@ -1,10 +1,15 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasource/local/secure_wallet_storage.dart';
 import '../../data/datasource/local/security_password_storage.dart';
 import '../../blockchain/chain_registry.dart';
 import '../../services/evm_transaction_service.dart';
+import '../../services/history/bitcoin_transaction_history_service.dart';
+import '../../services/history/evm_transaction_history_service.dart';
+import '../../services/history/solana_transaction_history_service.dart';
 import '../../services/history/transaction_history_service.dart';
+import '../../services/history/tron_transaction_history_service.dart';
 import '../../services/solana_transaction_service.dart';
 import '../../services/transfer/evm_transfer_service.dart';
 import '../../services/transfer/solana_transfer_service.dart';
@@ -46,13 +51,20 @@ final walletServiceProvider = Provider<WalletService>((ref) {
   );
 });
 
-/// 远程交易历史查询入口。
+/// 远程交易历史查询入口。接入新链时在 map 里加一行即可，页面无需改动。
 ///
-/// 目前没有任何链接入区块浏览器 / 索引器，map 为空 ⇒ `fetchAll` 恒返回空列表，
-/// 历史页只显示本地记录。接入某条链时在这里加一行实现即可，页面无需改动。
-final transactionHistoryServiceProvider = Provider<TransactionHistoryService>(
-  (ref) => const TransactionHistoryService(),
-);
+/// key 从 .env 读而不是让 service 自己去读：`lib/services/` 不认识 dotenv，
+/// 和它不认识 Riverpod 是同一个道理——配置从哪来只有装配处知道。
+final transactionHistoryServiceProvider = Provider<TransactionHistoryService>((ref) {
+  return TransactionHistoryService(
+    chainServices: {
+      ChainKind.evm: EvmTransactionHistoryService(apiKey: dotenv.maybeGet('ETHERSCAN_API_KEY') ?? ''),
+      ChainKind.solana: const SolanaTransactionHistoryService(),
+      ChainKind.tron: const TronTransactionHistoryService(),
+      ChainKind.bitcoin: const BitcoinTransactionHistoryService(),
+    },
+  );
+});
 
 /// 新钱包落盘的「事务」封装，创建与导入共用。
 final walletCommitServiceProvider = Provider<WalletCommitService>(

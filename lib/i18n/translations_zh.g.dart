@@ -152,6 +152,8 @@ class _Translations$transactionHistory$zh extends Translations$transactionHistor
 	@override String get emptyFiltered => '没有符合条件的记录';
 	@override String get emptyFilteredHint => '换个网络或类型再看看';
 	@override String get clearFilters => '清除筛选';
+	@override String get loadMore => '加载更多';
+	@override String get noMoreRecords => '没有更多了';
 	@override String get filterAllChains => '全部链';
 	@override String get selectChain => '选择网络';
 	@override String get filterAllDirections => '全部类型';
@@ -447,6 +449,8 @@ extension on TranslationsZh {
 			'transactionHistory.emptyFiltered' => '没有符合条件的记录',
 			'transactionHistory.emptyFilteredHint' => '换个网络或类型再看看',
 			'transactionHistory.clearFilters' => '清除筛选',
+			'transactionHistory.loadMore' => '加载更多',
+			'transactionHistory.noMoreRecords' => '没有更多了',
 			'transactionHistory.filterAllChains' => '全部链',
 			'transactionHistory.selectChain' => '选择网络',
 			'transactionHistory.filterAllDirections' => '全部类型',

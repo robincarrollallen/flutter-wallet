@@ -119,3 +119,6 @@ app.*.symbols
 !/dev/ci/**/Gemfile.lock
 # Android Studio 本地设备缓存，每次打开 IDE 都会变动
 .idea/caches/deviceStreaming.xml
+
+# 本机配置（API key 等），见 .env.example
+.env

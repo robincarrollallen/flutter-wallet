@@ -33,6 +33,8 @@
     "emptyFiltered": "No matching transactions",
     "emptyFilteredHint": "Try another network or type",
     "clearFilters": "Clear filters",
+    "loadMore": "Load more",
+    "noMoreRecords": "No more transactions",
     "filterAllChains": "All networks",
     "selectChain": "Select network",
     "filterAllDirections": "All types",

@@ -72,26 +72,49 @@ final selectableChainsProvider = Provider<List<String>>((ref) {
   });
 });
 
-/// 历史页的刷新动作：回填 pending 状态 + 拉取远程历史。
-class TransactionHistoryRefresher {
-  const TransactionHistoryRefresher(this._ref);
+/// 翻页进度。游标按链分开存：各链翻页快慢天然不同步，合成一个全局游标会互相拖累。
+class TransactionHistoryPagingState {
+  const TransactionHistoryPagingState({this.cursors = const {}, this.isLoadingMore = false});
 
-  final Ref _ref;
+  /// chainId -> 下一页游标。为空表示所有链都翻到底了（或者还没拉过第一页）。
+  final Map<String, String> cursors;
 
-  /// 下拉刷新与首帧都走这里。
+  final bool isLoadingMore;
+
+  bool get hasMore => cursors.isNotEmpty;
+}
+
+/// 历史页的翻页与刷新：回填 pending 状态、拉远程历史、记住各链翻到哪儿了。
+class TransactionHistoryPagingNotifier extends Notifier<TransactionHistoryPagingState> {
+  @override
+  TransactionHistoryPagingState build() => const TransactionHistoryPagingState();
+
+  /// 下拉刷新与首帧都走这里：回填 pending 状态 + 重新拉第一页远程历史。
   ///
-  /// 两件事互不依赖，失败也互不影响：链上状态查不到就维持 pending，远程历史没接入
-  /// 就是空——刷新永远不会失败到需要给用户报错。
+  /// 两件事互不依赖，失败也互不影响：链上状态查不到就维持 pending，远程拉不到
+  /// 就是没有新数据——刷新永远不会失败到需要给用户报错。
   Future<void> refresh() async {
     await Future.wait([_refillPendingStatuses(), _fetchRemoteHistory()]);
   }
 
+  /// 翻下一页。只查还有游标的链，已经到底的链不再打扰。
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasMore) return;
+    state = TransactionHistoryPagingState(cursors: state.cursors, isLoadingMore: true);
+    try {
+      await _fetchRemoteHistory(cursors: state.cursors);
+    } finally {
+      // 失败时保留原游标：这一页没拉到，下次点「加载更多」还能从同一个位置重试。
+      state = TransactionHistoryPagingState(cursors: state.cursors, isLoadingMore: false);
+    }
+  }
+
   /// 对仍是 pending 的记录再查一次链，把结果写回。
   Future<void> _refillPendingStatuses() async {
-    final pending = pendingRecordsToRefresh(_ref.read(transactionHistoryProvider));
+    final pending = pendingRecordsToRefresh(ref.read(transactionHistoryProvider));
     if (pending.isEmpty) return;
 
-    final walletService = _ref.read(walletServiceProvider);
+    final walletService = ref.read(walletServiceProvider);
     final queried = await Future.wait(
       pending.map((record) async {
         try {
@@ -112,21 +135,28 @@ class TransactionHistoryRefresher {
       }),
     );
 
-    final history = _ref.read(transactionHistoryProvider.notifier);
+    final history = ref.read(transactionHistoryProvider.notifier);
     for (final outcome in queried) {
       if (outcome.status == TransactionStatus.pending) continue;
       history.updateStatus(outcome.record.chainId, outcome.record.transactionHash, outcome.status);
     }
   }
 
-  /// 拉远程历史并合并。当前没有任何链接入 explorer，这里恒为空列表。
-  Future<void> _fetchRemoteHistory() async {
-    final wallet = _ref.read(activeWalletProvider);
+  /// 拉一页远程历史并合并，同时更新各链的翻页游标。
+  ///
+  /// [cursors] 为空即拉第一页。刷新拿到的游标会整个替换掉旧的——重新从头翻，
+  /// 上一轮翻到哪儿不再有意义。
+  Future<void> _fetchRemoteHistory({Map<String, String> cursors = const {}}) async {
+    final wallet = ref.read(activeWalletProvider);
     if (wallet == null) return;
-    final fetched = await _ref.read(transactionHistoryServiceProvider).fetchAll(wallet);
-    if (fetched.isEmpty) return;
-    _ref.read(transactionHistoryProvider.notifier).merge(fetched);
+
+    final page = await ref.read(transactionHistoryServiceProvider).fetchAll(wallet, cursors: cursors);
+    if (page.records.isNotEmpty) ref.read(transactionHistoryProvider.notifier).merge(page.records);
+    state = TransactionHistoryPagingState(cursors: page.nextCursors, isLoadingMore: state.isLoadingMore);
   }
 }
 
-final transactionHistoryRefresherProvider = Provider<TransactionHistoryRefresher>(TransactionHistoryRefresher.new);
+final transactionHistoryPagingProvider =
+    NotifierProvider<TransactionHistoryPagingNotifier, TransactionHistoryPagingState>(
+      TransactionHistoryPagingNotifier.new,
+    );

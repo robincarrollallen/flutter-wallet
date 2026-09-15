@@ -32,7 +32,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
     super.initState();
     // 进页面先回填一次 pending：用户多半就是回来看那笔交易确认了没有。
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(transactionHistoryRefresherProvider).refresh();
+      ref.read(transactionHistoryPagingProvider.notifier).refresh();
     });
   }
 
@@ -51,7 +51,7 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
           const _DirectionFilterBar(),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => ref.read(transactionHistoryRefresherProvider).refresh(),
+              onRefresh: () => ref.read(transactionHistoryPagingProvider.notifier).refresh(),
               child: records.isEmpty
                   // 空态也要能下拉：首次进来没记录时，用户下拉是想触发同步。
                   ? ListView(
@@ -64,8 +64,10 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
                   : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: EdgeInsets.only(bottom: 24.s),
-                      itemCount: grouped.length,
+                      // 末尾多一格给「加载更多」。
+                      itemCount: grouped.length + 1,
                       itemBuilder: (_, index) {
+                        if (index == grouped.length) return const _LoadMoreFooter();
                         final day = grouped.keys.elementAt(index);
                         return _DaySection(day: day, records: grouped[day]!);
                       },
@@ -308,6 +310,38 @@ class _ChainOption extends StatelessWidget {
       leading: icon,
       title: Text(label),
       trailing: selected ? Icon(Icons.check_rounded, size: 20.s, color: theme.colorScheme.primary) : null,
+    );
+  }
+}
+
+/// 列表末尾的翻页入口。
+///
+/// 做成显式按钮而不是滚到底自动加载：翻页会向各条链的浏览器打真实请求，
+/// 自动触发在快速滑动时容易连着打出好几轮。
+class _LoadMoreFooter extends ConsumerWidget {
+  const _LoadMoreFooter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
+    final paging = ref.watch(transactionHistoryPagingProvider);
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 16.s),
+      child: Center(
+        child: switch ((paging.isLoadingMore, paging.hasMore)) {
+          (true, _) => SizedBox(height: 20.s, width: 20.s, child: const CircularProgressIndicator(strokeWidth: 2)),
+          (false, true) => TextButton(
+            onPressed: () => ref.read(transactionHistoryPagingProvider.notifier).loadMore(),
+            child: Text(t.transactionHistory.loadMore),
+          ),
+          (false, false) => Text(
+            t.transactionHistory.noMoreRecords,
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+        },
+      ),
     );
   }
 }
