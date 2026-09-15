@@ -28,9 +28,13 @@ List<TransactionRecord> mergeTransactions(
   final merged = {for (final record in existing) record.identity: record};
   for (final fresh in incoming) {
     final local = merged[fresh.identity];
+    // 把 fresh 叠在 local 上，而不是逐字段手搓一个新记录——手搓过一次就漏了
+    // validUntilBlock，往后每加一个字段都要再漏一次。copyWith 的「给了才换」正好
+    // 是这里要的语义：远程给得出的字段以远程为准，远程给不出的（validUntilBlock
+    // 只有本机广播时知道）保留本地的，而不是被 null 抹掉。
     merged[fresh.identity] = local == null
         ? fresh
-        : TransactionRecord(
+        : local.copyWith(
             transactionHash: fresh.transactionHash,
             walletId: fresh.walletId,
             chainId: fresh.chainId,
@@ -39,7 +43,10 @@ List<TransactionRecord> mergeTransactions(
             fromAddress: fresh.fromAddress,
             toAddress: fresh.toAddress,
             amount: fresh.amount,
-            submittedAt: local.submittedAt,
+            validUntilBlock: fresh.validUntilBlock,
+            feeAmount: fresh.feeAmount,
+            blockNumber: fresh.blockNumber,
+            confirmedAt: fresh.confirmedAt,
             status: fresh.status,
             direction: fresh.direction,
           );

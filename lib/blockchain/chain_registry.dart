@@ -23,6 +23,7 @@ class Chain {
     this.evmChainId,
     this.nativeBalanceRpcMethod,
     this.coinGeckoPlatformId,
+    this.explorerTxUrlTemplate,
     this.supportsRpcBatch = true,
   }) : assert(
          (kind == ChainKind.evm || kind == ChainKind.solana || kind == ChainKind.sui) ==
@@ -69,6 +70,15 @@ class Chain {
   /// 该链的节点是否接受批量 JSON-RPC（一个请求体里发多条调用)「Sui 公共节点明确拒绝批量请求」
   final bool supportsRpcBatch;
 
+  /// 区块浏览器的交易页地址模板，`{hash}` 处填交易哈希。
+  ///
+  /// 存模板而不是 base url：各家路径差别太大，Tronscan 是 `/#/transaction/`、
+  /// Solana Explorer 还要在查询串上带 `?cluster=devnet`，拼不出统一规则。
+  final String? explorerTxUrlTemplate;
+
+  /// 这笔交易在区块浏览器上的地址；没配模板的链返回 null（调用方据此隐藏入口）。
+  String? explorerTxUrl(String transactionHash) => explorerTxUrlTemplate?.replaceAll('{hash}', transactionHash);
+
   /// 该链的派生方案：地址派生只认它，链的其余配置（endpoint / 价格 id 等）都与派生无关。
   DerivationScheme get derivation =>
       DerivationScheme(coin: coin, btcScriptType: kind == ChainKind.bitcoin ? btcScriptType : null);
@@ -110,6 +120,7 @@ class SupportedChains {
     evmChainId: 11155111,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'ethereum',
+    explorerTxUrlTemplate: 'https://sepolia.etherscan.io/tx/{hash}',
   );
 
   static const polygonAmoy = Chain(
@@ -124,6 +135,7 @@ class SupportedChains {
     evmChainId: 80002,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'polygon-pos',
+    explorerTxUrlTemplate: 'https://amoy.polygonscan.com/tx/{hash}',
   );
 
   static const bscTestnet = Chain(
@@ -138,6 +150,7 @@ class SupportedChains {
     evmChainId: 97,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'binance-smart-chain',
+    explorerTxUrlTemplate: 'https://testnet.bscscan.com/tx/{hash}',
   );
 
   static const baseSepolia = Chain(
@@ -152,6 +165,7 @@ class SupportedChains {
     evmChainId: 84532,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'base',
+    explorerTxUrlTemplate: 'https://sepolia.basescan.org/tx/{hash}',
   );
 
   static const arbitrumSepolia = Chain(
@@ -166,6 +180,7 @@ class SupportedChains {
     evmChainId: 421614,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'arbitrum-one',
+    explorerTxUrlTemplate: 'https://sepolia.arbiscan.io/tx/{hash}',
   );
 
   static const plasmaTestnet = Chain(
@@ -180,6 +195,7 @@ class SupportedChains {
     evmChainId: 9746,
     nativeBalanceRpcMethod: RpcMethod.ethGetBalance,
     coinGeckoPlatformId: 'plasma',
+    explorerTxUrlTemplate: 'https://testnet.plasmascan.to/tx/{hash}',
   );
 
   static const bitcoinTestnet = Chain(
@@ -192,6 +208,7 @@ class SupportedChains {
     coinGeckoId: 'bitcoin',
     decimals: 8,
     btcScriptType: BtcScriptType.p2wpkh,
+    explorerTxUrlTemplate: 'https://mempool.space/testnet4/tx/{hash}',
   );
 
   static const solanaDevnet = Chain(
@@ -205,6 +222,7 @@ class SupportedChains {
     decimals: 9,
     nativeBalanceRpcMethod: RpcMethod.solGetBalance,
     coinGeckoPlatformId: 'solana',
+    explorerTxUrlTemplate: 'https://explorer.solana.com/tx/{hash}?cluster=devnet',
   );
 
   // —— 以下三条非 EVM 链的原生币与代币余额查询均已接入（Tron/Sui/Aptos）。 ——
@@ -226,6 +244,7 @@ class SupportedChains {
     coinGeckoId: 'tron',
     decimals: 6,
     coinGeckoPlatformId: 'tron',
+    explorerTxUrlTemplate: 'https://nile.tronscan.org/#/transaction/{hash}',
   );
 
   static const suiTestnet = Chain(
@@ -243,6 +262,7 @@ class SupportedChains {
     // 而 Sui 官方 fullnode 的 JSON-RPC 已整体弃用（-32601，要求迁移到 gRPC/GraphQL），
     // 换端点解决不了。多代币查询走并发单条。
     supportsRpcBatch: false,
+    explorerTxUrlTemplate: 'https://suiscan.xyz/testnet/tx/{hash}',
   );
 
   static const aptosTestnet = Chain(
@@ -255,6 +275,7 @@ class SupportedChains {
     coinGeckoId: 'aptos',
     decimals: 8,
     coinGeckoPlatformId: 'aptos',
+    explorerTxUrlTemplate: 'https://explorer.aptoslabs.com/txn/{hash}?network=testnet',
   );
 
   /// 首页展示顺序。

@@ -20,6 +20,9 @@ class TransactionRecord {
     required this.submittedAt,
     this.tokenIdentifier,
     this.validUntilBlock,
+    this.feeAmount,
+    this.blockNumber,
+    this.confirmedAt,
     this.status = TransactionStatus.pending,
     this.direction = TransactionDirection.outgoing,
   });
@@ -57,6 +60,18 @@ class TransactionRecord {
   /// 回填状态时靠它把「还在等」和「已经死透」区分开，见 [TransactionStatus.expired]。
   final int? validUntilBlock;
 
+  /// 这笔交易实际花掉的手续费，原生币十进制字符串，与 [amount] 同口径。
+  ///
+  /// 以下三个字段都要查链 / 查浏览器才知道，本机广播时一律为 null，回填后才有值。
+  final String? feeAmount;
+
+  /// 打包这笔交易的区块高度。与 [validUntilBlock] 不是一回事——那个是失效上界。
+  final int? blockNumber;
+
+  /// 上链时刻。[submittedAt] 始终是「本机按下发送的时刻」，两者语义不同：
+  /// 从浏览器拉回来的收款记录本机压根没提交过，那种情况下两个字段都取区块时间。
+  final DateTime? confirmedAt;
+
   /// 上链状态，广播时先记下，之后可由 [copyWith] 回填。
   final TransactionStatus status;
 
@@ -69,20 +84,41 @@ class TransactionRecord {
   /// 是否为原生币转账。
   bool get isNativeCoin => tokenIdentifier == null;
 
-  TransactionRecord copyWith({TransactionStatus? status}) {
+  /// 覆盖式复制。所有参数都是「给了就换、不给就留」——可空字段没有「改回 null」的语义，
+  /// 因为它们只会从 null 被回填成有值，不会倒过来。
+  TransactionRecord copyWith({
+    String? transactionHash,
+    String? walletId,
+    String? chainId,
+    String? tokenIdentifier,
+    String? symbol,
+    String? fromAddress,
+    String? toAddress,
+    String? amount,
+    DateTime? submittedAt,
+    int? validUntilBlock,
+    String? feeAmount,
+    int? blockNumber,
+    DateTime? confirmedAt,
+    TransactionStatus? status,
+    TransactionDirection? direction,
+  }) {
     return TransactionRecord(
-      transactionHash: transactionHash,
-      walletId: walletId,
-      chainId: chainId,
-      tokenIdentifier: tokenIdentifier,
-      symbol: symbol,
-      fromAddress: fromAddress,
-      toAddress: toAddress,
-      amount: amount,
-      submittedAt: submittedAt,
-      validUntilBlock: validUntilBlock,
+      transactionHash: transactionHash ?? this.transactionHash,
+      walletId: walletId ?? this.walletId,
+      chainId: chainId ?? this.chainId,
+      tokenIdentifier: tokenIdentifier ?? this.tokenIdentifier,
+      symbol: symbol ?? this.symbol,
+      fromAddress: fromAddress ?? this.fromAddress,
+      toAddress: toAddress ?? this.toAddress,
+      amount: amount ?? this.amount,
+      submittedAt: submittedAt ?? this.submittedAt,
+      validUntilBlock: validUntilBlock ?? this.validUntilBlock,
+      feeAmount: feeAmount ?? this.feeAmount,
+      blockNumber: blockNumber ?? this.blockNumber,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
       status: status ?? this.status,
-      direction: direction,
+      direction: direction ?? this.direction,
     );
   }
 
@@ -97,6 +133,9 @@ class TransactionRecord {
     'amount': amount,
     'submittedAt': submittedAt.toIso8601String(),
     if (validUntilBlock != null) 'validUntilBlock': validUntilBlock,
+    if (feeAmount != null) 'feeAmount': feeAmount,
+    if (blockNumber != null) 'blockNumber': blockNumber,
+    if (confirmedAt != null) 'confirmedAt': confirmedAt!.toIso8601String(),
     'status': status.name,
     'direction': direction.name,
   };
@@ -135,6 +174,9 @@ class TransactionRecord {
       submittedAt: submittedAt,
       // 本次之前落盘的记录没有这个字段，读成 null 即可——那些链本来也判不了过期。
       validUntilBlock: json['validUntilBlock'] as int?,
+      feeAmount: json['feeAmount'] as String?,
+      blockNumber: json['blockNumber'] as int?,
+      confirmedAt: DateTime.tryParse(json['confirmedAt'] as String? ?? ''),
       status: TransactionStatus.values.asNameMap()[json['status']] ?? TransactionStatus.pending,
       direction: TransactionDirection.values.asNameMap()[json['direction']] ?? TransactionDirection.outgoing,
     );

@@ -312,27 +312,45 @@ class _ChainOption extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
+/// 空态。分两种，文案不能混：一笔都没有是「还没开始用」，筛选无结果是「筛窄了」——
+/// 后者给用户看「交易会出现在这里」纯属误导，他明明有交易。
+class _EmptyState extends ConsumerWidget {
   const _EmptyState();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final theme = Theme.of(context);
+    final filteredOut = ref.watch(walletTransactionHistoryProvider).isNotEmpty;
+
     return Column(
       children: [
-        Icon(Icons.receipt_long_outlined, size: 48.s, color: theme.colorScheme.onSurfaceVariant),
+        Icon(
+          filteredOut ? Icons.filter_alt_off_outlined : Icons.receipt_long_outlined,
+          size: 48.s,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
         SizedBox(height: 12.s),
-        Text(t.transactionHistory.empty, style: theme.textTheme.titleMedium),
+        Text(
+          filteredOut ? t.transactionHistory.emptyFiltered : t.transactionHistory.empty,
+          style: theme.textTheme.titleMedium,
+        ),
         SizedBox(height: 4.s),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 48.s),
           child: Text(
-            t.transactionHistory.emptyHint,
+            filteredOut ? t.transactionHistory.emptyFilteredHint : t.transactionHistory.emptyHint,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ),
+        if (filteredOut) ...[
+          SizedBox(height: 16.s),
+          TextButton(
+            onPressed: () => ref.read(transactionHistoryFilterProvider.notifier).clear(),
+            child: Text(t.transactionHistory.clearFilters),
+          ),
+        ],
       ],
     );
   }

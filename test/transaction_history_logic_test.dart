@@ -9,6 +9,9 @@ TransactionRecord _record({
   TransactionStatus status = TransactionStatus.pending,
   TransactionDirection direction = TransactionDirection.outgoing,
   DateTime? submittedAt,
+  int? validUntilBlock,
+  String? feeAmount,
+  int? blockNumber,
 }) {
   return TransactionRecord(
     transactionHash: hash,
@@ -21,6 +24,9 @@ TransactionRecord _record({
     submittedAt: submittedAt ?? DateTime(2026, 9, 11, 10),
     status: status,
     direction: direction,
+    validUntilBlock: validUntilBlock,
+    feeAmount: feeAmount,
+    blockNumber: blockNumber,
   );
 }
 
@@ -34,6 +40,20 @@ void main() {
 
       expect(merged, hasLength(1));
       expect(merged.single.status, TransactionStatus.confirmed);
+    });
+
+    test('远程给不出的字段保留本地的，不被 null 抹掉', () {
+      // validUntilBlock 只有本机广播时知道，远程记录一定为 null。曾经的手搓合并
+      // 会把它丢掉，Solana 记录因此再也判不出过期。
+      final merged = mergeTransactions(
+        [_record(hash: '0xaa', validUntilBlock: 12345)],
+        [_record(hash: '0xaa', status: TransactionStatus.confirmed, feeAmount: '0.001', blockNumber: 999)],
+      );
+
+      expect(merged.single.validUntilBlock, 12345);
+      expect(merged.single.status, TransactionStatus.confirmed);
+      expect(merged.single.feeAmount, '0.001');
+      expect(merged.single.blockNumber, 999);
     });
 
     test('合并时保留本地的提交时刻——远程只知道打包时刻', () {

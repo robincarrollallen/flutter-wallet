@@ -67,6 +67,9 @@ dependencies:
   on_chain: ^8.1.0
   go_router: ^18.0.1
 
+  # 交易详情跳转区块浏览器（唤起系统浏览器）
+  url_launcher: ^6.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

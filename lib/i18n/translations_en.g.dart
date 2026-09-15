@@ -194,6 +194,15 @@ class Translations$transactionHistory$en {
 	/// en: 'Transactions sent from this app will show up here'
 	String get emptyHint => 'Transactions sent from this app will show up here';
 
+	/// en: 'No matching transactions'
+	String get emptyFiltered => 'No matching transactions';
+
+	/// en: 'Try another network or type'
+	String get emptyFilteredHint => 'Try another network or type';
+
+	/// en: 'Clear filters'
+	String get clearFilters => 'Clear filters';
+
 	/// en: 'All networks'
 	String get filterAllChains => 'All networks';
 
@@ -227,12 +236,6 @@ class Translations$transactionHistory$en {
 	/// en: 'Transaction hash'
 	String get fieldHash => 'Transaction hash';
 
-	/// en: 'Status'
-	String get fieldStatus => 'Status';
-
-	/// en: 'Amount'
-	String get fieldAmount => 'Amount';
-
 	/// en: 'From'
 	String get fieldFrom => 'From';
 
@@ -244,6 +247,27 @@ class Translations$transactionHistory$en {
 
 	/// en: 'Submitted'
 	String get fieldTime => 'Submitted';
+
+	/// en: 'Asset'
+	String get fieldToken => 'Asset';
+
+	/// en: 'Network fee'
+	String get fieldFee => 'Network fee';
+
+	/// en: 'Block'
+	String get fieldBlock => 'Block';
+
+	/// en: 'Confirmed'
+	String get fieldConfirmedAt => 'Confirmed';
+
+	/// en: 'Native coin'
+	String get nativeCoin => 'Native coin';
+
+	/// en: 'View on explorer'
+	String get viewOnExplorer => 'View on explorer';
+
+	/// en: 'Couldn't open the explorer'
+	String get openExplorerFailed => 'Couldn\'t open the explorer';
 
 	/// en: 'Copied'
 	String get copied => 'Copied';
@@ -654,6 +678,9 @@ extension on Translations {
 			'transactionHistory.title' => 'Transaction history',
 			'transactionHistory.empty' => 'No transactions yet',
 			'transactionHistory.emptyHint' => 'Transactions sent from this app will show up here',
+			'transactionHistory.emptyFiltered' => 'No matching transactions',
+			'transactionHistory.emptyFilteredHint' => 'Try another network or type',
+			'transactionHistory.clearFilters' => 'Clear filters',
 			'transactionHistory.filterAllChains' => 'All networks',
 			'transactionHistory.selectChain' => 'Select network',
 			'transactionHistory.filterAllDirections' => 'All types',
@@ -665,12 +692,17 @@ extension on Translations {
 			'transactionHistory.directionIncoming' => 'Received',
 			'transactionHistory.detailTitle' => 'Transaction details',
 			'transactionHistory.fieldHash' => 'Transaction hash',
-			'transactionHistory.fieldStatus' => 'Status',
-			'transactionHistory.fieldAmount' => 'Amount',
 			'transactionHistory.fieldFrom' => 'From',
 			'transactionHistory.fieldTo' => 'To',
 			'transactionHistory.fieldChain' => 'Network',
 			'transactionHistory.fieldTime' => 'Submitted',
+			'transactionHistory.fieldToken' => 'Asset',
+			'transactionHistory.fieldFee' => 'Network fee',
+			'transactionHistory.fieldBlock' => 'Block',
+			'transactionHistory.fieldConfirmedAt' => 'Confirmed',
+			'transactionHistory.nativeCoin' => 'Native coin',
+			'transactionHistory.viewOnExplorer' => 'View on explorer',
+			'transactionHistory.openExplorerFailed' => 'Couldn\'t open the explorer',
 			'transactionHistory.copied' => 'Copied',
 			'transactionHistory.today' => 'Today',
 			'transactionHistory.yesterday' => 'Yesterday',

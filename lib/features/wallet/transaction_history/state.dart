@@ -33,6 +33,9 @@ class TransactionHistoryFilterNotifier extends Notifier<TransactionHistoryFilter
 
   void selectDirection(TransactionDirection? direction) =>
       state = TransactionHistoryFilter(chainId: state.chainId, direction: direction);
+
+  /// 一键回到「全部链 + 全部类型」。筛空了的空态给用户的出口。
+  void clear() => state = const TransactionHistoryFilter();
 }
 
 final transactionHistoryFilterProvider = NotifierProvider<TransactionHistoryFilterNotifier, TransactionHistoryFilter>(
