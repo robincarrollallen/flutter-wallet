@@ -10,6 +10,9 @@ import '../domain/evm_fee.dart';
 import '../enums/fee_speed.dart';
 import 'transfer/transfer_result.dart';
 
+/// [jsonRpcCall] 的函数签名。测试塞一份假节点进来，不必为了验证请求编排而真的联网。
+typedef JsonRpcCaller = Future<Object?> Function(String url, String method, List<Object?> params);
+
 /// EVM 转账实现：取 nonce / 估费 / 估 gas → 构造交易 → 本地签名 → 广播 → 轮询 receipt
 class EvmTransactionService {
   const EvmTransactionService({this._call = jsonRpcCall});

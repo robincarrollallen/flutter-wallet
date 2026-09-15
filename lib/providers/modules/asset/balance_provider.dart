@@ -41,7 +41,7 @@ Future<void> refreshHomeData(WidgetRef ref, {String? walletId}) async {
 /// 某条链上某地址持有的**全部代币**余额，键为 [TokenCatalog.identityKey]。
 ///
 /// 为什么按链聚合而不是一个代币一个 provider：代币余额是逐个合约 `balanceOf`，
-/// 一条链上十几个代币各发一次就是十几次握手，六条 EVM 链同时刷首页会明显卡顿。
+/// 一条链上十几个代币各发一次就是十几次 HTTP 往返，六条 EVM 链同时刷首页会明显卡顿。
 /// 这里合成一次批量 JSON-RPC，[balanceProvider] 再从结果里取自己那份——
 /// UI 仍是逐资产的独立 AsyncValue，请求却只有一个。
 ///

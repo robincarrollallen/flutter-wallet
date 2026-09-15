@@ -9,10 +9,6 @@ int _nextJsonRpcRequestId = 0; // 自增请求初始 ID
 /// 批量调用中的单条请求。字段名与 JSON-RPC 报文一致，构造点读起来即报文本身。
 typedef JsonRpcRequest = ({String method, List<Object?> params});
 
-/// [jsonRpcCall] 的函数签名。调用方把它当参数收下，测试就能塞一份假节点进来，
-/// 不必为了验证请求编排而真的联网。
-typedef JsonRpcCaller = Future<Object?> Function(String url, String method, List<Object?> params);
-
 /// 通用 JSON-RPC 调用：统一使用自增请求 id，并在错误时抛出 Exception。
 Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) async {
   final requestId = ++_nextJsonRpcRequestId; // 自增请求 ID
@@ -37,15 +33,7 @@ Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) asy
   return decoded['result']; // 返回结果
 }
 
-/// 批量 JSON-RPC：一次 HTTP 往返发出多条调用，**返回顺序与 [calls] 一致**。
-///
-/// 规范允许服务端乱序返回，所以不能按数组下标取结果——这里按分配出去的 id
-/// 建索引再回填。同链多代币的 `balanceOf` 靠它合并成一个往返：
-/// 六条 EVM 链各查 N 个代币，逐条发就是 6×N 次握手。
-///
-/// **任一条目出错即整批抛出**，不做「部分成功」：调用方拿到的是
-/// 「这条链这一轮取数失败」，与 [jsonRpcCall] 的失败语义一致——
-/// 把失败条目静默填成 0 会让持仓凭空缩水。
+/// 批量 JSON-RPC：一次往返发多条，按 id 回填保持与 [calls] 同序；任一条出错即整批抛出。
 Future<List<Object?>> jsonRpcBatch(String url, List<JsonRpcRequest> calls) async {
   if (calls.isEmpty) return const []; // 空批次不发请求，省掉一次无意义的往返
 
@@ -96,8 +84,7 @@ Object? _unwrapBatchItem(
   return item['result'];
 }
 
-/// POST 一份 JSON-RPC 报文并解码响应体。单条与批量共用同一段传输逻辑，
-/// [label] 只用于错误文案（单条是方法名，批量是批次描述）。
+/// POST 一份 JSON-RPC 报文并解码响应体；[label] 只进错误文案。
 Future<Object?> _post(String url, Object payload, String label) async {
   final uri = Uri.parse(url); // 解析 URL
   final body = utf8.encode(jsonEncode(payload)); // 编码 JSON 请求体
@@ -126,8 +113,8 @@ Future<Object?> _post(String url, Object payload, String label) async {
 
 /// 检查响应 ID 是否匹配请求 ID
 bool _isMatchingRpcId(Object? responseId, int requestId) {
-  if (responseId == requestId) return true;
-  return responseId?.toString() == requestId.toString();
+  if (responseId == requestId) return true; // 如果响应 ID 与请求 ID 相同则返回 true
+  return responseId?.toString() == requestId.toString(); // 如果响应 ID 与请求 ID 不同则返回 false
 }
 
 /// 格式化 RPC 错误信息
