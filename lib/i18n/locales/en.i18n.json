@@ -32,6 +32,7 @@
     "emptyHint": "Transactions sent from this app will show up here",
     "filterAllChains": "All networks",
     "selectChain": "Select network",
+    "filterAllDirections": "All types",
     "statusPending": "Pending",
     "statusConfirmed": "Confirmed",
     "statusFailed": "Failed",

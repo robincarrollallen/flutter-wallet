@@ -44,30 +44,116 @@ class _TransactionHistoryScreenState extends ConsumerState<TransactionHistoryScr
 
     return Scaffold(
       appBar: AppBar(title: Text(t.transactionHistory.title), actions: const [_ChainFilterAction()]),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(transactionHistoryRefresherProvider).refresh(),
-        child: records.isEmpty
-            // 空态也要能下拉：首次进来没记录时，用户下拉是想触发同步。
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(height: 120.s),
-                  const _EmptyState(),
-                ],
-              )
-            : ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.only(bottom: 24.s),
-                itemCount: grouped.length,
-                itemBuilder: (_, index) {
-                  final day = grouped.keys.elementAt(index);
-                  return _DaySection(day: day, records: grouped[day]!);
-                },
-              ),
+      // 方向筛选放在导航栏下方、列表之外：它是列表的控制器而不是列表的一部分，
+      // 跟着内容滚走以后想换个类型还得先滚回顶部。
+      body: Column(
+        children: [
+          const _DirectionFilterBar(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => ref.read(transactionHistoryRefresherProvider).refresh(),
+              child: records.isEmpty
+                  // 空态也要能下拉：首次进来没记录时，用户下拉是想触发同步。
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(height: 120.s),
+                        const _EmptyState(),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.only(bottom: 24.s),
+                      itemCount: grouped.length,
+                      itemBuilder: (_, index) {
+                        final day = grouped.keys.elementAt(index);
+                        return _DaySection(day: day, records: grouped[day]!);
+                      },
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
+/// 列表上方常驻的收发方向筛选条：全部类型 / 转出 / 转入。
+///
+/// 用 [MenuAnchor] 悬浮菜单而不是链筛选那样的整屏弹窗——方向只有三项，
+/// 为三行内容盖满一屏太重；也不用 PopupMenuButton，它自带按钮外观，
+/// 套不进这里与链入口共用的胶囊造型。
+class _DirectionFilterBar extends ConsumerWidget {
+  const _DirectionFilterBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
+    final selected = ref.watch(transactionHistoryFilterProvider).direction;
+    final theme = Theme.of(context);
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16.s, 8.s, 16.s, 8.s),
+        child: MenuAnchor(
+          alignmentOffset: Offset(0, 4.s),
+          menuChildren: [
+            for (final option in <TransactionDirection?>[
+              null,
+              TransactionDirection.outgoing,
+              TransactionDirection.incoming,
+            ])
+              MenuItemButton(
+                leadingIcon: Icon(_directionIcon(option), size: 20.s, color: theme.colorScheme.onSurfaceVariant),
+                trailingIcon: option == selected
+                    ? Icon(Icons.check_rounded, size: 20.s, color: theme.colorScheme.primary)
+                    : null,
+                onPressed: () => ref.read(transactionHistoryFilterProvider.notifier).selectDirection(option),
+                child: Text(_directionLabel(t, option)),
+              ),
+          ],
+          builder: (context, controller, _) => Material(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(999.s),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => controller.isOpen ? controller.close() : controller.open(),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(12.s, 6.s, 6.s, 6.s),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_directionIcon(selected), size: 18.s, color: theme.colorScheme.onSurfaceVariant),
+                    SizedBox(width: 6.s),
+                    Text(
+                      _directionLabel(t, selected),
+                      style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurface),
+                    ),
+                    Icon(Icons.arrow_drop_down_rounded, size: 20.s, color: theme.colorScheme.onSurfaceVariant),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 转出 / 转入用与列表行同一对箭头，「全部类型」用双向箭头。
+IconData _directionIcon(TransactionDirection? direction) => switch (direction) {
+  TransactionDirection.outgoing => Icons.arrow_upward_rounded,
+  TransactionDirection.incoming => Icons.arrow_downward_rounded,
+  null => Icons.swap_vert_rounded,
+};
+
+String _directionLabel(Translations t, TransactionDirection? direction) => switch (direction) {
+  TransactionDirection.outgoing => t.transactionHistory.directionOutgoing,
+  TransactionDirection.incoming => t.transactionHistory.directionIncoming,
+  null => t.transactionHistory.filterAllDirections,
+};
 
 /// 导航栏右侧的链选择入口：只显示当前筛选链的图标，「全部链」显示地球图标。
 ///

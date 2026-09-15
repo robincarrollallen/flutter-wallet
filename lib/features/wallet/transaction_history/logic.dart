@@ -47,12 +47,18 @@ List<TransactionRecord> mergeTransactions(
   return List.unmodifiable(sortByTimeDescending(merged.values).take(maximum));
 }
 
-/// 按钱包 / 链筛选。两个条件都为 null 表示不限。
-List<TransactionRecord> filterTransactions(Iterable<TransactionRecord> records, {String? walletId, String? chainId}) {
+/// 按钱包 / 链 / 收发方向筛选。条件为 null 表示该维度不限。
+List<TransactionRecord> filterTransactions(
+  Iterable<TransactionRecord> records, {
+  String? walletId,
+  String? chainId,
+  TransactionDirection? direction,
+}) {
   return List.unmodifiable(
     records.where((record) {
       if (walletId != null && record.walletId != walletId) return false;
       if (chainId != null && record.chainId != chainId) return false;
+      if (direction != null && record.direction != direction) return false;
       return true;
     }),
   );

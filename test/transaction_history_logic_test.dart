@@ -7,6 +7,7 @@ TransactionRecord _record({
   String chainId = 'ethereum-sepolia',
   String walletId = 'wallet-1',
   TransactionStatus status = TransactionStatus.pending,
+  TransactionDirection direction = TransactionDirection.outgoing,
   DateTime? submittedAt,
 }) {
   return TransactionRecord(
@@ -19,6 +20,7 @@ TransactionRecord _record({
     amount: '1.5',
     submittedAt: submittedAt ?? DateTime(2026, 9, 11, 10),
     status: status,
+    direction: direction,
   );
 }
 
@@ -85,6 +87,27 @@ void main() {
     expect(filterTransactions(records), hasLength(3));
     expect(filterTransactions(records, walletId: 'wallet-1'), hasLength(2));
     expect(filterTransactions(records, walletId: 'wallet-1', chainId: 'tron-nile'), hasLength(1));
+  });
+
+  test('filterTransactions 按收发方向筛选，可与钱包 / 链条件叠加', () {
+    final records = [
+      _record(hash: '0xa', direction: TransactionDirection.outgoing),
+      _record(hash: '0xb', direction: TransactionDirection.incoming),
+      _record(hash: '0xc', chainId: 'tron-nile', direction: TransactionDirection.incoming),
+      _record(hash: '0xd', walletId: 'wallet-2', direction: TransactionDirection.incoming),
+    ];
+
+    expect(filterTransactions(records, direction: TransactionDirection.outgoing).single.transactionHash, '0xa');
+    expect(filterTransactions(records, direction: TransactionDirection.incoming), hasLength(3));
+    expect(
+      filterTransactions(
+        records,
+        walletId: 'wallet-1',
+        chainId: 'ethereum-sepolia',
+        direction: TransactionDirection.incoming,
+      ).single.transactionHash,
+      '0xb',
+    );
   });
 
   test('groupByDay 按本地日历日分组，同一天的不同时刻落进同一组', () {

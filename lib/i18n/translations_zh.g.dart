@@ -151,6 +151,7 @@ class _Translations$transactionHistory$zh extends Translations$transactionHistor
 	@override String get emptyHint => '通过本应用发出的交易会出现在这里';
 	@override String get filterAllChains => '全部链';
 	@override String get selectChain => '选择网络';
+	@override String get filterAllDirections => '全部类型';
 	@override String get statusPending => '确认中';
 	@override String get statusConfirmed => '已确认';
 	@override String get statusFailed => '失败';
@@ -437,6 +438,7 @@ extension on TranslationsZh {
 			'transactionHistory.emptyHint' => '通过本应用发出的交易会出现在这里',
 			'transactionHistory.filterAllChains' => '全部链',
 			'transactionHistory.selectChain' => '选择网络',
+			'transactionHistory.filterAllDirections' => '全部类型',
 			'transactionHistory.statusPending' => '确认中',
 			'transactionHistory.statusConfirmed' => '已确认',
 			'transactionHistory.statusFailed' => '失败',

@@ -32,6 +32,7 @@
     "emptyHint": "通过本应用发出的交易会出现在这里",
     "filterAllChains": "全部链",
     "selectChain": "选择网络",
+    "filterAllDirections": "全部类型",
     "statusPending": "确认中",
     "statusConfirmed": "已确认",
     "statusFailed": "失败",

@@ -6,23 +6,33 @@ import '../../../providers/modules/transaction/transaction_history_provider.dart
 import '../../../providers/modules/wallet/wallet_provider.dart';
 import 'logic.dart';
 
-/// 历史列表的筛选条件。
+/// 历史列表的筛选条件：链 + 收发方向。
 ///
-/// 只有链这一个维度：钱包维度不开放给用户选——历史页是从首页当前钱包进来的，
+/// 钱包维度不开放给用户选——历史页是从首页当前钱包进来的，
 /// 展示的就是这个钱包的交易，跟着 [activeWalletProvider] 走即可。
 class TransactionHistoryFilter {
-  const TransactionHistoryFilter({this.chainId});
+  const TransactionHistoryFilter({this.chainId, this.direction});
 
   /// 只看这条链；null = 全部链。
   final String? chainId;
+
+  /// 只看这个方向；null = 全部类型。
+  final TransactionDirection? direction;
 }
 
-/// 当前筛选条件。默认「全部链」。
+/// 当前筛选条件。默认「全部链 + 全部类型」。
+///
+/// 两个 setter 都得能把自己那一维置回 null（「全部」），所以不用 copyWith 的
+/// 可选参数语义——那样传 null 表示「不改」，恰好表达不了「清空」。改成各自重建，
+/// 顺带把另一维从 state 里带过来，避免切链时把方向选择清掉。
 class TransactionHistoryFilterNotifier extends Notifier<TransactionHistoryFilter> {
   @override
   TransactionHistoryFilter build() => const TransactionHistoryFilter();
 
-  void selectChain(String? chainId) => state = TransactionHistoryFilter(chainId: chainId);
+  void selectChain(String? chainId) => state = TransactionHistoryFilter(chainId: chainId, direction: state.direction);
+
+  void selectDirection(TransactionDirection? direction) =>
+      state = TransactionHistoryFilter(chainId: state.chainId, direction: direction);
 }
 
 final transactionHistoryFilterProvider = NotifierProvider<TransactionHistoryFilterNotifier, TransactionHistoryFilter>(
@@ -34,10 +44,16 @@ final walletTransactionHistoryProvider = Provider<List<TransactionRecord>>((ref)
   return filterTransactions(ref.watch(transactionHistoryProvider), walletId: ref.watch(activeWalletProvider)?.id);
 });
 
-/// 应用链筛选后的历史记录，最新在前。
+/// 应用链与方向筛选后的历史记录，最新在前。
 final filteredTransactionHistoryProvider = Provider<List<TransactionRecord>>((ref) {
-  final chainId = ref.watch(transactionHistoryFilterProvider).chainId;
-  return sortByTimeDescending(filterTransactions(ref.watch(walletTransactionHistoryProvider), chainId: chainId));
+  final filter = ref.watch(transactionHistoryFilterProvider);
+  return sortByTimeDescending(
+    filterTransactions(
+      ref.watch(walletTransactionHistoryProvider),
+      chainId: filter.chainId,
+      direction: filter.direction,
+    ),
+  );
 });
 
 /// 链选择器的可选项：当前钱包持有地址的链 + 历史里出现过的链。

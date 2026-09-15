@@ -200,6 +200,9 @@ class Translations$transactionHistory$en {
 	/// en: 'Select network'
 	String get selectChain => 'Select network';
 
+	/// en: 'All types'
+	String get filterAllDirections => 'All types';
+
 	/// en: 'Pending'
 	String get statusPending => 'Pending';
 
@@ -653,6 +656,7 @@ extension on Translations {
 			'transactionHistory.emptyHint' => 'Transactions sent from this app will show up here',
 			'transactionHistory.filterAllChains' => 'All networks',
 			'transactionHistory.selectChain' => 'Select network',
+			'transactionHistory.filterAllDirections' => 'All types',
 			'transactionHistory.statusPending' => 'Pending',
 			'transactionHistory.statusConfirmed' => 'Confirmed',
 			'transactionHistory.statusFailed' => 'Failed',
