@@ -14,15 +14,14 @@ import 'transfer/transfer_result.dart';
 ///
 /// SPL 的余额不在钱包地址上，而在「钱包地址 + mint」派生出的关联代币账户（ATA）里。
 /// 这一步把「转给谁」翻译成「写哪个账户」，估费与发送都要先过这里。
-typedef _TokenAccounts =
-    ({
-      SolAddress mint,
-      SolAddress source, // 发送方 ATA
-      SolAddress destination, // 收款方 ATA
-      bool sourceExists, // 发送方 ATA 是否已存在（不存在即它从没持有过这个币）
-      BigInt sourceBalance, // 发送方代币余额（source 不存在时为 0）
-      bool createsDestination, // 本次是否要顺带创建收款方 ATA
-    });
+typedef _TokenAccounts = ({
+  SolAddress mint,
+  SolAddress source, // 发送方 ATA
+  SolAddress destination, // 收款方 ATA
+  bool sourceExists, // 发送方 ATA 是否已存在（不存在即它从没持有过这个币）
+  BigInt sourceBalance, // 发送方代币余额（source 不存在时为 0）
+  bool createsDestination, // 本次是否要顺带创建收款方 ATA
+});
 
 /// Solana 转账：取最新 blockhash → 本地构造交易 → 本地签名 → 广播 → 查签名状态。
 /// 只做链上交互，不认识钱包与私钥来源。

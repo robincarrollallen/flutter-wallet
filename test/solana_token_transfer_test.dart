@@ -181,8 +181,7 @@ bool _createsAta(String base64Transaction) {
   final message = _decodeBroadcast(base64Transaction).message;
   return message.compiledInstructions.any(
     (candidate) =>
-        message.accountKeys[candidate.programIdIndex] ==
-        AssociatedTokenAccountProgramConst.associatedTokenProgramId,
+        message.accountKeys[candidate.programIdIndex] == AssociatedTokenAccountProgramConst.associatedTokenProgramId,
   );
 }
 
@@ -311,13 +310,9 @@ void main() {
       test('估费把那笔租金算进总花费，但不算进网络费', () async {
         final node = _FakeSolanaService(destinationExists: false);
 
-        final estimate = await _service(node).estimateTokenFee(
-          chain: _chain,
-          token: _token,
-          from: _owner.address,
-          to: _recipient.address,
-          amount: '1.5',
-        );
+        final estimate = await _service(
+          node,
+        ).estimateTokenFee(chain: _chain, token: _token, from: _owner.address, to: _recipient.address, amount: '1.5');
 
         expect(estimate.createsTokenAccount, isTrue);
         expect(estimate.ataRentLamports, _ataRent);
@@ -355,13 +350,7 @@ void main() {
 
         await expectLater(
           _send(node),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              allOf(contains('不足以支付网络费'), contains('租金')),
-            ),
-          ),
+          throwsA(isA<Exception>().having((e) => e.toString(), 'message', allOf(contains('不足以支付网络费'), contains('租金')))),
         );
         expect(node.calls, isNot(contains('sendTransaction')));
       });
