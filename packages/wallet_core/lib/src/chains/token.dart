@@ -77,10 +77,10 @@ class Token {
 
   /// 远程目录 JSON：顶层可以是代币数组，或 `{ "tokens": [ ... ] }`。
   static List<Token> listFromJson(dynamic raw) {
-    final list = switch (raw) {
-      List l => l,
-      Map m when m['tokens'] is List => m['tokens'] as List,
-      _ => const [],
+    final List<dynamic> list = switch (raw) {
+      final List<dynamic> l => l,
+      final Map<dynamic, dynamic> m when m['tokens'] is List => m['tokens'] as List<dynamic>,
+      _ => const <dynamic>[],
     };
     return [
       for (final item in list)

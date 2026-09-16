@@ -1,4 +1,3 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/wallet_core.dart';
@@ -11,6 +10,7 @@ import '../../services/history/tron_transaction_history_service.dart';
 import '../modules/asset/token_catalog_provider.dart';
 import '../modules/wallet/wallet_provider.dart';
 import 'storage_provider.dart';
+import '../../config/app_config.dart';
 
 /// services 层的装配处。
 ///
@@ -43,12 +43,14 @@ final walletServiceProvider = Provider<WalletService>((ref) {
 
 /// 远程交易历史查询入口。接入新链时在 map 里加一行即可，页面无需改动。
 ///
-/// key 从 .env 读而不是让 service 自己去读：`lib/services/` 不认识 dotenv，
+/// key 在装配处注入而不是让 service 自己去读配置：service 不认识配置来源，
 /// 和它不认识 Riverpod 是同一个道理——配置从哪来只有装配处知道。
+/// 这也是为什么历史查询留在 app 而没有进 wallet_core：它是唯一的 key 消费者，
+/// 把它和 key 一起留在边界外，安全包就能保持"不读任何配置"。
 final transactionHistoryServiceProvider = Provider<TransactionHistoryService>((ref) {
   return TransactionHistoryService(
     chainServices: {
-      ChainKind.evm: EvmTransactionHistoryService(apiKey: dotenv.maybeGet('ETHERSCAN_API_KEY') ?? ''),
+      ChainKind.evm: EvmTransactionHistoryService(apiKey: AppConfig.etherscanApiKey),
       ChainKind.solana: const SolanaTransactionHistoryService(),
       ChainKind.tron: const TronTransactionHistoryService(),
       ChainKind.bitcoin: const BitcoinTransactionHistoryService(),

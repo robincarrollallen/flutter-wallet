@@ -25,7 +25,7 @@ Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) asy
     throw Exception('RPC id mismatch [$method] $url: expected=$requestId, got=$responseId');
   }
 
-  final error = decoded['error']; // 获取错误信息
+  final Object? error = decoded['error']; // 获取错误信息
   if (error != null) {
     // 如果错误信息不为空则抛出异常
     throw Exception('RPC error [$method] $url: ${_formatRpcError(error)}');
@@ -77,7 +77,7 @@ Object? _unwrapBatchItem(
   if (item == null) {
     throw Exception('RPC batch missing response [$method] $url: id=$requestId');
   }
-  final error = item['error'];
+  final Object? error = item['error'];
   if (error != null) {
     throw Exception('RPC error [$method] $url: ${_formatRpcError(error)}');
   }

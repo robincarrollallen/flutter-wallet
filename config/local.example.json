@@ -1,0 +1,7 @@
+{
+  "_comment": "本机构建配置。复制成 config/local.json 后填值：cp config/local.example.json config/local.json",
+  "_usage": "flutter run --dart-define-from-file=config/local.json",
+  "_note": "config/local.json 不进 git。值在编译期内联进二进制，不会作为独立文件出现在安装包里——但随客户端分发的凭据终归是公开的，见 packages/wallet_core/SECURITY.md。",
+
+  "ETHERSCAN_API_KEY": ""
+}

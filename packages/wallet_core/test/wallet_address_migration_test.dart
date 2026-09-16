@@ -65,7 +65,7 @@ void main() {
     });
 
     test('空 address 或缺失时不编造地址', () {
-      expect(Wallet.fromJson({'id': 'w1', 'name': 'W', 'addresses': const {}}).addresses, isEmpty);
+      expect(Wallet.fromJson({'id': 'w1', 'name': 'W', 'addresses': const <String, String>{}}).addresses, isEmpty);
       expect(Wallet.fromJson({'id': 'w1', 'name': 'W', 'address': ''}).addresses, isEmpty);
       expect(Wallet.fromJson({'id': 'w1', 'name': 'W'}).addresses, isEmpty);
     });

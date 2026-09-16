@@ -297,7 +297,7 @@ void main() {
     });
 
     test('没有代币账户（value 为空）= 真实的 0', () async {
-      final s = await _serve(_rpcBatch((_) => {'value': const []}));
+      final s = await _serve(_rpcBatch((_) => {'value': const <dynamic>[]}));
 
       expect(await api.fetchTokenBalance(_solanaAt(s), _token('mint1', TokenStandard.spl), 'SoL1'), BigInt.zero);
     });

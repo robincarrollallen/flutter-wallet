@@ -323,7 +323,7 @@ void main() {
         signatureStatus: const {
           'confirmationStatus': 'finalized',
           'slot': 1,
-          'err': {'InstructionError': []},
+          'err': {'InstructionError': <dynamic>[]},
         },
       );
       expect(await statusOf(node), TransactionStatus.failed);

@@ -16,6 +16,29 @@ final HttpClient sharedHttpClient = HttpClient()..connectionTimeout = kRemoteTim
 /// 错误体预览的最大字符数，避免把一整页 HTML 错误页塞进日志。
 const int _maxErrorBodyPreviewChars = 300;
 
+/// 查询串里按凭据处理、不允许出现在任何错误信息中的参数名。
+///
+/// 区块浏览器的 key 是以 `?apikey=` 的形式拼在 URL 里的，而 URL 会随异常信息
+/// 流向日志、崩溃上报，甚至 UI 上的错误提示。只要有一次 429 或 5xx，key 就跟着出去了。
+const Set<String> _credentialQueryParams = {'apikey', 'api_key', 'key', 'token', 'access_token'};
+
+/// 把 URI 里的凭据参数替换成 `REDACTED`，其余部分原样保留。
+///
+/// 保留路径和其他参数是有意的：排查问题时需要知道请求打到了哪个端点、带了什么条件，
+/// 脱敏脱到只剩 host 就没人会看了，最后大家又会绕过它去打印原始 uri。
+Uri redactCredentials(Uri uri) {
+  if (uri.queryParameters.isEmpty) return uri;
+  if (!uri.queryParameters.keys.any((k) => _credentialQueryParams.contains(k.toLowerCase()))) {
+    return uri;
+  }
+  return uri.replace(
+    queryParameters: {
+      for (final entry in uri.queryParameters.entries)
+        entry.key: _credentialQueryParams.contains(entry.key.toLowerCase()) ? 'REDACTED' : entry.value,
+    },
+  );
+}
+
 /// 截断过长的响应体，仅用于错误信息展示。
 String previewBody(String body) =>
     body.length <= _maxErrorBodyPreviewChars ? body : '${body.substring(0, _maxErrorBodyPreviewChars)}...';
@@ -33,5 +56,5 @@ class HttpStatusException implements Exception {
   final String body;
 
   @override
-  String toString() => 'HTTP $statusCode $uri: ${previewBody(body)}';
+  String toString() => 'HTTP $statusCode ${redactCredentials(uri)}: ${previewBody(body)}';
 }

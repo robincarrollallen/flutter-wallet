@@ -158,7 +158,7 @@ class _FakeBalances implements ChainBalanceApi {
   Future<BigInt> fetchTokenBalance(Chain chain, Token token, String address) async => BigInt.parse(tokenBalance);
 
   @override
-  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 TronTransactionService _service(_FakeNode node, {_FakeBalances balances = const _FakeBalances()}) =>

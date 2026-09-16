@@ -76,9 +76,6 @@ dependencies:
   # 交易详情跳转区块浏览器（唤起系统浏览器）
   url_launcher: ^6.3.2
 
-  # 区块浏览器 API key 等本机配置（.env 不进 git，见 .env.example）
-  flutter_dotenv: ^6.0.1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -110,8 +107,6 @@ flutter:
 
   assets:
     - assets/icons/wallets/
-    # 本机配置，不进 git；缺失时 App 照常启动，只是查不了 EVM 历史。
-    - .env
 
   # To add assets to your application, add an assets section, like this:
   # assets:

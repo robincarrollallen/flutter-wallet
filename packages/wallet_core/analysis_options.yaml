@@ -1,9 +1,10 @@
 # wallet_core 的静态检查配置。
 #
-# 现在与主工程保持一致，只为让骨架 commit 能干净通过；
-# 严格规则（strict-casts、unawaited_futures 升 error、public_member_api_docs 等）
-# 在迁移完成后的加固 commit 里一次性打开——放在代码搬进来之前打开，
-# 只会让每一步迁移都同时背上「搬运」和「改写」两件事，出问题时分不清是哪件引入的。
+# 比主工程严格，只对这个包生效。这么切分是有意的：一次性把全仓拉到这个强度
+# 会产生上千条告警，最后的结局一定是 ignore_for_file 满天飞。安全边界就这么大，
+# 在这里守住是可行的。
+#
+# 规则分两类：一类是"安全上会出事"，升成 error；一类是"读起来更清楚"，留 warning。
 include: package:flutter_lints/flutter.yaml
 
 formatter:
@@ -12,3 +13,56 @@ formatter:
 analyzer:
   exclude:
     - build/**
+
+  language:
+    # 隐式的 dynamic 与向下转型在这里都是真风险：一个 RPC 返回的 Map 被随手
+    # 当成期望的形状用，错了要到广播那一刻才暴露。
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+  errors:
+    # 以下每条都写明"违反了会怎样"，否则下一个人只会加 ignore 绕过去。
+
+    # 漏一次 await，安全存储的写入可能根本没落盘，而调用方以为已经存好了——
+    # 两阶段提交的全部前提就没了。
+    unawaited_futures: error
+
+    # 吞掉签名/存储异常是这里最危险的模式：失败被当成成功，用户以为转账发出去了。
+    avoid_catches_without_on_clauses: error
+
+    # 动态调用绕过类型检查，RPC 响应的形状变了也不会有人发现。
+    avoid_dynamic_calls: error
+
+    # 抛非 Error 类型会让上层的 on 子句失配，异常一路穿到顶。
+    only_throw_errors: error
+
+    # null 强转成非 null，崩溃点离真正的问题很远。
+    cast_nullable_to_non_nullable: error
+
+    # finally 里抛异常会把原始异常吃掉——而 finally 正是这里清零私钥的地方，
+    # 丢掉的恰好是"转账为什么失败"。
+    throw_in_finally: error
+
+    # 包里不该有任何打印。密钥经过的每一层都不能顺手 print 一下看看。
+    avoid_print: error
+
+    # 公开面必须有文档：这个包是给外部审计读的，没注释的导出等于没解释的攻击面。
+    # 先留 warning——存量补齐后再升 error，一上来就 error 只会逼人写空注释。
+    public_member_api_docs: warning
+
+linter:
+  rules:
+    - avoid_slow_async_io
+    - prefer_final_locals
+    - prefer_final_in_for_each
+    - always_declare_return_types
+    - avoid_returning_null_for_void
+    - literal_only_boolean_expressions
+    - test_types_in_equals
+    - close_sinks
+
+    # 刻意不开 comment_references：它只检查文档注释里的 [Xxx] 链接能否解析，
+    # 一开就是 20 条 info，而"修复"方式是为了文档链接去 import 一个运行时用不到的类型。
+    # 这个包的公开面注释本来就要求写全（见上面的 public_member_api_docs），
+    # 链接能不能跳转不值得用生产代码的 import 去换。

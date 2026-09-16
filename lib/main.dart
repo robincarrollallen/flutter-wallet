@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -14,12 +13,6 @@ import 'i18n/translations.g.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 手动把 Flutter 引擎与 Dart 层之间的绑定初始化好
-
-  // 本机配置（目前只有区块浏览器的 API key）。文件缺失 / 格式不对都只影响远程历史查询，
-  // 绝不能让 App 起不来——所以整段吞掉异常，读不到就是一份空配置。
-  try {
-    await dotenv.load();
-  } catch (_) {}
 
   final sharedPreferences =
       await SharedPreferences.getInstance(); // 同步拿到 prefs 实例，注入到 provider，供各 Notifier 的 build() 同步读取。

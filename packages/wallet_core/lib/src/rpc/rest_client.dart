@@ -28,7 +28,7 @@ Future<({int statusCode, String body})> _send(Uri uri, {Map<String, Object?>? js
     final body = await response.transform(utf8.decoder).join().timeout(kRemoteTimeout);
     return (statusCode: response.statusCode, body: body);
   } on TimeoutException {
-    throw Exception('HTTP timeout $uri after ${kRemoteTimeout.inSeconds}s');
+    throw Exception('HTTP timeout ${redactCredentials(uri)} after ${kRemoteTimeout.inSeconds}s');
   }
 }
 

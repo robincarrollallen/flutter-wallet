@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 的传输安全基线。
+
+  两件事，都是在没有做证书 pinning 的前提下更划算的选择（理由见
+  packages/wallet_core/SECURITY.md 的"已评估并拒绝：证书 pinning"）：
+
+  1. cleartextTrafficPermitted="false"：任何一条端点退回 http 会直接连不上，
+     而不是悄悄以明文发出去。配套的断言在 endpoint_transport_test.dart。
+
+  2. trust-anchors 只含 system，不含 user：用户自己装进系统的 CA 一律不被信任。
+     挡的是"被诱导安装一张代理证书"——这是移动端真实发生的攻击面，
+     而 pinning 挡的那部分已经被 TLS 本身覆盖了。
+
+  注意副作用：开了第 2 条之后，Charles / mitmproxy 这类抓包工具在 release 包上
+  不再能看到本 App 的流量。调试请用 debug-overrides（仅 debug 构建生效）。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>
