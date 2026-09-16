@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
 
-import '../data/datasource/local/security_password_storage.dart';
+import '../storage/security_password_storage.dart';
 
 /// 安全码的设置与校验。
 ///

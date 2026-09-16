@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet_core/chains.dart';
-import 'package:wallet/services/private_key_service.dart';
 import 'package:wallet_core/wallet_core.dart';
 
 void main() {

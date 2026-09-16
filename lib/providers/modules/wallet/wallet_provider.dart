@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../data/datasource/local/secure_wallet_storage.dart';
 import 'package:wallet_core/wallet_core.dart';
 import '../../../enums/prefs_key.dart';
 import '../../../services/wallet_registry.dart';
 import '../../core/persistent_notifier.dart';
+import '../../core/storage_provider.dart';
 
 /// 钱包列表的状态管理。
 /// 元数据（id/name/addresses/source）持久化到 SharedPreferences；

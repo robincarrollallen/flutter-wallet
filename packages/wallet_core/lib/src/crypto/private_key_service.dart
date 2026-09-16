@@ -2,10 +2,10 @@ import 'dart:typed_data';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
 
-import 'package:wallet_core/chains.dart';
+import '../../chains.dart';
 
 import 'mnemonic_service.dart';
-import 'package:wallet_core/wallet_core.dart';
+import '../model/enums/private_key_kind.dart';
 
 /// 私钥导入相关能力的统一封装：集中 blockchain_utils 调用，隔离第三方库细节，
 /// 便于将来替换与单测。复用 [DerivedWallet] 作为派生结果。

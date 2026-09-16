@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/core/utils/secure_clipboard.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

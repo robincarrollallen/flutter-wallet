@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core/utils/secret_reveal.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../../../widgets/secret_guard.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
-import 'package:wallet_core/wallet_core.dart';
 import '../../../../../providers/core/service_provider.dart';
 import '../../widgets/panel/view.dart';
 import '../../../../../core/navigation/panel_routes.dart';

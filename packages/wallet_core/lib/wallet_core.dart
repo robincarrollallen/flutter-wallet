@@ -43,3 +43,29 @@ export 'src/model/fee/tron_fee.dart';
 /// 转账请求。UI 唯一能向签名层递交的入参形态——收敛成一个类型，
 /// 是为了让「有多少条路径能触发签名」可以被一眼数清。
 export 'src/model/dto/send_tx_request.dart';
+
+/// 助记词的生成、校验与多链地址派生。创建/导入/备份流程的入口。
+export 'src/crypto/mnemonic_service.dart';
+
+/// 导入私钥的格式探测与解码。解码按探测出的类别精确进行，不做格式猜测——
+/// 猜错格式会把一把 Solana 私钥当 EVM 解，派生出一个用户永远拿不回资产的地址。
+export 'src/crypto/private_key_service.dart';
+
+/// 私钥的统一出口。助记词钱包现场派生、导入钱包读存储，两条路都在这里收口，
+/// 并负责用完 wipeKey 清零。任何绕过它拿私钥的代码都是审计要揪的对象。
+export 'src/crypto/private_key_resolver.dart';
+
+/// 安全存储。provider 声明留在 app 侧（lib/providers/core/storage_provider.dart），
+/// 包内只有纯类——否则 flutter_riverpod 会被拖进安全包的依赖里。
+export 'src/storage/secure_wallet_storage.dart';
+export 'src/storage/security_password_storage.dart';
+
+/// 安全码的 PBKDF2 派生、常量时间比对与旧明文记录升级。
+export 'src/security/security_password_service.dart';
+
+/// 敏感文本复制到剪贴板后的自动清除。剪贴板是跨 app 共享的，
+/// 「密钥在那里待多久」是一个可被审计的确定数值，所以只有这一个入口。
+export 'src/security/secure_clipboard.dart';
+
+/// 明文屏显的时长上限。和剪贴板同理：把"暴露多久"变成一个常量而非各页面自行决定。
+export 'src/security/secret_reveal.dart';

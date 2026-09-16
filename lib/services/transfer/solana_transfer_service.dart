@@ -1,6 +1,5 @@
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
-import '../private_key_resolver.dart';
 import '../solana_transaction_service.dart';
 import 'chain_transfer_service.dart';
 

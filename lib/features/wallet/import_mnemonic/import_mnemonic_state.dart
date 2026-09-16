@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/wallet_core.dart';
-import '../../../services/mnemonic_service.dart';
-import '../../../services/private_key_service.dart';
 import '../../../providers/core/service_provider.dart';
 import '../../../services/wallet_commit_service.dart';
 import '../../../i18n/translations.g.dart';

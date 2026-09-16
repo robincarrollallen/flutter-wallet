@@ -1,7 +1,6 @@
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
 import '../evm_transaction_service.dart';
-import '../private_key_resolver.dart';
 import 'chain_transfer_service.dart';
 
 /// 历史页回填状态时的单次查询超时：只够发一轮 `eth_getTransactionReceipt`。

@@ -1,5 +1,3 @@
-import '../../../services/mnemonic_service.dart';
-import '../../../services/private_key_service.dart';
 import 'package:wallet_core/wallet_core.dart';
 
 /// 校验结果：类型 + 可选数据（词数 / 无效单词），供 UI 层组装本地化文案。

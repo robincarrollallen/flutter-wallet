@@ -2,8 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:wallet/data/datasource/local/security_password_storage.dart';
-import 'package:wallet/services/security_password_service.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 /// 内存版安全存储平台层，只需支持读写。
 class _FakePlatform extends FlutterSecureStoragePlatform with MockPlatformInterfaceMixin {

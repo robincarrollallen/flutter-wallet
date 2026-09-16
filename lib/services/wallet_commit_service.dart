@@ -1,5 +1,4 @@
 import 'package:wallet_core/wallet_core.dart';
-import '../data/datasource/local/secure_wallet_storage.dart';
 import 'wallet_registry.dart';
 
 /// 提交失败的原因，供页面区分提示文案。

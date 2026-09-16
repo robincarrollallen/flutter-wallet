@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 
-import 'package:wallet_core/chains.dart';
+import '../../chains.dart';
 
-import 'package:wallet_core/wallet_core.dart';
+import '../model/wallet.dart';
 import 'mnemonic_service.dart';
 import 'private_key_service.dart';
-import '../data/datasource/local/secure_wallet_storage.dart';
+import '../storage/secure_wallet_storage.dart';
 
 /// - 私钥/助记词明文按需取用、用完即弃，绝不进入 Riverpod 状态、日志或持久化；
 /// - 助记词钱包**不额外存私钥**，每次现场派生（攻击面最小），派生在后台 isolate；

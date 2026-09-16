@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 钱包敏感数据（助记词 / 私钥）的安全存储。
@@ -133,5 +132,3 @@ class SecureWalletStorage {
   }
 }
 
-/// 全局单例 provider，供创建 / 导入 / 签名流程注入使用。
-final secureWalletStorageProvider = Provider<SecureWalletStorage>((ref) => SecureWalletStorage());

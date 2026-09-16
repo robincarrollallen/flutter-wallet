@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// App 级「安全密码（安全码）」的安全存储。
@@ -33,5 +32,3 @@ class SecurityPasswordStorage {
   Future<void> write(String record) => _storage.write(key: _key, value: record);
 }
 
-/// 全局单例 provider。
-final securityPasswordStorageProvider = Provider<SecurityPasswordStorage>((ref) => SecurityPasswordStorage());

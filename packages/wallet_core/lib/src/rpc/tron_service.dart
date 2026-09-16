@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:on_chain/tron/tron.dart';
 
-import 'package:wallet_core/chains.dart';
+import '../../chains.dart';
 import 'http_config.dart';
 
 /// on_chain 的 Tron provider 与本项目 HTTP 栈之间的适配层。

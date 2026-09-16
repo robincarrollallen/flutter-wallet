@@ -1,8 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/datasource/local/secure_wallet_storage.dart';
-import '../../data/datasource/local/security_password_storage.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet_core/chains.dart';
 import '../../services/evm_transaction_service.dart';
 import '../../services/history/bitcoin_transaction_history_service.dart';
@@ -16,11 +15,10 @@ import '../../services/transfer/solana_transfer_service.dart';
 import '../../services/transfer/tron_transfer_service.dart';
 import '../../services/tron_transaction_service.dart';
 import '../../services/wallet_commit_service.dart';
-import '../../services/private_key_resolver.dart';
-import '../../services/security_password_service.dart';
 import '../../services/wallet_service.dart';
 import '../modules/asset/token_catalog_provider.dart';
 import '../modules/wallet/wallet_provider.dart';
+import 'storage_provider.dart';
 
 /// services 层的装配处。
 ///

@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core/utils/secure_clipboard.dart';
-import '../../../../../core/utils/secret_reveal.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../../../widgets/secret_guard.dart';
 
 import 'package:wallet_core/chains.dart';
@@ -12,9 +11,7 @@ import 'package:wallet_core/chains.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
-import 'package:wallet_core/wallet_core.dart';
 import '../../../../../providers/core/service_provider.dart';
-import '../../../../../services/private_key_resolver.dart';
 import '../../widgets/panel/view.dart';
 
 /// 显示某条链的私钥：默认隐藏，点击「闭眼」区域后展示二维码与明文。

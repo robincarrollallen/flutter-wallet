@@ -2,10 +2,7 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:wallet_core/chains.dart';
-import 'package:wallet/features/wallet/send/coins/logic.dart';
-import 'package:wallet/services/mnemonic_service.dart';
-import 'package:wallet/services/private_key_service.dart';
-import 'package:wallet/services/private_key_resolver.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 const vector = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
@@ -93,8 +90,8 @@ void main() {
       'tb1pqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesf3hn0c', // v1 P2TR
       'mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn', // legacy P2PKH
     ]) {
-      expect(SendLogic.validateAddress(btc, addr), isNull, reason: addr);
+      expect(AddressValidation.validate(btc, addr), isNull, reason: addr);
     }
-    expect(SendLogic.validateAddress(btc, 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsy'), isNotNull); // 校验和错误
+    expect(AddressValidation.validate(btc, 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsy'), isNotNull); // 校验和错误
   });
 }

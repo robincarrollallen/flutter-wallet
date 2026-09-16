@@ -5,8 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/solana/solana.dart';
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
-import 'package:wallet/data/datasource/local/secure_wallet_storage.dart';
-import 'package:wallet/services/private_key_resolver.dart';
 import 'package:wallet/services/solana_transaction_service.dart';
 import 'package:wallet/services/transfer/solana_transfer_service.dart';
 
