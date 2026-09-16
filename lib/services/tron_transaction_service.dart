@@ -3,7 +3,7 @@ import 'package:on_chain/tron/tron.dart';
 
 import 'package:wallet_core/chains.dart';
 import '../data/datasource/remote/chain_balance_api.dart';
-import '../data/datasource/remote/tron_service.dart';
+import 'package:wallet_core/rpc.dart';
 import 'package:wallet_core/wallet_core.dart';
 import 'transfer/transfer_result.dart';
 

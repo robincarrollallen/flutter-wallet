@@ -1,6 +1,6 @@
 import 'package:wallet_core/chains.dart';
 import '../../../domain/btc_utxo.dart';
-import 'rest_client.dart';
+import 'package:wallet_core/rpc.dart';
 
 /// 比特币 UTXO 集合的远程查询（Esplora / mempool.space 兼容）。
 ///

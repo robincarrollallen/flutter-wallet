@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wallet_core/chains.dart';
 import 'package:wallet/data/datasource/remote/bitcoin_utxo_api.dart';
-import 'package:wallet/data/datasource/remote/http_config.dart';
+import 'package:wallet_core/rpc.dart';
 import 'package:wallet/domain/btc_utxo.dart';
 import 'package:wallet/enums/prefs_key.dart';
 import 'package:wallet/providers/modules/transaction/broadcast_history_provider.dart';

@@ -1,5 +1,5 @@
 import 'package:wallet_core/chains.dart';
-import '../../data/datasource/remote/rest_client.dart';
+import 'package:wallet_core/rpc.dart';
 import '../../domain/transaction_record.dart';
 import 'chain_transaction_history_service.dart';
 

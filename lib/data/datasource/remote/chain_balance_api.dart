@@ -3,9 +3,7 @@ import 'dart:io';
 import 'package:blockchain_utils/blockchain_utils.dart';
 
 import 'package:wallet_core/chains.dart';
-import 'http_config.dart';
-import 'json_rpc.dart';
-import 'rest_client.dart';
+import 'package:wallet_core/rpc.dart';
 
 /// 各链原生币余额的远程查询：按 [ChainKind] 分发到对应协议。
 ///

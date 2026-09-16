@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/data/datasource/remote/json_rpc.dart';
+import 'package:wallet_core/rpc.dart';
 
 /// 与 chain_balance_api_test 同一套路：传输层是顶层函数、没有注入点，
 /// 直接给它一个真的 HTTP 对端最省事，顺带覆盖状态码与报文解析。

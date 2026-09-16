@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../constants/currency_symbols.dart';
-import 'rest_client.dart';
+import 'package:wallet_core/rpc.dart';
 
 /// 行情类型别名：coinGeckoId -> (当前计价币种下的单价, 图标 URL)。
 typedef Markets = Map<String, ({double price, String? logoUrl})>;

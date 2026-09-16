@@ -3,7 +3,7 @@
 import 'package:on_chain/solana/solana.dart' hide TokenStandard;
 
 import 'package:wallet_core/chains.dart';
-import '../data/datasource/remote/solana_service.dart';
+import 'package:wallet_core/rpc.dart';
 import 'package:wallet_core/wallet_core.dart';
 import 'transfer/transfer_result.dart';
 

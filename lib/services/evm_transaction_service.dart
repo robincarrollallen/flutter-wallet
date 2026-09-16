@@ -1,7 +1,7 @@
 import 'package:on_chain/ethereum/ethereum.dart';
 
 import 'package:wallet_core/chains.dart';
-import '../data/datasource/remote/json_rpc.dart';
+import 'package:wallet_core/rpc.dart';
 import 'package:wallet_core/wallet_core.dart';
 import 'transfer/transfer_result.dart';
 
