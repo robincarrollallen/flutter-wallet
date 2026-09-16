@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet_core/chains.dart';
-import 'package:wallet/data/datasource/remote/chain_balance_api.dart';
 import 'package:wallet_core/rpc.dart';
 
 /// 起一个本地服务替代真实链节点：REST 传输层是顶层函数、没有注入点，

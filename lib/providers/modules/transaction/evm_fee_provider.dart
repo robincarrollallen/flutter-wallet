@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
 import '../../../enums/prefs_key.dart';
-import '../../../services/evm_transaction_service.dart';
 import '../../core/persistent_notifier.dart';
 import '../../core/service_provider.dart';
 

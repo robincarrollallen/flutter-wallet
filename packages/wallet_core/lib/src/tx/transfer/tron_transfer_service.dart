@@ -1,7 +1,8 @@
 import 'package:wallet_core/chains.dart';
-import 'package:wallet_core/wallet_core.dart';
+import '../../model/models.dart';
 import '../tron_transaction_service.dart';
 import 'chain_transfer_service.dart';
+import '../../crypto/private_key_resolver.dart';
 
 /// 历史页回填状态时的单次查询超时：只够发一轮 `wallet/gettransactionbyid`。
 const _singleQueryTimeout = Duration(seconds: 1);

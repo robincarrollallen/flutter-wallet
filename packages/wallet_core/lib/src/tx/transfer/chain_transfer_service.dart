@@ -1,5 +1,5 @@
 import 'package:wallet_core/chains.dart';
-import 'package:wallet_core/wallet_core.dart';
+import '../../model/models.dart';
 import 'transfer_result.dart';
 
 export 'transfer_result.dart';

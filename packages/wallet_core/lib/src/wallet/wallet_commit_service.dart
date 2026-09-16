@@ -1,5 +1,6 @@
-import 'package:wallet_core/wallet_core.dart';
+import '../model/models.dart';
 import 'wallet_registry.dart';
+import '../storage/secure_wallet_storage.dart';
 
 /// 提交失败的原因，供页面区分提示文案。
 enum WalletCommitFailure {

@@ -5,8 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/solana/solana.dart' hide TokenStandard;
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
-import 'package:wallet/services/solana_transaction_service.dart';
-import 'package:wallet/services/transfer/transfer_result.dart';
 
 const _chain = SupportedChains.solanaDevnet;
 

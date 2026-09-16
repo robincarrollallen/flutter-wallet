@@ -5,7 +5,7 @@ import 'package:wallet_core/chains.dart';
 import 'package:wallet/providers/modules/transaction/evm_fee_provider.dart';
 import 'package:wallet/providers/core/prefs_provider.dart';
 import 'package:wallet/providers/core/service_provider.dart';
-import 'package:wallet/services/evm_transaction_service.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 const _chain = SupportedChains.ethereumSepolia;
 const _from = '0x1111111111111111111111111111111111111111';

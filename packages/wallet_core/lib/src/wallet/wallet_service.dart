@@ -1,6 +1,6 @@
 import 'package:wallet_core/chains.dart';
-import 'package:wallet_core/wallet_core.dart';
-import 'transfer/chain_transfer_service.dart';
+import '../model/models.dart';
+import '../tx/transfer/chain_transfer_service.dart';
 
 /// 钱包业务编排：校验请求 → 解析链与代币 → 按 [ChainKind] 查表分发给各链实现(这里只做编排，不碰私钥、不构造交易、不访问数据)
 class WalletService {

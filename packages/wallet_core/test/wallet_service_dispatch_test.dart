@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
-import 'package:wallet/services/transfer/chain_transfer_service.dart';
-import 'package:wallet/services/wallet_service.dart';
 
 final _catalog = TokenCatalog.merge(chains: SupportedChains.all, remote: BundledTokenCatalog.all);
 final _sepoliaUsdc = BundledTokenCatalog.all.firstWhere((t) => t.chainId == SupportedChains.ethereumSepolia.id);

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
-import '../../../data/datasource/remote/chain_balance_api.dart';
+import 'package:wallet_core/rpc.dart';
 import '../../../data/repository/balance_repository.dart';
 import '../../../domain/account_balance.dart';
 import 'package:wallet_core/wallet_core.dart';

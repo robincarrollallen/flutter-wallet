@@ -1,4 +1,4 @@
-import 'package:wallet_core/wallet_core.dart';
+import '../model/models.dart';
 
 /// 钱包列表与选中态的读写端口。
 ///

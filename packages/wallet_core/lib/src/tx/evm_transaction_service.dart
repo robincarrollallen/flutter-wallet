@@ -2,7 +2,7 @@ import 'package:on_chain/ethereum/ethereum.dart';
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
-import 'package:wallet_core/wallet_core.dart';
+import '../model/models.dart';
 import 'transfer/transfer_result.dart';
 
 /// [jsonRpcCall] 的函数签名。测试塞一份假节点进来，不必为了验证请求编排而真的联网。

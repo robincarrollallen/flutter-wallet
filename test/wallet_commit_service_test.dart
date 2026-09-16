@@ -9,8 +9,6 @@ import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet/providers/modules/wallet/wallet_provider.dart';
 import 'package:wallet/providers/core/prefs_provider.dart';
 import 'package:wallet/providers/core/service_provider.dart';
-import 'package:wallet/services/wallet_commit_service.dart';
-import 'package:wallet/services/wallet_registry.dart';
 import 'package:wallet/providers/core/storage_provider.dart';
 
 /// 内存版安全存储：可注入「写入抛异常」与「写入静默丢弃」两种故障，

@@ -1,6 +1,6 @@
-import 'package:wallet_core/wallet_core.dart';
+import '../../model/models.dart';
 
-export 'package:wallet_core/wallet_core.dart' show TransactionStatus;
+export '../../model/enums/transaction_status.dart';
 
 /// 转账结果：(交易哈希, 实际发送金额, 上链状态, 交易失效高度)。
 ///

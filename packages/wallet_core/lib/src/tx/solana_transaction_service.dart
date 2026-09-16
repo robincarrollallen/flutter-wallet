@@ -4,7 +4,7 @@ import 'package:on_chain/solana/solana.dart' hide TokenStandard;
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
-import 'package:wallet_core/wallet_core.dart';
+import '../model/models.dart';
 import 'transfer/transfer_result.dart';
 
 /// 一笔 SPL 转账要用到的两个代币账户，以及发送方的代币余额。

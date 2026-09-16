@@ -4,10 +4,8 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/tron/tron.dart';
 import 'package:wallet_core/chains.dart';
-import 'package:wallet/data/datasource/remote/chain_balance_api.dart';
+import 'package:wallet_core/rpc.dart';
 import 'package:wallet_core/wallet_core.dart';
-import 'package:wallet/services/transfer/transfer_result.dart';
-import 'package:wallet/services/tron_transaction_service.dart';
 
 /// 测试用私钥；地址由它现场派生，不写死。
 const _privateKeyHex = '4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318';

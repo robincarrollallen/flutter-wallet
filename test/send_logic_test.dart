@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet/features/wallet/send/coins/logic.dart';
-import 'package:wallet/services/transfer/chain_transfer_service.dart';
 
 final _catalog = TokenCatalog.merge(chains: SupportedChains.all, remote: BundledTokenCatalog.all);
 

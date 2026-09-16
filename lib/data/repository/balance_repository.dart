@@ -2,7 +2,7 @@ import 'package:wallet_core/chains.dart';
 import '../../domain/account_balance.dart';
 import '../../domain/btc_utxo.dart';
 import '../datasource/remote/bitcoin_utxo_api.dart';
-import '../datasource/remote/chain_balance_api.dart';
+import 'package:wallet_core/rpc.dart';
 
 /// 账户余额的统一入口：把数据源返回的原始最小单位换算成领域对象。
 ///

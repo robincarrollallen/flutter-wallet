@@ -69,3 +69,28 @@ export 'src/security/secure_clipboard.dart';
 
 /// 明文屏显的时长上限。和剪贴板同理：把"暴露多久"变成一个常量而非各页面自行决定。
 export 'src/security/secret_reveal.dart';
+
+/// 各链的交易构造、签名与广播。审计的核心对象：
+/// 从「用户在确认页看到的金额」到「广播出去的那串字节」之间的全部变换都在这里。
+export 'src/tx/evm_transaction_service.dart';
+export 'src/tx/solana_transaction_service.dart';
+export 'src/tx/tron_transaction_service.dart';
+
+/// 转账编排：取私钥 → 签名 → finally 里清零。
+/// 私钥的生命周期只在这一层展开，UI 拿不到也不需要拿到原始字节。
+export 'src/tx/transfer/chain_transfer_service.dart';
+export 'src/tx/transfer/transfer_result.dart';
+export 'src/tx/transfer/evm_transfer_service.dart';
+export 'src/tx/transfer/solana_transfer_service.dart';
+export 'src/tx/transfer/tron_transfer_service.dart';
+
+/// 钱包的增删改与按链分发。
+export 'src/wallet/wallet_service.dart';
+
+/// 钱包列表的读写端口。实现由 app 侧的 providers 提供——
+/// 包内只定义契约，不认识 SharedPreferences。
+export 'src/wallet/wallet_registry.dart';
+
+/// 「先写密钥、后写列表」的两阶段提交与 pending 标记对账。
+/// 中途崩溃会留下孤儿密钥或无密钥的钱包条目，这里是唯一负责收拾的地方。
+export 'src/wallet/wallet_commit_service.dart';
