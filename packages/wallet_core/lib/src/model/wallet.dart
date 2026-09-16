@@ -1,9 +1,9 @@
-import '../enums/backup_method.dart';
-import '../enums/wallet_source.dart';
-import '../blockchain/chain_registry.dart';
+import 'enums/backup_method.dart';
+import 'enums/wallet_source.dart';
+import '../chains/chain_registry.dart';
 
-export '../enums/backup_method.dart';
-export '../enums/wallet_source.dart';
+export 'enums/backup_method.dart';
+export 'enums/wallet_source.dart';
 
 /// 钱包模型, 只保存非敏感信息；助记词 / 私钥等敏感数据应存入 flutter_secure_storage
 class Wallet {

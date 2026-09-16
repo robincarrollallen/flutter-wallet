@@ -10,7 +10,7 @@ import '../../../../providers/modules/asset/chain_icon_provider.dart';
 import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../providers/modules/asset/token_catalog_provider.dart';
 import '../../../../providers/core/service_provider.dart';
-import '../../../../blockchain/listed_asset.dart';
+import 'package:wallet_core/chains.dart';
 import '../../../../router/route_args.dart';
 import '../../../../router/routes.dart';
 import 'logic.dart';

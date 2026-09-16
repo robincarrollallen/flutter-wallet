@@ -1,12 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../blockchain/chain_registry.dart';
-import '../../../blockchain/token.dart';
-import '../../../blockchain/token_catalog.dart';
+import 'package:wallet_core/chains.dart';
 import '../../../data/datasource/remote/chain_balance_api.dart';
 import '../../../data/repository/balance_repository.dart';
 import '../../../domain/account_balance.dart';
-import '../../../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../domain/wallet_total.dart';
 import '../market/markets_provider.dart';
 import '../transaction/broadcast_history_provider.dart';

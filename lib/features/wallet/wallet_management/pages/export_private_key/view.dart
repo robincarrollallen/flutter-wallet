@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
-import '../../../../../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../widgets/panel/view.dart';
 import '../../../../../core/navigation/panel_routes.dart';
 import '../private_key_view/view.dart';

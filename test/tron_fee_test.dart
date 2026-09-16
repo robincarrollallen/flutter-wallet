@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/tron/tron.dart';
-import 'package:wallet/domain/tron_fee.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 final _owner = TronPrivateKey('${'1' * 63}2').publicKey().toAddress();
 final _to = TronPrivateKey('${'2' * 63}3').publicKey().toAddress();

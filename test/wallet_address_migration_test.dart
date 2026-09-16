@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
-import 'package:wallet/domain/wallet.dart';
+import 'package:wallet_core/chains.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 const _legacyAddress = '0x0000000000000000000000000000000000000001';
 const _sepoliaAddress = '0x9858EfFD232B4033E47d90003D41EC34EcaEda94';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../blockchain/listed_asset.dart';
+import 'package:wallet_core/chains.dart';
 import '../core/format/amount_formatter.dart';
 import '../core/format/token_amount_formatter.dart';
 import '../core/responsive/screen_adapter.dart';

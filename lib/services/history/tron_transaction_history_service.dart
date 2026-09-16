@@ -1,7 +1,6 @@
 import 'package:on_chain/on_chain.dart';
 
-import '../../blockchain/chain_registry.dart';
-import '../../blockchain/units.dart';
+import 'package:wallet_core/chains.dart';
 import '../../data/datasource/remote/rest_client.dart';
 import '../../domain/transaction_record.dart';
 import 'chain_transaction_history_service.dart';

@@ -1,7 +1,4 @@
-import '../../blockchain/chain_registry.dart';
-import '../../blockchain/token.dart';
-import '../../blockchain/token_catalog.dart';
-import '../../blockchain/units.dart';
+import 'package:wallet_core/chains.dart';
 import '../../domain/account_balance.dart';
 import '../../domain/btc_utxo.dart';
 import '../datasource/remote/bitcoin_utxo_api.dart';

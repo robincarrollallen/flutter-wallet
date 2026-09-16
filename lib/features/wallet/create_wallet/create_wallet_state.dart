@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/wallet.dart';
-import '../../../domain/wallet_id.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../services/mnemonic_service.dart';
 import '../../../providers/core/service_provider.dart';
 import '../../../providers/modules/wallet/wallet_provider.dart';

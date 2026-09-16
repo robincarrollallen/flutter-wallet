@@ -3,9 +3,7 @@ import 'dart:io';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/blockchain/bundled_token_catalog.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
-import 'package:wallet/blockchain/token.dart';
+import 'package:wallet_core/chains.dart';
 import 'package:wallet/data/datasource/remote/chain_balance_api.dart';
 import 'package:wallet/data/datasource/remote/http_config.dart';
 

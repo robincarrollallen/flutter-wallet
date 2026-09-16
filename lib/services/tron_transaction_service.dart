@@ -1,13 +1,10 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:on_chain/tron/tron.dart';
 
-import '../blockchain/chain_registry.dart';
-import '../blockchain/token.dart';
-import '../blockchain/units.dart';
-import '../core/utils/erc20_abi.dart';
+import 'package:wallet_core/chains.dart';
 import '../data/datasource/remote/chain_balance_api.dart';
 import '../data/datasource/remote/tron_service.dart';
-import '../domain/tron_fee.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'transfer/transfer_result.dart';
 
 /// Tron 转账：让节点补齐区块引用 → **回解校验** → 本地签名 → 广播 → 轮询回执(只做链上交互，不认识钱包与私钥来源)

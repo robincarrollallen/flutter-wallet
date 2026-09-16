@@ -5,7 +5,7 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import 'package:wallet/data/datasource/remote/bitcoin_utxo_api.dart';
 import 'package:wallet/data/datasource/remote/http_config.dart';
 import 'package:wallet/domain/btc_utxo.dart';

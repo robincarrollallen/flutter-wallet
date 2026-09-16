@@ -1,6 +1,6 @@
-import '../blockchain/listed_asset.dart';
+import 'package:wallet_core/chains.dart';
 import '../domain/transaction_record.dart';
-import '../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 /// 各带参页面的路由参数。
 ///

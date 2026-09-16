@@ -6,8 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/format/token_amount_formatter.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
-import '../../../../blockchain/listed_asset.dart';
-import '../../../../enums/transaction_status.dart';
+import 'package:wallet_core/chains.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../../router/routes.dart';
 import 'state.dart';
 

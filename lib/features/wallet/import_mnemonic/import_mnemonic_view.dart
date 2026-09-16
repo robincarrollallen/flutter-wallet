@@ -7,7 +7,7 @@ import '../../../i18n/translations.g.dart';
 import '../../../router/routes.dart';
 import 'import_mnemonic_logic.dart';
 import 'import_mnemonic_state.dart';
-import '../../../enums/secret_type.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 /// 把校验错误类型映射为当前语言的文案。
 String _errorText(Translations t, MnemonicError error) {

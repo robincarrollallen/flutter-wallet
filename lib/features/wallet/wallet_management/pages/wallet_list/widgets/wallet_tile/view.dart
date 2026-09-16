@@ -5,7 +5,7 @@ import '../../../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../../../widgets/amount_text.dart';
 import '../../../../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../../../../providers/modules/market/currency_provider.dart';
-import '../../../../../../../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../../../../../domain/wallet_avatar.dart';
 
 /// 单个钱包行：点击行=切换钱包

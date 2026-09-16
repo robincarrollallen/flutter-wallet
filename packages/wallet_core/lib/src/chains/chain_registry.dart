@@ -1,12 +1,12 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 
-import '../enums/btc_script_type.dart';
-import '../enums/chain_kind.dart';
-import '../enums/rpc_method.dart';
+import '../model/enums/btc_script_type.dart';
+import '../model/enums/chain_kind.dart';
+import '../model/enums/rpc_method.dart';
 
-export '../enums/btc_script_type.dart';
-export '../enums/chain_kind.dart';
-export '../enums/rpc_method.dart';
+export '../model/enums/btc_script_type.dart';
+export '../model/enums/chain_kind.dart';
+export '../model/enums/rpc_method.dart';
 
 /// 一条受支持链的静态配置。代币不挂在链上，由 TokenCatalog 单独提供。
 class Chain {

@@ -1,9 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/blockchain/bundled_token_catalog.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
-import 'package:wallet/blockchain/token_catalog.dart';
-import 'package:wallet/domain/wallet.dart';
-import 'package:wallet/dto/request/send_tx_request.dart';
+import 'package:wallet_core/chains.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet/services/transfer/chain_transfer_service.dart';
 import 'package:wallet/services/wallet_service.dart';
 

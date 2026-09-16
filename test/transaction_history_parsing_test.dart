@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import 'package:wallet/domain/transaction_record.dart';
 import 'package:wallet/services/history/bitcoin_transaction_history_service.dart';
 import 'package:wallet/services/history/evm_transaction_history_service.dart';

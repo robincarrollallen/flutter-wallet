@@ -1,13 +1,8 @@
 import 'package:on_chain/ethereum/ethereum.dart';
 
-import '../blockchain/units.dart';
-import '../blockchain/chain_registry.dart';
-import '../blockchain/token.dart';
-import '../core/utils/erc20_abi.dart';
-import '../core/utils/evm_hex.dart';
+import 'package:wallet_core/chains.dart';
 import '../data/datasource/remote/json_rpc.dart';
-import '../domain/evm_fee.dart';
-import '../enums/fee_speed.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'transfer/transfer_result.dart';
 
 /// [jsonRpcCall] 的函数签名。测试塞一份假节点进来，不必为了验证请求编排而真的联网。

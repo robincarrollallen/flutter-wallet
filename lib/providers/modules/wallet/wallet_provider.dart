@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/datasource/local/secure_wallet_storage.dart';
-import '../../../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../enums/prefs_key.dart';
 import '../../../services/wallet_registry.dart';
 import '../../core/persistent_notifier.dart';

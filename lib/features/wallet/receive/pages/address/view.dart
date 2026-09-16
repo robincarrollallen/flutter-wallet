@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
-import '../../../../../blockchain/listed_asset.dart';
+import 'package:wallet_core/chains.dart';
 import '../../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../../widgets/asset_icon.dart';
 import '../../../../../widgets/app_toast.dart';

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../widgets/app_toast.dart';
 import '../../../../../providers/modules/wallet/wallet_provider.dart';
-import '../../../../../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../widgets/panel/view.dart';
 
 /// 备份步骤二之校验：把助记词打乱后让用户按原顺序依次点击，

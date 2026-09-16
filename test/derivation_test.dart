@@ -1,7 +1,7 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/tron/tron.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import 'package:wallet/features/wallet/send/coins/logic.dart';
 import 'package:wallet/services/mnemonic_service.dart';
 import 'package:wallet/services/private_key_service.dart';

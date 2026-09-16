@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasource/local/secure_wallet_storage.dart';
 import '../../data/datasource/local/security_password_storage.dart';
-import '../../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import '../../services/evm_transaction_service.dart';
 import '../../services/history/bitcoin_transaction_history_service.dart';
 import '../../services/history/evm_transaction_history_service.dart';

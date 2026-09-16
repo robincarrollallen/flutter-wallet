@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../providers/modules/asset/chain_icon_provider.dart';
-import '../../../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import '../../../providers/modules/asset/token_catalog_provider.dart';
 import '../../../widgets/token_icon.dart';
 import '../../../core/navigation/panel_routes.dart';

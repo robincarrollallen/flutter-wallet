@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet/features/wallet/import_mnemonic/import_mnemonic_logic.dart';
-import 'package:wallet/enums/secret_type.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 void main() {
   const validMnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';

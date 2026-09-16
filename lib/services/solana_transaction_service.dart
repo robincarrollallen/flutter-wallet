@@ -2,12 +2,9 @@
 // `enums/token_standard.dart`（经 blockchain/token.dart 传入）撞名。本文件要的是后者。
 import 'package:on_chain/solana/solana.dart' hide TokenStandard;
 
-import '../blockchain/chain_registry.dart';
-import '../blockchain/units.dart';
+import 'package:wallet_core/chains.dart';
 import '../data/datasource/remote/solana_service.dart';
-import '../domain/solana_fee.dart';
-import '../enums/fee_speed.dart';
-import '../blockchain/token.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'transfer/transfer_result.dart';
 
 /// 一笔 SPL 转账要用到的两个代币账户，以及发送方的代币余额。

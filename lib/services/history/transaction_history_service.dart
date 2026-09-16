@@ -1,6 +1,6 @@
 import '../../domain/transaction_record.dart';
-import '../../domain/wallet.dart';
-import '../../enums/chain_kind.dart';
+import 'package:wallet_core/wallet_core.dart';
+import 'package:wallet_core/chains.dart';
 import 'chain_transaction_history_service.dart';
 
 export 'chain_transaction_history_service.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/blockchain/units.dart';
+import 'package:wallet_core/chains.dart';
 import 'package:wallet/core/format/token_amount_formatter.dart';
 
 void main() {

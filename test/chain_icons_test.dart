@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import 'package:wallet/data/datasource/remote/coingecko_api.dart';
 import 'package:wallet/enums/prefs_key.dart';
 import 'package:wallet/providers/core/coingecko_api_provider.dart';

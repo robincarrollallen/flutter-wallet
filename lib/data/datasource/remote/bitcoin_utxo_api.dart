@@ -1,4 +1,4 @@
-import '../../../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import '../../../domain/btc_utxo.dart';
 import 'rest_client.dart';
 

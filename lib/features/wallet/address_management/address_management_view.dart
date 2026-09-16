@@ -5,9 +5,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../providers/modules/asset/chain_icon_provider.dart';
-import '../../../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import '../../../widgets/token_icon.dart';
-import '../../../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../providers/modules/market/markets_provider.dart';
 
 /// 地址管理页：列出当前钱包在各条链上的地址，支持复制与查看二维码。

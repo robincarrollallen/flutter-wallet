@@ -1,4 +1,4 @@
-import '../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../data/datasource/local/secure_wallet_storage.dart';
 import 'wallet_registry.dart';
 

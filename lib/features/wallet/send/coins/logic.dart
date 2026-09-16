@@ -1,9 +1,5 @@
-import '../../../../blockchain/address_validation.dart';
-import '../../../../blockchain/chain_registry.dart';
-import '../../../../blockchain/units.dart';
+import 'package:wallet_core/chains.dart';
 
-import '../../../../blockchain/listed_asset.dart';
-import '../../../../blockchain/token_catalog.dart';
 import '../../../../services/transfer/chain_transfer_service.dart';
 
 /// 发送弹窗的纯逻辑：资产列表构建/过滤与地址、金额校验，不依赖 UI/状态框架。

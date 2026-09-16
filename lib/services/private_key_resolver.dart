@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-import '../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 
-import '../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'mnemonic_service.dart';
 import 'private_key_service.dart';
 import '../data/datasource/local/secure_wallet_storage.dart';

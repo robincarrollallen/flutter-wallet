@@ -1,7 +1,5 @@
-import '../../blockchain/chain_registry.dart';
-import '../../blockchain/token.dart';
-import '../../domain/wallet.dart';
-import '../../enums/fee_speed.dart';
+import 'package:wallet_core/chains.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'transfer_result.dart';
 
 export 'transfer_result.dart';

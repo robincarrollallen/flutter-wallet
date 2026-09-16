@@ -2,10 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../blockchain/chain_registry.dart';
-import '../../../core/utils/erc20_abi.dart';
-import '../../../domain/evm_fee.dart';
-import '../../../enums/fee_speed.dart';
+import 'package:wallet_core/chains.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../enums/prefs_key.dart';
 import '../../../services/evm_transaction_service.dart';
 import '../../core/persistent_notifier.dart';

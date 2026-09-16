@@ -1,4 +1,4 @@
-import '../../../blockchain/listed_asset.dart';
+import 'package:wallet_core/chains.dart';
 import '../receive/logic.dart';
 
 /// 管理代币页的纯逻辑，不依赖 UI / 状态框架。

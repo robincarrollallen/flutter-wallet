@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 
 /// 链注册表的静态自洽性检查：这些约束散落在 Chain 的多个字段之间，
 /// 类型系统表达不了（`nativeBalanceRpcMethod` / `evmChainId` 都是可空字段），

@@ -1,6 +1,4 @@
-import '../../../blockchain/chain_registry.dart';
-import '../../../blockchain/listed_asset.dart';
-import '../../../blockchain/token_catalog.dart';
+import 'package:wallet_core/chains.dart';
 
 /// 接收弹窗的纯逻辑：构建与过滤可接收资产列表，不依赖 UI/状态框架。
 class ReceiveLogic {

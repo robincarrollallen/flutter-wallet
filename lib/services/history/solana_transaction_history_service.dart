@@ -1,5 +1,4 @@
-import '../../blockchain/chain_registry.dart';
-import '../../blockchain/units.dart';
+import 'package:wallet_core/chains.dart';
 import '../../data/datasource/remote/json_rpc.dart';
 import '../../domain/transaction_record.dart';
 import 'chain_transaction_history_service.dart';

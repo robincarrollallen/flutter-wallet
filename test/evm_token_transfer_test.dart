@@ -1,9 +1,7 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/ethereum/ethereum.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
-import 'package:wallet/blockchain/token.dart';
-import 'package:wallet/core/utils/erc20_abi.dart';
+import 'package:wallet_core/chains.dart';
 import 'package:wallet/services/evm_transaction_service.dart';
 import 'package:wallet/services/transfer/transfer_result.dart';
 

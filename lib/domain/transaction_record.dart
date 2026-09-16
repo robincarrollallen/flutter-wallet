@@ -1,7 +1,7 @@
-import '../enums/transaction_status.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../enums/transaction_direction.dart';
 
-export '../enums/transaction_status.dart';
+export 'package:wallet_core/wallet_core.dart' show TransactionStatus;
 export '../enums/transaction_direction.dart';
 
 /// 一笔交易记录。字段全部来自发送时已知的信息 + 事后回填的上链状态。

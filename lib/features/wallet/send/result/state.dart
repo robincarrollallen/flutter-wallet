@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../enums/transaction_status.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../../providers/core/service_provider.dart';
 import '../../../../providers/modules/transaction/transaction_history_provider.dart';
 

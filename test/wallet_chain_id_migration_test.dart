@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
-import 'package:wallet/domain/wallet.dart';
+import 'package:wallet_core/chains.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 /// 地址按 chainId 存盘，而 `addressFor` 只按 [Chain.id] 查、加载时不会重新派生。
 /// 所以换测试网时若只改 id 不迁移老数据，用户钱包里该链的地址会**直接消失**——

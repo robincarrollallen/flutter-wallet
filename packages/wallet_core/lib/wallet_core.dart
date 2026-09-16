@@ -8,4 +8,38 @@
 /// 说不出理由的，就是本该留在 `src/` 里的实现细节。
 library;
 
-// 迁移中：内容随 refactor(core) 系列 commit 自底向上填入。
+/// 钱包实体。它会被序列化进 SharedPreferences（明文），
+/// 所以 `toJson` 的字段集合是安全断言的对象，由守卫测试钉死白名单。
+export 'src/model/wallet.dart';
+
+/// 钱包 id 生成。id 参与 secure storage 的 key 拼接（`wallet.<id>.mnemonic`），
+/// 生成方式必须在包内统一，否则换一种实现就可能撞 key 或读不出旧密钥。
+export 'src/model/wallet_id.dart';
+
+/// 钱包来源。不只是展示字段——它决定私钥是「现场从助记词派生」还是「从存储读」。
+export 'src/model/enums/wallet_source.dart';
+
+/// 备份方式。决定助记词除了本机 Keychain 之外还去过哪里，是威胁模型的输入。
+export 'src/model/enums/backup_method.dart';
+
+/// 导入私钥的格式类别（EVM hex / Solana base58 / Sui bech32 …）。
+/// 导入页要据此提示用户，且解码必须按类别精确匹配、不能靠猜。
+export 'src/model/enums/private_key_kind.dart';
+
+/// 明文展示的是助记词还是私钥。决定倒计时与遮罩策略。
+export 'src/model/enums/secret_type.dart';
+
+/// 交易状态。转账结果页与历史列表共用同一套状态，避免两处判定不一致。
+export 'src/model/enums/transaction_status.dart';
+
+/// 手续费档位与报价模型。费用是用户在确认页唯一能核对的东西，
+/// 构造过程必须和签名在同一个包里，不能让 UI 自己算一份。
+export 'src/model/enums/fee_speed.dart';
+export 'src/model/fee/fee_quote.dart';
+export 'src/model/fee/evm_fee.dart';
+export 'src/model/fee/solana_fee.dart';
+export 'src/model/fee/tron_fee.dart';
+
+/// 转账请求。UI 唯一能向签名层递交的入参形态——收敛成一个类型，
+/// 是为了让「有多少条路径能触发签名」可以被一眼数清。
+export 'src/model/dto/send_tx_request.dart';

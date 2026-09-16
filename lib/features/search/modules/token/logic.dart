@@ -1,6 +1,4 @@
-import '../../../../blockchain/chain_registry.dart';
-import '../../../../blockchain/token.dart';
-import '../../../../blockchain/token_catalog.dart';
+import 'package:wallet_core/chains.dart';
 
 /// 代币 Tab 的纯匹配逻辑：与状态/UI 无关，便于单测与复用。
 /// 入参 [q] 应为已规整（小写、去空白）的关键词。

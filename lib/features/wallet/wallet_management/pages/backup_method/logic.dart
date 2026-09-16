@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import '../../../../../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 
 /// 备份方式选择页的纯逻辑：与平台相关的云备份文案 / 方式，不依赖 UI / 状态。
 class BackupMethodLogic {

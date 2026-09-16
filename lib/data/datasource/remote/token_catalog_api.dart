@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../blockchain/token.dart';
+import 'package:wallet_core/chains.dart';
 import 'rest_client.dart';
 
 /// 远程代币目录：只负责发请求与解析 JSON，不做缓存、不做回退决策。

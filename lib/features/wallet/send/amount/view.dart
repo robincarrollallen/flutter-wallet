@@ -7,7 +7,7 @@ import '../../../../widgets/amount_text.dart';
 import '../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../coins/logic.dart';
-import '../../../../blockchain/listed_asset.dart';
+import 'package:wallet_core/chains.dart';
 import '../../../../router/route_args.dart';
 import '../../../../router/routes.dart';
 

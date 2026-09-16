@@ -1,5 +1,5 @@
-import '../../blockchain/chain_registry.dart';
-import '../../domain/wallet.dart';
+import 'package:wallet_core/chains.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../evm_transaction_service.dart';
 import '../private_key_resolver.dart';
 import 'chain_transfer_service.dart';

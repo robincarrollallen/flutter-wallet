@@ -1,6 +1,6 @@
-import '../enums/token_standard.dart';
+import '../model/enums/token_standard.dart';
 
-export '../enums/token_standard.dart';
+export '../model/enums/token_standard.dart';
 
 /// 某条链上的单个代币。身份键是 (chainId, identifier)，由 TokenCatalog 合并去重。
 class Token {

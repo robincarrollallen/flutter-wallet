@@ -3,10 +3,8 @@ import 'dart:convert';
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/solana/solana.dart' hide TokenStandard;
-import 'package:wallet/blockchain/bundled_token_catalog.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
-import 'package:wallet/blockchain/token.dart';
-import 'package:wallet/enums/fee_speed.dart';
+import 'package:wallet_core/chains.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet/services/solana_transaction_service.dart';
 import 'package:wallet/services/transfer/transfer_result.dart';
 

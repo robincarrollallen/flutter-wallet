@@ -2,10 +2,7 @@ import 'dart:io';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
 
-import '../../../blockchain/chain_registry.dart';
-import '../../../blockchain/token.dart';
-import '../../../core/utils/erc20_abi.dart';
-import '../../../core/utils/evm_hex.dart';
+import 'package:wallet_core/chains.dart';
 import 'http_config.dart';
 import 'json_rpc.dart';
 import 'rest_client.dart';

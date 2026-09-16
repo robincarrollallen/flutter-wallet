@@ -1,4 +1,4 @@
-import '../../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import '../../domain/transaction_record.dart';
 
 /// 一页历史记录 + 下一页的游标。

@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
 
-import '../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 
 /// 助记词相关能力的统一封装: 集中 blockchain_utils 的调用, 隔离第三方库细节,便于将来替换与单测
 class MnemonicService {

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../providers/modules/wallet/wallet_provider.dart';
-import '../../../../../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../widgets/panel/view.dart';
 import '../../../../../core/navigation/panel_routes.dart';
 import '../cloud_backup/view.dart';

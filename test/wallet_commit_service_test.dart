@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wallet/data/datasource/local/secure_wallet_storage.dart';
-import 'package:wallet/domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet/providers/modules/wallet/wallet_provider.dart';
 import 'package:wallet/providers/core/prefs_provider.dart';
 import 'package:wallet/providers/core/service_provider.dart';

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import '../../../../../core/format/token_amount_formatter.dart';
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../domain/transaction_record.dart';

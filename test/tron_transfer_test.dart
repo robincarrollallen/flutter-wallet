@@ -3,10 +3,9 @@ import 'dart:convert';
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/tron/tron.dart';
-import 'package:wallet/blockchain/chain_registry.dart';
-import 'package:wallet/blockchain/units.dart';
+import 'package:wallet_core/chains.dart';
 import 'package:wallet/data/datasource/remote/chain_balance_api.dart';
-import 'package:wallet/domain/tron_fee.dart';
+import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet/services/transfer/transfer_result.dart';
 import 'package:wallet/services/tron_transaction_service.dart';
 

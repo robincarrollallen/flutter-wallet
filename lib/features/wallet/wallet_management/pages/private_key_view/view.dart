@@ -7,12 +7,12 @@ import '../../../../../core/utils/secure_clipboard.dart';
 import '../../../../../core/utils/secret_reveal.dart';
 import '../../../../../widgets/secret_guard.dart';
 
-import '../../../../../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
-import '../../../../../domain/wallet.dart';
+import 'package:wallet_core/wallet_core.dart';
 import '../../../../../providers/core/service_provider.dart';
 import '../../../../../services/private_key_resolver.dart';
 import '../../widgets/panel/view.dart';

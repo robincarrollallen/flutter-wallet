@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../blockchain/chain_registry.dart';
+import 'package:wallet_core/chains.dart';
 import '../../../core/format/token_amount_formatter.dart';
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../domain/transaction_record.dart';

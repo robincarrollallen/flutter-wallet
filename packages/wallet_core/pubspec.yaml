@@ -23,6 +23,10 @@ dependencies:
   # 敏感数据安全存储（iOS Keychain / Android Keystore-EncryptedSharedPreferences）
   flutter_secure_storage: ^10.3.1
 
+  # 钱包唯一标识符（UUID v4）。id 参与 secure storage 的 key 拼接，
+  # 所以生成方式属于安全边界内的事，不能留给 app 随手定。
+  uuid: ^4.5.3
+
   # @internal / @visibleForTesting 标注，用来把不该公开的实现细节挡在库外
   meta: ^1.15.0
 
