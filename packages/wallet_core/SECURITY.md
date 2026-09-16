@@ -52,7 +52,7 @@
 | chainId 进签名（防跨链重放） | 强 | 同上 |
 | Tron「签 rawData 而非 txID」 | 强：双哈希陷阱有专门用例 | `test/tron_transfer_test.dart` |
 | Solana 公钥派生 / ATA 推导 | **强**：与 `@solana/web3.js` + `@solana/spl-token` 交叉验证，逐字节一致 | `test/signing_vectors_test.dart` |
-| Solana 交易 message | **中**：账户集合、指令组成、金额的语义等价（字节级不可比，见下） | 同上 |
+| Solana 交易 message | **中**：账户集合、指令组成、金额的语义等价 + devnet 节点实测接受（字节级不可比，见下） | 同上 |
 | Solana ed25519 签名 | **中**：验签绑定本笔 message + 篡改必败 + 确定性 | 同上 |
 | 密钥派生（BIP-39/32/44） | 中：多链一致性与回导往返 | `test/derivation_test.dart` |
 | 密钥不入 SharedPreferences | 强：端到端跑完真实流程后全量搜哨兵，含元测试证明守卫可证伪 | `test/../no_plaintext_secret_in_prefs_test.dart`（app 侧） |
@@ -65,7 +65,12 @@
 「签名者/可写」分组，组内不要求排序。EVM 能做逐字节比对是因为 RLP 的字段顺序由规范定死，
 Solana 的账户顺序是编码器的自由选择。
 所以跨实现钉死的是**没有自由度**的部分（公钥派生、ATA 推导），message 退一步验证语义等价。
-生成脚本与完整说明见 `tool/solana_vectors/`，任何人可以重跑核对。
+
+「on_chain 的排序合法」**不是推断**：`tool/solana_vectors/verify_account_order.dart`
+拿真实 devnet blockhash 构造交易并 `simulateTransaction`（`sigVerify: true`），
+2026-09-16 实测节点把三条指令全部执行完（两条 ComputeBudget 成功、System transfer
+被正确派发），说明账户清单与 `programIdIndex` 解析全对。排序若不合法，会停在
+反序列化 / sanitize，根本进不到执行。生成与核对脚本见 `tool/solana_vectors/`。
 
 **已知缺口**：
 - Tron 缺交易级的已知向量（固定 rawData → 固定签名字节）。双哈希陷阱已有专门用例，

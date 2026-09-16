@@ -31,4 +31,35 @@ node gen.js
 所以测试里跨实现钉死的是**没有自由度**的部分——公钥派生和 ATA 推导，
 这两项与 spl-token / web3.js 完全一致；message 那条退一步验证语义等价。
 
+## 「on_chain 的排序合法」不是推断，是实测过的
+
+上面那个说法如果只靠读代码得出，终究是判断。`verify_account_order.dart`
+把它变成了证据：用真实的 devnet blockhash 构造一笔 on_chain 交易，签名后交给
+节点 `simulateTransaction`（`sigVerify: true`）。
+
+```bash
+cd packages/wallet_core && dart run tool/solana_vectors/verify_account_order.dart
+```
+
+2026-09-16 实测结果，节点日志：
+
+```
+Program ComputeBudget111111111111111111111111111111 invoke [1]
+Program ComputeBudget111111111111111111111111111111 success
+Program ComputeBudget111111111111111111111111111111 invoke [1]
+Program ComputeBudget111111111111111111111111111111 success
+Program 11111111111111111111111111111111 invoke [1]
+Transfer: `from` must not carry data
+```
+
+节点不只是接受了排序，而是**把三条指令全部执行了**——两条 ComputeBudget 成功，
+System transfer 也被正确派发。这说明 `programIdIndex` 在 on_chain 的账户排列下
+解析全对；若账户清单有问题，会调用到错误的程序，或者在 sanitize 阶段就被拒。
+
+最后的失败与排序无关：那把公开测试种子（1..32）在 devnet 上早被人用过，
+账户带了 data，System 程序拒绝从带 data 的账户转账。**别把这把种子当干净账户。**
+
+判读要点：看的不是成功还是失败，而是**失败在哪一步**。
+排序不合法会停在反序列化 / sanitize，根本进不到执行。
+
 `node_modules/` 不进 git：这是一次性的核对工具，不是构建依赖。
