@@ -1,0 +1,14 @@
+# wallet_core 的静态检查配置。
+#
+# 现在与主工程保持一致，只为让骨架 commit 能干净通过；
+# 严格规则（strict-casts、unawaited_futures 升 error、public_member_api_docs 等）
+# 在迁移完成后的加固 commit 里一次性打开——放在代码搬进来之前打开，
+# 只会让每一步迁移都同时背上「搬运」和「改写」两件事，出问题时分不清是哪件引入的。
+include: package:flutter_lints/flutter.yaml
+
+formatter:
+  page_width: 120
+
+analyzer:
+  exclude:
+    - build/**

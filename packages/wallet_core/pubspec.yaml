@@ -1,0 +1,39 @@
+name: wallet_core
+description: "钱包的安全核心：助记词派生、私钥存储、签名与广播。第三方安全审计的唯一边界。"
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
+
+# 依赖清单本身就是审计材料的一部分——每加一个依赖都在扩大攻击面，所以逐条注明理由。
+# 这里刻意不含 flutter_riverpod / shared_preferences / flutter_dotenv：
+# 状态管理、非敏感持久化与本机配置一律留在 app 侧，由 test/layering_test.dart 守卫。
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 助记词 / BIP32+44 派生 / 多链地址编码 / PBKDF2 与常量时间比较
+  blockchain_utils: ^7.1.0
+
+  # EVM / Solana / Tron 的交易构造与签名
+  on_chain: ^8.1.0
+
+  # 敏感数据安全存储（iOS Keychain / Android Keystore-EncryptedSharedPreferences）
+  flutter_secure_storage: ^10.3.1
+
+  # @internal / @visibleForTesting 标注，用来把不该公开的实现细节挡在库外
+  meta: ^1.15.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 单测里用内存实现替换安全存储的平台层
+  flutter_secure_storage_platform_interface: ^2.0.1
+  plugin_platform_interface: ^2.1.8
+
+  flutter_lints: ^6.0.0
+
+flutter:

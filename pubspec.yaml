@@ -36,6 +36,12 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  # 安全核心：助记词派生、私钥存储、签名与广播。
+  # 单独成包是为了给第三方审计一条由编译器强制的边界——
+  # 审计范围 = packages/wallet_core 这一个目录，不需要通读整个 app。
+  wallet_core:
+    path: packages/wallet_core
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
