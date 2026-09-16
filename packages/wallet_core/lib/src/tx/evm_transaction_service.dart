@@ -8,6 +8,43 @@ import 'transfer/transfer_result.dart';
 /// [jsonRpcCall] 的函数签名。测试塞一份假节点进来，不必为了验证请求编排而真的联网。
 typedef JsonRpcCaller = Future<Object?> Function(String url, String method, List<Object?> params);
 
+/// 构造并签名一笔 EVM 交易，返回可直接广播的原始字节。
+///
+/// 从 `_signAndBroadcast` 里原样提出来，逻辑一行没改。提取的唯一目的是让
+/// nonce、gasPrice、chainId 这些原本藏在 RPC 调用后面的值可以被注入，
+/// 从而能拿 EIP-155 规范里的已知向量做逐字节比对——不联网、结果确定。
+///
+/// 签名是这个钱包里唯一一处「错了就直接损失资产、且事后无法撤销」的计算。
+/// 它必须能被独立验证，而不只是"转账测试跑通了"。
+List<int> buildAndSignEvmTransaction({
+  required int evmChainId,
+  required ETHPrivateKey signer,
+  required ETHAddress from,
+  required String to,
+  required BigInt value,
+  required List<int> data,
+  required int nonce,
+  required BigInt gasLimit,
+  required EvmFeeRate fee,
+}) {
+  /// 构造交易「未签名」
+  final unsigned = ETHTransaction(
+    type: fee.eip1559 ? ETHTransactionType.eip1559 : ETHTransactionType.legacy,
+    from: from,
+    to: ETHAddress(to),
+    nonce: nonce,
+    gasLimit: gasLimit,
+    maxFeePerGas: fee.eip1559 ? fee.maxFeePerGas : null,
+    maxPriorityFeePerGas: fee.eip1559 ? fee.maxPriorityFeePerGas : null,
+    gasPrice: fee.eip1559 ? null : fee.gasPrice,
+    value: value,
+    data: data,
+    chainId: BigInt.from(evmChainId),
+  );
+  final signature = signer.sign(unsigned.serialized); // 给交易添加签名
+  return unsigned.copyWith(signature: signature).signedSerialized(); // 签名后的交易
+}
+
 /// EVM 转账实现：取 nonce / 估费 / 估 gas → 构造交易 → 本地签名 → 广播 → 轮询 receipt
 class EvmTransactionService {
   const EvmTransactionService({this._call = jsonRpcCall});
@@ -201,22 +238,17 @@ class EvmTransactionService {
     required BigInt gasLimit, // gas 用量[wei]
     required EvmFeeRate fee, // 手续费「实例」
   }) async {
-    /// 构造交易「未签名」
-    final unsigned = ETHTransaction(
-      type: fee.eip1559 ? ETHTransactionType.eip1559 : ETHTransactionType.legacy,
+    final raw = buildAndSignEvmTransaction(
+      evmChainId: evmChainId,
+      signer: signer,
       from: from,
-      to: ETHAddress(to),
-      nonce: nonce,
-      gasLimit: gasLimit,
-      maxFeePerGas: fee.eip1559 ? fee.maxFeePerGas : null,
-      maxPriorityFeePerGas: fee.eip1559 ? fee.maxPriorityFeePerGas : null,
-      gasPrice: fee.eip1559 ? null : fee.gasPrice,
+      to: to,
       value: value,
       data: data,
-      chainId: BigInt.from(evmChainId),
+      nonce: nonce,
+      gasLimit: gasLimit,
+      fee: fee,
     );
-    final signature = signer.sign(unsigned.serialized); // 给交易添加签名
-    final raw = unsigned.copyWith(signature: signature).signedSerialized(); // 签名后的交易
 
     // 发送签名后的交易
     final hash =
