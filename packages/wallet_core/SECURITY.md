@@ -51,15 +51,25 @@
 | ERC-20 calldata | **强**：选择器 + 32 字节对齐参数写死 | 同上 |
 | chainId 进签名（防跨链重放） | 强 | 同上 |
 | Tron「签 rawData 而非 txID」 | 强：双哈希陷阱有专门用例 | `test/tron_transfer_test.dart` |
-| Solana ed25519 签名 | **中**：验签 + 篡改必败 + 确定性，但**没有交易级官方向量** | `test/signing_vectors_test.dart` |
+| Solana 公钥派生 / ATA 推导 | **强**：与 `@solana/web3.js` + `@solana/spl-token` 交叉验证，逐字节一致 | `test/signing_vectors_test.dart` |
+| Solana 交易 message | **中**：账户集合、指令组成、金额的语义等价（字节级不可比，见下） | 同上 |
+| Solana ed25519 签名 | **中**：验签绑定本笔 message + 篡改必败 + 确定性 | 同上 |
 | 密钥派生（BIP-39/32/44） | 中：多链一致性与回导往返 | `test/derivation_test.dart` |
 | 密钥不入 SharedPreferences | 强：端到端跑完真实流程后全量搜哨兵，含元测试证明守卫可证伪 | `test/../no_plaintext_secret_in_prefs_test.dart`（app 侧） |
 | 端点强制 https | 强 | `test/endpoint_transport_test.dart` |
 | 凭据不随异常外流 | 强 | `test/credential_redaction_test.dart` |
 
+**Solana 为什么没有逐字节向量**（不是遗漏，是做不到）：
+`@solana/web3.js` 把同权限级的账户按 base58 字典序排序，`on_chain` 保留首次出现顺序。
+两份 message 都自洽、都会被验证节点接受——Solana 的消息格式只要求账户按
+「签名者/可写」分组，组内不要求排序。EVM 能做逐字节比对是因为 RLP 的字段顺序由规范定死，
+Solana 的账户顺序是编码器的自由选择。
+所以跨实现钉死的是**没有自由度**的部分（公钥派生、ATA 推导），message 退一步验证语义等价。
+生成脚本与完整说明见 `tool/solana_vectors/`，任何人可以重跑核对。
+
 **已知缺口**：
-- Solana / Tron 缺交易级的已知向量（固定 blockhash/rawData → 固定签名字节）。
-  刻意没有用被测代码反算期望值填上——那样测的只是「它等于它自己」。
+- Tron 缺交易级的已知向量（固定 rawData → 固定签名字节）。双哈希陷阱已有专门用例，
+  但完整的 rawData → signature 向量还没有。
 - 没有 `SecretGuard` / `secret_reveal` 的 widget 测试。
 - 没有「wipeKey 之后内存确已归零」的断言（Dart 层难以可靠验证）。
 

@@ -105,17 +105,109 @@ void main() {
   });
 
   group('Solana', () {
-    // 这一组和 EVM 那组性质不同，值得说清楚，免得被误当成同等强度的保证。
+    // 交易级向量由 @solana/web3.js 1.99.0 + @solana/spl-token 0.4.15 离线生成
+    // （2026-09-16），这是与被测代码完全独立的另一套实现。生成脚本连同全部输入
+    // 记录在 tool/solana_vectors/gen.js，任何人可以自己重跑一遍核对。
     //
-    // EVM 那条是真正的 known-answer：期望值来自 EIP-155 规范原文。
-    // Solana 这里没有同等权威、可离线核对的交易级向量，所以**不编造**期望值——
-    // 从被测代码反算一个 hex 贴上去，测的只是"它等于它自己"，毫无价值。
-    //
-    // 改为验证一条独立于签名实现的性质：签名必须能用公钥验过。
-    // 验签走的是另一条代码路径，签错消息、用错私钥、种子与密钥对混用
-    // （fromSeed vs fromBytes 是这里踩过的坑）都会被它抓住。
-    // 交易级的官方向量仍是缺口，记在 SECURITY.md 里，不假装已经覆盖。
+    // 期望值绝不能由被测代码反算——那测的只是"它等于它自己"。用另一个实现算出来
+    // 再钉死，才谈得上交叉验证。
     final seed = List<int>.generate(32, (i) => i + 1);
+    final recipientSeed = List<int>.generate(32, (i) => 255 - i);
+
+    // 与生产代码 _buildTransaction 一致的三条指令组成。少一条，向量验证的就是
+    // 一个生产里并不存在的交易形态。
+    const computeUnitLimit = 600;
+    final computeUnitPrice = BigInt.from(1000);
+    final blockhash = SolAddress.uncheckBytes(List<int>.generate(32, (i) => (i * 3 + 7) % 256));
+
+    SolanaTransaction buildFixedTransaction(SolAddress owner, SolAddress recipient) => SolanaTransaction(
+      payerKey: owner,
+      recentBlockhash: blockhash,
+      instructions: [
+        ComputeBudgetProgram.setComputeUnitLimit(
+          layout: const ComputeBudgetSetComputeUnitLimitLayout(units: computeUnitLimit),
+        ),
+        ComputeBudgetProgram.setComputeUnitPrice(
+          layout: ComputeBudgetSetComputeUnitPriceLayout(microLamports: computeUnitPrice),
+        ),
+        SystemProgram.transfer(layout: SystemTransferLayout(lamports: BigInt.from(1000000)), from: owner, to: recipient),
+      ],
+    );
+
+    test('公钥派生与 web3.js 一致', () {
+      expect(SolanaPrivateKey.fromSeed(seed).publicKey().toAddress().address, '9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj');
+      expect(
+        SolanaPrivateKey.fromSeed(recipientSeed).publicKey().toAddress().address,
+        'Dav6Vxmr7BEgvQW4osrzWutwgPEqQ4Ji3zWxKp6nX9AD',
+      );
+    });
+
+    test('message 的账户集合与指令语义与 web3.js 等价', () {
+      // 这里刻意**不**做字节级比对，原因值得记下来，免得后来者以为是漏写了：
+      //
+      // web3.js 把同权限级的账户按 base58 字典序排（SystemProgram 全零，排在
+      // ComputeBudget 前面），on_chain 保留首次出现的顺序。两份 message 都自洽，
+      // 也都会被验证节点接受——Solana 只要求账户按「签名者/可写」分组，
+      // 组内不要求排序。所以 Solana 做不到 EVM 那种跨实现的逐字节向量：
+      // RLP 的字段顺序是规范定死的，Solana 的账户顺序不是。
+      //
+      // 能跨实现钉死的是密钥层（见上一条与 ATA 那条），已经钉了。
+      // 这里退一步验证语义等价：账户集合、指令数量、转账金额。
+      final owner = SolanaPrivateKey.fromSeed(seed).publicKey().toAddress();
+      final recipient = SolanaPrivateKey.fromSeed(recipientSeed).publicKey().toAddress();
+
+      final transaction = buildFixedTransaction(owner, recipient);
+      final accounts = transaction.message.accountKeys.map((a) => a.address).toSet();
+
+      // web3.js 生成的同一笔交易里的四个账户，逐个在这里出现。
+      expect(accounts, contains('9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj')); // payer
+      expect(accounts, contains('Dav6Vxmr7BEgvQW4osrzWutwgPEqQ4Ji3zWxKp6nX9AD')); // 收款方
+      expect(accounts, contains(SystemProgramConst.programId.address));
+      expect(accounts, contains(ComputeBudgetConst.programId.address));
+      expect(accounts, hasLength(4), reason: '多出账户说明指令组成变了，费用与权限都会跟着变');
+
+      expect(transaction.message.compiledInstructions, hasLength(3), reason: '两条 ComputeBudget + 一条 transfer，少一条优先费就失效');
+
+      // 转账金额编在 SystemProgram 指令的 data 里（小端 u64，1000000 = 0x0f4240）。
+      final transferIx = transaction.message.compiledInstructions.firstWhere(
+        (CompiledInstruction i) =>
+            transaction.message.accountKeys[i.programIdIndex].address == SystemProgramConst.programId.address,
+      );
+      expect(BytesUtils.toHexString(transferIx.data), '0200000040420f0000000000');
+    });
+
+    test('签名能被公钥验过，且绑定的是这一笔 message', () {
+      // 字节级比对既然做不成，就换成一条不依赖对方实现的性质：
+      // 签名必须在**我们自己序列化出的 message** 上验得过。
+      // 验签是另一条代码路径，签错消息、用错私钥、种子与密钥对混用
+      // （fromSeed vs fromBytes 是这里踩过的坑）都会被它抓住。
+      final signer = SolanaPrivateKey.fromSeed(seed);
+      final transaction = buildFixedTransaction(
+        signer.publicKey().toAddress(),
+        SolanaPrivateKey.fromSeed(recipientSeed).publicKey().toAddress(),
+      );
+
+      transaction.sign([signer]);
+      final signature = transaction.signatures.first;
+
+      expect(signature, hasLength(64));
+      expect(
+        signer.publicKey().verify(message: transaction.serializeMessage(), signature: signature),
+        isTrue,
+      );
+    });
+
+    test('ATA 派生与 spl-token 一致', () {
+      // SPL 转账最容易静默回归的一处：ATA 是本地 PDA 派生，算错了钱会打到一个
+      // 没人控制的地址上，而交易本身完全成功。生产代码直接委托给这个 util，
+      // 所以这条断言钉的是依赖升级不会改变派生结果。
+      final owner = SolanaPrivateKey.fromSeed(seed).publicKey().toAddress();
+      final mint = SolAddress('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'); // USDC
+
+      final ata = AssociatedTokenAccountProgramUtils.associatedTokenAccount(mint: mint, owner: owner).address;
+
+      expect(ata.address, 'FjCjyojZLVYVQ2dEdDKQx76msks96TdH9xqvc8BQ9UUx');
+    });
 
     test('ed25519 签名能被对应公钥验过', () {
       final signer = SolanaPrivateKey.fromSeed(seed);
