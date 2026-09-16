@@ -106,7 +106,8 @@ class EvmGasBasisNotifier extends Notifier<EvmFeeCache> with PersistentNotifier<
       chain,
       from: key.from,
       contract: token,
-      data: encodeTransfer(to: key.to, amount: BigInt.one),
+      to: key.to,
+      amount: BigInt.one,
     );
   }
 }

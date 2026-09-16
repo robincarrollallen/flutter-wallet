@@ -22,16 +22,6 @@ export 'src/chains/token_catalog.dart';
 export 'src/chains/bundled_token_catalog.dart';
 export 'src/chains/listed_asset.dart';
 
-/// EVM 的 hex 编解码与 ERC-20 calldata 构造。
-///
-/// 计划里原本要把这两个文件关在 `src/internal/` 里，实际改下来不成立：
-/// 余额查询（`balanceOf`）和 gas 预估都要用同一套编码，而它们按设计留在 app 侧。
-/// 让 app 自己再写一份 ABI 编码，比公开这份更危险——转账 calldata 和余额 calldata
-/// 一旦走两套实现，就会出现「余额读得对、转账编错」这类最难发现的 bug。
-/// 这两个文件不接触任何密钥，公开它们不扩大密钥可达面。
-export 'src/chains/evm_hex.dart';
-export 'src/chains/erc20_abi.dart';
-
 /// 链与代币的分类枚举。chain_kind 决定走哪条签名路径，token_standard 决定 calldata 形态。
 export 'src/model/enums/chain_kind.dart';
 export 'src/model/enums/token_standard.dart';

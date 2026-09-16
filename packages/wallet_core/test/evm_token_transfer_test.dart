@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/ethereum/ethereum.dart';
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
+import 'package:wallet_core/src/internal/erc20_abi.dart';
 
 /// 测试用私钥；地址由它现场派生，不写死。
 const _privateKeyHex = '4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318';

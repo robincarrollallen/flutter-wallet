@@ -2,8 +2,8 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:on_chain/ethereum/ethereum.dart';
 import 'package:on_chain/solana/solana.dart';
-import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
+import 'package:wallet_core/src/internal/erc20_abi.dart';
 
 /// 签名的已知向量（known-answer）测试。
 ///

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wallet_core/chains.dart';
+import 'package:wallet_core/src/internal/erc20_abi.dart';
 
 void main() {
   group('encodeBalanceOf', () {

@@ -5,6 +5,7 @@ import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
 import '../model/models.dart';
 import 'transfer/transfer_result.dart';
+import '../internal/erc20_abi.dart';
 
 /// Tron 转账：让节点补齐区块引用 → **回解校验** → 本地签名 → 广播 → 轮询回执(只做链上交互，不认识钱包与私钥来源)
 class TronTransactionService {

@@ -4,6 +4,8 @@ import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
 import '../model/models.dart';
 import 'transfer/transfer_result.dart';
+import '../internal/erc20_abi.dart';
+import '../internal/evm_hex.dart';
 
 /// [jsonRpcCall] 的函数签名。测试塞一份假节点进来，不必为了验证请求编排而真的联网。
 typedef JsonRpcCaller = Future<Object?> Function(String url, String method, List<Object?> params);
@@ -193,7 +195,7 @@ class EvmTransactionService {
     final nonceHex =
         await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending']) as String;
     final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed); // 获取并计算手续费「实例」(按档位)
-    final gasLimit = await resolveTokenGasLimit(chain, from: from.address, contract: contract, data: data); // 估算 gas 用量
+    final gasLimit = await resolveTokenGasLimit(chain, from: from.address, contract: contract, to: to, amount: value); // 估算 gas 用量
     final feeCap = fee.capGasPrice * gasLimit; // 计算手续费上限[wei]
 
     // 获取原生币余额(手续费走原生币，与代币余额是两本账，必须单独校验)
@@ -299,14 +301,20 @@ class EvmTransactionService {
   /// 一笔 ERC-20 转账的 gasLimit：合约执行用量因实现（首次写入 storage、
   /// 手续费代币等）而异，只能实测，没有 21000 那样的常量可用。
   ///
-  /// [data] 为 `transfer(address,uint256)` 的 calldata（0x 前缀）。估算失败即报错，
-  /// 不猜一个默认值——猜低了交易 out of gas，gas 照扣，钱没转到。
+  /// calldata 由本方法按 [to] 与 [amount] 自行编码，不从外部收。
+  /// 调用方原先要自己 `encodeTransfer` 再把 calldata 传进来，等于让 UI 层知道
+  /// 「代币 gas 估算 = 编一笔 transfer」这件签名路径的事——ABI 编码因此不得不
+  /// 对外公开。收进来之后，`erc20_abi` 可以退回包内实现，边界少一个缺口。
+  ///
+  /// 估算失败即报错，不猜一个默认值——猜低了交易 out of gas，gas 照扣，钱没转到。
   Future<BigInt> resolveTokenGasLimit(
     Chain chain, {
     required String from,
     required String contract,
-    required String data,
+    required String to,
+    required BigInt amount,
   }) async {
+    final data = encodeTransfer(to: to, amount: amount);
     try {
       return await _estimateGas(chain.endpoint, from: from, to: contract, value: BigInt.zero, data: data);
     } catch (_) {
