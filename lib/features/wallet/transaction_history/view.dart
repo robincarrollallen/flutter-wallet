@@ -8,6 +8,7 @@ import '../../../core/responsive/screen_adapter.dart';
 import '../../../domain/transaction_record.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../providers/modules/asset/chain_icon_provider.dart';
+import '../../../providers/modules/asset/token_catalog_provider.dart';
 import '../../../providers/modules/market/markets_provider.dart';
 import '../../../router/route_args.dart';
 import '../../../router/routes.dart';
@@ -416,13 +417,13 @@ class _DaySection extends StatelessWidget {
   }
 }
 
-class _TransactionRow extends StatelessWidget {
+class _TransactionRow extends ConsumerWidget {
   const _TransactionRow({required this.record});
 
   final TransactionRecord record;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final theme = Theme.of(context);
     final isOutgoing = record.direction == TransactionDirection.outgoing;
@@ -440,7 +441,8 @@ class _TransactionRow extends StatelessWidget {
         ),
       ),
       title: Text(
-        '${isOutgoing ? t.transactionHistory.directionOutgoing : t.transactionHistory.directionIncoming} ${record.symbol}',
+        '${isOutgoing ? t.transactionHistory.directionOutgoing : t.transactionHistory.directionIncoming} '
+        '${displaySymbolOf(record, ref.watch(tokenCatalogProvider))}',
       ),
       subtitle: Text(
         '${shortenAddress(counterparty)} · ${_chainNameOf(record.chainId)}',

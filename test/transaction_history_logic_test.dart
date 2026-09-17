@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wallet_core/chains.dart';
 import 'package:wallet/domain/transaction_record.dart';
 import 'package:wallet/features/wallet/transaction_history/logic.dart';
 
@@ -6,6 +7,8 @@ TransactionRecord _record({
   required String hash,
   String chainId = 'ethereum-sepolia',
   String walletId = 'wallet-1',
+  String symbol = 'ETH',
+  String? tokenIdentifier,
   TransactionStatus status = TransactionStatus.pending,
   TransactionDirection direction = TransactionDirection.outgoing,
   DateTime? submittedAt,
@@ -17,7 +20,8 @@ TransactionRecord _record({
     transactionHash: hash,
     walletId: walletId,
     chainId: chainId,
-    symbol: 'ETH',
+    symbol: symbol,
+    tokenIdentifier: tokenIdentifier,
     fromAddress: '0xfrom',
     toAddress: '0xto',
     amount: '1.5',
@@ -30,7 +34,42 @@ TransactionRecord _record({
   );
 }
 
+/// 与 app 运行时同构的一份目录（内置表就是远程目录缺席时的默认值）。
+final _catalog = TokenCatalog.merge(chains: SupportedChains.all, remote: BundledTokenCatalog.all);
+
 void main() {
+  group('displaySymbolOf', () {
+    // Solana Devnet 的 USDC。历史记录里存的符号是 mint 前四位那种兜底值，
+    // 渲染时查目录把它救回来——这条路径是已经落盘的旧记录唯一的补救机会。
+    const usdcMint = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
+
+    test('代币按 identifier 查目录，盖掉记录里存的兜底符号', () {
+      final record = _record(
+        hash: '0x1',
+        chainId: 'solana-devnet',
+        symbol: '4zMM',
+        tokenIdentifier: usdcMint,
+      );
+      expect(displaySymbolOf(record, _catalog), 'USDC');
+    });
+
+    test('目录里没有就回退记录里存的那个，而不是显示空', () {
+      final record = _record(
+        hash: '0x1',
+        chainId: 'solana-devnet',
+        symbol: 'SOME',
+        tokenIdentifier: 'UnlistedMint',
+      );
+      // 快照语义正是靠这条兜底守住的：目录变了、代币被隐藏了，历史照样显示得出来。
+      expect(displaySymbolOf(record, _catalog), 'SOME');
+    });
+
+    test('原生币不查目录：它的符号来自链配置，一定是对的', () {
+      final record = _record(hash: '0x1', chainId: 'solana-devnet', symbol: 'SOL');
+      expect(displaySymbolOf(record, _catalog), 'SOL');
+    });
+  });
+
   group('mergeTransactions', () {
     test('同链同哈希视为同一笔，以新记录为准', () {
       final merged = mergeTransactions(

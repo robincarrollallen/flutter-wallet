@@ -1,6 +1,22 @@
+import 'package:wallet_core/chains.dart';
 import '../../../domain/transaction_record.dart';
 
 // 交易历史纯逻辑：与状态/UI 无关，便于单测与复用。
+
+/// 一条记录该显示成什么符号。
+///
+/// [TransactionRecord.symbol] 存的是**交易发生当时**的符号快照，原则上直接显示即可。
+/// 但 Solana 是个例外：`getTransaction` 的余额条目只给 mint，给不出符号，所以
+/// `SolanaTransactionHistoryService` 只能拿 mint 前四位兜底（显示成 `4zMM` 这种）。
+/// 已经落盘的那些记录不会自己变好，于是渲染时再查一次目录把它们救回来。
+///
+/// 查不到就回退 [TransactionRecord.symbol]，快照语义因此没有丢：目录里没有的代币、
+/// 被用户隐藏的代币，历史照样显示得出来——这正是当初要把符号冗余存一份的理由。
+String displaySymbolOf(TransactionRecord record, TokenCatalog catalog) {
+  final identifier = record.tokenIdentifier;
+  if (identifier == null) return record.symbol; // 原生币的符号来自链配置，一定是对的
+  return catalog.findToken(record.chainId, identifier)?.symbol ?? record.symbol;
+}
 
 /// 本地保留的交易记录上限。超出后丢弃最旧的——历史越久价值越低，
 /// 而 SharedPreferences 存的是单个 JSON 字符串，不设上限迟早撑爆。

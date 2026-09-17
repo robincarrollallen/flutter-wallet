@@ -15,7 +15,12 @@ import '../../config/app_config.dart';
 /// services 层的装配处。
 ///
 /// service 类自身不认识 Riverpod（`lib/services/` 下不 import flutter_riverpod，
-/// 由 `test/layering_test.dart` 守着），依赖一律走构造注入，谁跟谁组装只在这里决定。
+/// 由 `test/layering_test.dart` 的「services 层不认识状态管理」守着），
+/// 依赖一律走构造注入，谁跟谁组装只在这里决定。
+///
+/// 「注入」不等于绕开 provider：像 [tokenCatalogProvider] 这种，是在这里 `ref.watch`
+/// 之后把值传进去的——service 拿到的就是 provider 当前的那份，且它一变，
+/// 这里的 Provider 会连带重建。区别只在于由谁来监听。
 
 /// 导出私钥 / 签名等流程的私钥解析入口。
 final privateKeyResolverProvider = Provider<PrivateKeyResolver>(
@@ -52,7 +57,9 @@ final transactionHistoryServiceProvider = Provider<TransactionHistoryService>((r
   return TransactionHistoryService(
     chainServices: {
       ChainKind.evm: EvmTransactionHistoryService(apiKey: AppConfig.etherscanApiKey),
-      ChainKind.solana: const SolanaTransactionHistoryService(),
+      // 注入目录：Solana 的 RPC 给不出 SPL 的符号，只有 mint，得靠目录翻译。
+      // 这里给的是远程下发 + 自定义合并后的那份，不是 wallet_core 里的内置兜底表。
+      ChainKind.solana: SolanaTransactionHistoryService(catalog: ref.watch(tokenCatalogProvider)),
       ChainKind.tron: const TronTransactionHistoryService(),
       ChainKind.bitcoin: const BitcoinTransactionHistoryService(),
     },

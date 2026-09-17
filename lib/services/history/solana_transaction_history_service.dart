@@ -7,7 +7,17 @@ import 'chain_transaction_history_service.dart';
 ///
 /// 不需要 key —— 公共 RPC 就能查，所以 [supportsHistory] 恒为 true。
 class SolanaTransactionHistoryService implements ChainTransactionHistoryService {
-  const SolanaTransactionHistoryService();
+  /// [catalog] 用来把 SPL 的 mint 翻译成符号，见 [_tokenDelta]。
+  ///
+  /// 走构造注入而不是在这里 watch provider：本层按约定不认识 Riverpod。
+  /// 装配处（`lib/providers/core/service_provider.dart`）传进来的正是
+  /// `ref.watch(tokenCatalogProvider)` 的结果，也就是远程下发 + 用户自定义合并后的
+  /// 那份目录，不是内置兜底表——目录一变，那个 Provider 会连带重建这个 service。
+  ///
+  /// 允许为 null 是为了让 `parseSolanaTransaction` 的单测不必造目录。
+  const SolanaTransactionHistoryService({this._catalog});
+
+  final TokenCatalog? _catalog;
 
   @override
   ChainKind get kind => ChainKind.solana;
@@ -54,7 +64,14 @@ class SolanaTransactionHistoryService implements ChainTransactionHistoryService 
     final records = [
       for (var index = 0; index < hashes.length; index++)
         if (details[index] case final Map<String, dynamic> detail)
-          ?parseSolanaTransaction(detail, hash: hashes[index], chain: chain, address: address, walletId: walletId),
+          ?parseSolanaTransaction(
+            detail,
+            hash: hashes[index],
+            chain: chain,
+            address: address,
+            walletId: walletId,
+            catalog: _catalog,
+          ),
     ];
 
     // 满页才有下一页；游标取本页最后一条签名，而不是最后一条成功解析的记录——
@@ -73,6 +90,7 @@ TransactionRecord? parseSolanaTransaction(
   required Chain chain,
   required String address,
   required String walletId,
+  TokenCatalog? catalog,
 }) {
   final meta = detail['meta'];
   if (meta is! Map<String, dynamic>) return null;
@@ -89,7 +107,7 @@ TransactionRecord? parseSolanaTransaction(
   // 只有第一个账户（fee payer）承担手续费，别的账户看到的余额差里不含它。
   final paidFee = ownIndex == 0;
 
-  final tokenDelta = _tokenDelta(meta, address: address);
+  final tokenDelta = _tokenDelta(meta, address: address, chainId: chain.id, catalog: catalog);
   final (amount, tokenIdentifier, symbol) =
       tokenDelta ?? _nativeDelta(meta, ownIndex, fee: fee, paidFee: paidFee, chain: chain);
   if (amount == BigInt.zero) return null;
@@ -145,16 +163,27 @@ BigInt _balanceAt(Object? balances, int index) {
 }
 
 /// SPL 代币的净变化；这笔交易没动自己的代币账户时返回 null，调用方回落到原生币。
-(BigInt, String?, String)? _tokenDelta(Map<String, dynamic> meta, {required String address}) {
+///
+/// 符号只能靠 [catalog] 查：SPL 的余额条目只给 mint 和数量，节点不给符号。
+/// 这是 Solana 独有的缺口——EVM 从 Etherscan 的 `tokenSymbol`、Tron 从 TronGrid 的
+/// `token_info` 都能白拿到符号。
+(BigInt, String?, String)? _tokenDelta(
+  Map<String, dynamic> meta, {
+  required String address,
+  required String chainId,
+  required TokenCatalog? catalog,
+}) {
   final pre = _ownTokenAmount(meta['preTokenBalances'], address);
   final post = _ownTokenAmount(meta['postTokenBalances'], address);
   if (pre == null && post == null) return null;
 
   final mint = post?.mint ?? pre!.mint;
   final delta = (post?.amount ?? BigInt.zero) - (pre?.amount ?? BigInt.zero);
-  // 符号没处可取——SPL 的余额条目只给 mint 和数量。用 mint 前四位兜底，
-  // 至少比空字符串认得出是哪种代币。
-  return (delta, mint, mint.length > 4 ? mint.substring(0, 4) : mint);
+  // 目录里没有（未收录的代币、或者没注入目录的单测）就拿 mint 前四位兜底，
+  // 至少比空字符串认得出是哪种代币。**不要**在这里回落到链的原生币符号——
+  // 那会把一笔 USDC 转账显示成 SOL。
+  final symbol = catalog?.findToken(chainId, mint)?.symbol;
+  return (delta, mint, symbol ?? (mint.length > 4 ? mint.substring(0, 4) : mint));
 }
 
 int _tokenDecimals(Map<String, dynamic> meta, String address) =>

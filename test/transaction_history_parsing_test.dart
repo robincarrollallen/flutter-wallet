@@ -12,6 +12,10 @@ import 'package:wallet/services/history/tron_transaction_history_service.dart';
 
 const _wallet = 'wallet-1';
 
+/// 与 app 运行时同构的一份目录：内置表在没有远程数据时就是 `remoteTokensProvider`
+/// 的默认值，合并逻辑走的也是同一个 `TokenCatalog.merge`。
+final _catalog = TokenCatalog.merge(chains: SupportedChains.all, remote: BundledTokenCatalog.all);
+
 void main() {
   group('Etherscan（EVM）', () {
     const chain = SupportedChains.ethereumSepolia;
@@ -243,6 +247,66 @@ void main() {
       expect(record.tokenIdentifier, 'MintAddress');
       expect(record.amount, '2.5');
       expect(record.direction, TransactionDirection.outgoing);
+      // 没给目录时拿 mint 前四位兜底。**不能**回落到链的原生币符号——
+      // 那会把一笔代币转账显示成 SOL。
+      expect(record.symbol, 'Mint');
+    });
+
+    test('SPL 的符号查目录得来：链上只给 mint，节点给不出符号', () {
+      final withToken = detail();
+      const mint = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
+      (withToken['meta'] as Map<String, dynamic>).addAll({
+        'preTokenBalances': [
+          {
+            'owner': own,
+            'mint': mint,
+            'uiTokenAmount': {'amount': '5000000', 'decimals': 6},
+          },
+        ],
+        'postTokenBalances': [
+          {
+            'owner': own,
+            'mint': mint,
+            'uiTokenAmount': {'amount': '2500000', 'decimals': 6},
+          },
+        ],
+      });
+
+      final record = parseSolanaTransaction(
+        withToken,
+        hash: '0xsig',
+        chain: chain,
+        address: own,
+        walletId: _wallet,
+        catalog: _catalog,
+      )!;
+
+      expect(record.symbol, 'USDC');
+      expect(record.tokenIdentifier, mint, reason: 'mint 仍要原样留着，详情页拿它去浏览器核对');
+    });
+
+    test('目录里没有这个 mint 时仍回落到前四位，而不是空字符串', () {
+      final withToken = detail();
+      (withToken['meta'] as Map<String, dynamic>).addAll({
+        'postTokenBalances': [
+          {
+            'owner': own,
+            'mint': 'UnlistedMintAddress',
+            'uiTokenAmount': {'amount': '2500000', 'decimals': 6},
+          },
+        ],
+      });
+
+      final record = parseSolanaTransaction(
+        withToken,
+        hash: '0xsig',
+        chain: chain,
+        address: own,
+        walletId: _wallet,
+        catalog: _catalog,
+      )!;
+
+      expect(record.symbol, 'Unli');
     });
 
     test('这笔交易没动自己的余额时整条丢弃', () {

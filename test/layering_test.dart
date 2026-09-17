@@ -107,6 +107,25 @@ void main() {
     expect(offenders, isEmpty, reason: '绕过了统一的落盘入口：\n${offenders.join('\n')}');
   });
 
+  test('services 层不认识状态管理', () {
+    // `lib/providers/core/service_provider.dart` 的文档注释一直声称这条由本文件守着，
+    // 但在补上这条断言之前它并不存在——约定只是被自觉遵守着。而一旦某个 service
+    // 自己去 watch provider，「谁跟谁组装」就从装配处散回各个 service，
+    // 单测也得先搭一个 ProviderContainer 才跑得起来。
+    final services = _dartFilesIn(Directory('${appLib.path}/services'));
+    // 目录改名或挪走时，上面那个循环会扫出空集合，断言随之变成一句空话——
+    // 仍然全绿，却不再守住任何东西。先钉死「确实扫到了文件」。
+    expect(services, isNotEmpty, reason: 'lib/services/ 扫不到文件，这条守卫已经失效');
+
+    final offenders = [
+      for (final file in services)
+        if (_directivesOf(file).any((directive) => directive.contains('flutter_riverpod')))
+          '${file.path}：service 不得认识 Riverpod，依赖一律走构造注入',
+    ];
+
+    expect(offenders, isEmpty, reason: '违反分层：\n${offenders.join('\n')}');
+  });
+
   test('包内测试确实存在', () {
     // CI 要分别在两个目录跑 flutter test。少写一条命令，包内测试会静默不执行，
     // 而"全绿"看起来毫无异常——这条断言是那个失效模式的唯一哨兵。
