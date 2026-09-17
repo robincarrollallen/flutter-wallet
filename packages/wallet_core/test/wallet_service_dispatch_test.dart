@@ -43,7 +43,7 @@ const _wallet = Wallet(id: 'w1', name: '测试钱包');
 WalletService _service(_RecordingTransfer transfer) =>
     WalletService(transferServices: {transfer.kind: transfer}, catalog: _catalog);
 
-SendTxRequest _request({String? tokenIdentifier, String? chainId, String? to}) => SendTxRequest(
+SendTransactionRequest _request({String? tokenIdentifier, String? chainId, String? to}) => SendTransactionRequest(
   from: '0x0000000000000000000000000000000000000001',
   // 默认收款地址必须是**校验得过**的：服务层现在会拦非法地址，
   // 随手写的 0x...02 是合法的 40 位十六进制，正好可用。
@@ -166,7 +166,7 @@ void main() {
     test('缺少 chainId 即报错', () async {
       final evm = _RecordingTransfer(ChainKind.evm);
       await expectLater(
-        _service(evm).sendTransaction(const SendTxRequest(from: '0x1', to: '0x2', amount: '1'), _wallet),
+        _service(evm).sendTransaction(const SendTransactionRequest(from: '0x1', to: '0x2', amount: '1'), _wallet),
         throwsArgumentError,
       );
     });

@@ -128,7 +128,7 @@ class WalletDetailPage extends ConsumerWidget {
                       children: [
                         // 私钥导入/硬件钱包没有助记词，不显示助记词备份入口。
                         if (current.hasMnemonic) ...[
-                          _NavRow(
+                          _NavigationRow(
                             label: '备份',
                             hint: current.isBackedUp ? '已备份' : '未备份',
                             hintColor: current.isBackedUp ? context.appColors.success : theme.colorScheme.error,
@@ -136,7 +136,7 @@ class WalletDetailPage extends ConsumerWidget {
                           ),
                           Divider(height: 1.s),
                         ],
-                        _NavRow(label: '导出私钥', onTap: () => _onExportPrivateKey(context, current)),
+                        _NavigationRow(label: '导出私钥', onTap: () => _onExportPrivateKey(context, current)),
                       ],
                     ),
                   ),
@@ -269,9 +269,9 @@ class WalletDetailPage extends ConsumerWidget {
   }
 
   /// 格式化创建时间；为空显示「未知」。
-  String _formatCreatedAt(DateTime? dt) {
-    if (dt == null) return '未知';
-    final local = dt.toLocal();
+  String _formatCreatedAt(DateTime? createdAt) {
+    if (createdAt == null) return '未知';
+    final local = createdAt.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
     return '${local.year}-${two(local.month)}-${two(local.day)} '
         '${two(local.hour)}:${two(local.minute)}';
@@ -353,8 +353,8 @@ class _DetailRow extends StatelessWidget {
 }
 
 /// 可点击跳转的一行：左标签 +（可选）右侧提示 + 箭头。
-class _NavRow extends StatelessWidget {
-  const _NavRow({required this.label, required this.onTap, this.hint, this.hintColor});
+class _NavigationRow extends StatelessWidget {
+  const _NavigationRow({required this.label, required this.onTap, this.hint, this.hintColor});
 
   final String label;
   final VoidCallback onTap;

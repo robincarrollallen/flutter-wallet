@@ -2,8 +2,8 @@ import '../enums/fee_speed.dart';
 
 /// 【请求数据】发起转账时提交给后端 / 节点的请求体。
 /// 仅用于序列化为 API 入参，不在 UI 中长期持有。
-class SendTxRequest {
-  const SendTxRequest({
+class SendTransactionRequest {
+  const SendTransactionRequest({
     required this.from,
     required this.to,
     required this.amount,

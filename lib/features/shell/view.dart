@@ -8,7 +8,7 @@ import '../exchange/view.dart';
 import '../market/view.dart';
 import '../wallet/home/home_view.dart';
 import 'state.dart';
-import 'widgets/glass_nav_bar.dart';
+import 'widgets/glass_navigation_bar.dart';
 
 /// 应用根容器：IndexedStack 承载五个一级 tab（保留各自状态），
 /// 顶部叠加悬浮的毛玻璃导航栏。
@@ -37,7 +37,7 @@ class RootShell extends ConsumerWidget {
             left: 16.s,
             right: 16.s,
             bottom: MediaQuery.of(context).viewPadding.bottom, // 让导航栏整体悬浮在底部安全区之上。
-            child: const GlassNavBar(),
+            child: const GlassNavigationBar(),
           ),
         ],
       ),

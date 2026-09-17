@@ -74,7 +74,7 @@ void main() {
     for (final dir in ['crypto', 'storage']) {
       for (final file in _dartFilesIn(Directory('${packageLib.path}/src/$dir'))) {
         final directives = _directivesOf(file);
-        for (final upper in ['../tx/', '../wallet/']) {
+        for (final upper in ['../transaction/', '../wallet/']) {
           if (directives.any((d) => d.contains("'$upper"))) {
             offenders.add('${file.path}：import 了 $upper，派生/存储层必须留在依赖链底部');
           }

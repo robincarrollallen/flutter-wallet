@@ -20,4 +20,4 @@ export 'fee/fee_quote.dart';
 export 'fee/evm_fee.dart';
 export 'fee/solana_fee.dart';
 export 'fee/tron_fee.dart';
-export 'dto/send_tx_request.dart';
+export 'dto/send_transaction_request.dart';

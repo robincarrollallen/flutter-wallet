@@ -64,10 +64,10 @@ class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> {
       _failed = false;
     });
     try {
-      final pk = await ref.read(privateKeyResolverProvider).resolveExportKey(widget.wallet, widget.chain);
+      final exportedKey = await ref.read(privateKeyResolverProvider).resolveExportKey(widget.wallet, widget.chain);
       if (!mounted) return;
       setState(() {
-        _privateKey = pk;
+        _privateKey = exportedKey;
         _loading = false;
       });
       _scheduleHide();

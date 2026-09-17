@@ -37,7 +37,7 @@
 4. `src/crypto/private_key_resolver.dart` — 私钥的唯一出口。助记词钱包现场派生、导入钱包读存储，两条路在这里收口，并负责清零。**任何绕过它拿私钥的代码都值得追问。**
 5. `src/storage/secure_wallet_storage.dart` — Keychain/Keystore 读写，写后回读校验，孤儿密钥对账。
 6. `src/wallet/wallet_commit_service.dart` — 「先写密钥、后写列表」的两阶段提交与 pending 标记。中途崩溃留下的残留由它收拾。
-7. `src/tx/` — 三条链的交易构造与签名，以及 `transfer/` 下的编排（取钥匙 → 签 → `finally` 清零）。
+7. `src/transaction/` — 三条链的交易构造与签名，以及 `transfer/` 下的编排（取钥匙 → 签 → `finally` 清零）。
 
 ---
 

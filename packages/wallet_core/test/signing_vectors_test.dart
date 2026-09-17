@@ -29,7 +29,7 @@ void main() {
         '25a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aec'
         'b703304b3800ccf555c9f3dc64214b297fb1966a3b6d83';
 
-    test('EIP-155 规范向量：签出的 raw tx 与文档逐字节一致', () {
+    test('EIP-155 规范向量：签出的原始交易字节与文档逐字节一致', () {
       final signer = ETHPrivateKey.fromBytes(privateKey);
 
       final raw = buildAndSignEvmTransaction(

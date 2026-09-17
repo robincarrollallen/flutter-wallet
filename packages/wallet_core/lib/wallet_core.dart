@@ -42,7 +42,7 @@ export 'src/model/fee/tron_fee.dart';
 
 /// 转账请求。UI 唯一能向签名层递交的入参形态——收敛成一个类型，
 /// 是为了让「有多少条路径能触发签名」可以被一眼数清。
-export 'src/model/dto/send_tx_request.dart';
+export 'src/model/dto/send_transaction_request.dart';
 
 /// 助记词的生成、校验与多链地址派生。创建/导入/备份流程的入口。
 export 'src/crypto/mnemonic_service.dart';
@@ -72,17 +72,17 @@ export 'src/security/secret_reveal.dart';
 
 /// 各链的交易构造、签名与广播。审计的核心对象：
 /// 从「用户在确认页看到的金额」到「广播出去的那串字节」之间的全部变换都在这里。
-export 'src/tx/evm_transaction_service.dart';
-export 'src/tx/solana_transaction_service.dart';
-export 'src/tx/tron_transaction_service.dart';
+export 'src/transaction/evm_transaction_service.dart';
+export 'src/transaction/solana_transaction_service.dart';
+export 'src/transaction/tron_transaction_service.dart';
 
 /// 转账编排：取私钥 → 签名 → finally 里清零。
 /// 私钥的生命周期只在这一层展开，UI 拿不到也不需要拿到原始字节。
-export 'src/tx/transfer/chain_transfer_service.dart';
-export 'src/tx/transfer/transfer_result.dart';
-export 'src/tx/transfer/evm_transfer_service.dart';
-export 'src/tx/transfer/solana_transfer_service.dart';
-export 'src/tx/transfer/tron_transfer_service.dart';
+export 'src/transaction/transfer/chain_transfer_service.dart';
+export 'src/transaction/transfer/transfer_result.dart';
+export 'src/transaction/transfer/evm_transfer_service.dart';
+export 'src/transaction/transfer/solana_transfer_service.dart';
+export 'src/transaction/transfer/tron_transfer_service.dart';
 
 /// 钱包的增删改与按链分发。
 export 'src/wallet/wallet_service.dart';

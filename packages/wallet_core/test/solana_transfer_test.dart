@@ -113,8 +113,8 @@ SolanaTransactionService _service(_FakeSolanaService node) => SolanaTransactionS
 /// 不能再用 `compiledInstructions.single`：现在每笔交易都带两条 ComputeBudget 指令
 /// （声明计算单元上限与优先单价），转账指令只是其中之一。
 ({SolAddress recipient, BigInt lamports}) _transferOf(String base64Transaction) {
-  final tx = SolanaTransaction.deserialize(StringUtils.encode(base64Transaction, encoding: StringEncoding.base64));
-  final message = tx.message;
+  final transaction = SolanaTransaction.deserialize(StringUtils.encode(base64Transaction, encoding: StringEncoding.base64));
+  final message = transaction.message;
   final instruction = message.compiledInstructions.firstWhere(
     (candidate) => message.accountKeys[candidate.programIdIndex] == SystemProgramConst.programId,
   );
@@ -124,8 +124,8 @@ SolanaTransactionService _service(_FakeSolanaService node) => SolanaTransactionS
 
 /// 广播出去的交易里声明的优先单价（micro-lamport / 计算单元）。
 BigInt _computeUnitPriceOf(String base64Transaction) {
-  final tx = SolanaTransaction.deserialize(StringUtils.encode(base64Transaction, encoding: StringEncoding.base64));
-  final message = tx.message;
+  final transaction = SolanaTransaction.deserialize(StringUtils.encode(base64Transaction, encoding: StringEncoding.base64));
+  final message = transaction.message;
   for (final instruction in message.compiledInstructions) {
     if (message.accountKeys[instruction.programIdIndex] != ComputeBudgetConst.programId) continue;
     final layout = ComputeBudgetProgramLayout.fromBytes(instruction.data);

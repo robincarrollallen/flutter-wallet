@@ -65,7 +65,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       final result = await ref
           .read(walletServiceProvider)
           .sendTransaction(
-            SendTxRequest(
+            SendTransactionRequest(
               from: from,
               to: widget.toAddress,
               amount: widget.amount,

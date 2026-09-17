@@ -1,6 +1,6 @@
 import 'package:wallet_core/chains.dart';
 import '../model/models.dart';
-import '../tx/transfer/chain_transfer_service.dart';
+import '../transaction/transfer/chain_transfer_service.dart';
 
 /// 钱包业务编排：校验请求 → 解析链与代币 → 按 [ChainKind] 查表分发给各链实现(这里只做编排，不碰私钥、不构造交易、不访问数据)
 class WalletService {
@@ -9,7 +9,7 @@ class WalletService {
   /// 各链类型的转账实现；缺席的链类型即「暂未支持」
   final Map<ChainKind, ChainTransferService> transferServices;
 
-  /// 用于把 [SendTxRequest.tokenIdentifier] 解析成 [Token]。
+  /// 用于把 [SendTransactionRequest.tokenIdentifier] 解析成 [Token]。
   final TokenCatalog catalog;
 
   /// 查询一笔已广播交易的当前上链状态，供交易历史回填 pending 记录
@@ -31,7 +31,7 @@ class WalletService {
   }
 
   /// 发起转账, 返回 (交易哈希, 实际发送金额, 上链状态)
-  Future<TransferResult> sendTransaction(SendTxRequest request, Wallet wallet) async {
+  Future<TransferResult> sendTransaction(SendTransactionRequest request, Wallet wallet) async {
     final chainId = request.chainId; // 链ID「链唯一标识」
     if (chainId == null) {
       throw ArgumentError('sendTransaction 缺少 chainId'); // 没有链ID抛出异常

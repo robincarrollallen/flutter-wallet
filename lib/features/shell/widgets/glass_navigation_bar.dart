@@ -11,8 +11,8 @@ import '../state.dart';
 ///
 /// 通过 [BackdropFilter] 对其后方内容做高斯模糊，再叠加半透明 surface 色，
 /// 形成 frosted glass 效果，能隐约透出当前页面。父级以 Positioned 让它悬浮。
-class GlassNavBar extends ConsumerWidget {
-  const GlassNavBar({super.key});
+class GlassNavigationBar extends ConsumerWidget {
+  const GlassNavigationBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +50,7 @@ class GlassNavBar extends ConsumerWidget {
             children: [
               for (var i = 0; i < kTabs.length; i++)
                 Expanded(
-                  child: _NavItem(
+                  child: _NavigationItem(
                     item: kTabs[i],
                     label: kTabs[i].label(t),
                     selected: i == current,
@@ -65,8 +65,8 @@ class GlassNavBar extends ConsumerWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
-  const _NavItem({required this.item, required this.label, required this.selected, required this.onTap});
+class _NavigationItem extends StatelessWidget {
+  const _NavigationItem({required this.item, required this.label, required this.selected, required this.onTap});
 
   final TabItem item;
   final String label;
