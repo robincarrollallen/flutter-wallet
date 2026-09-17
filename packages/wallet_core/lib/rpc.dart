@@ -23,7 +23,9 @@ export 'src/rpc/rest_client.dart';
 /// 而「签名前的余额预检」本来就属于签名路径的一部分，迁进来比拆开更诚实。
 export 'src/rpc/chain_balance_api.dart';
 
-/// Solana / Tron 的专用 RPC 封装。这两条链的广播和确认轮询不走通用 JSON-RPC 形态，
-/// 与各自的交易服务强绑定，所以和签名放在同一个包里。
+/// Solana / Tron / Aptos 的专用 RPC 封装。这三条链的广播和确认轮询不走通用
+/// JSON-RPC 形态（Aptos 干脆是 REST），与各自的交易服务强绑定，
+/// 所以和签名放在同一个包里。
+export 'src/rpc/aptos_service.dart';
 export 'src/rpc/solana_service.dart';
 export 'src/rpc/tron_service.dart';

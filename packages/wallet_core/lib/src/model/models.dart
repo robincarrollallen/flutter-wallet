@@ -17,6 +17,7 @@ export 'enums/secret_type.dart';
 export 'enums/transaction_status.dart';
 export 'enums/fee_speed.dart';
 export 'fee/fee_quote.dart';
+export 'fee/aptos_fee.dart';
 export 'fee/evm_fee.dart';
 export 'fee/solana_fee.dart';
 export 'fee/tron_fee.dart';

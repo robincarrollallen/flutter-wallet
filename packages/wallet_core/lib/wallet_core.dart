@@ -36,6 +36,7 @@ export 'src/model/enums/transaction_status.dart';
 /// 构造过程必须和签名在同一个包里，不能让 UI 自己算一份。
 export 'src/model/enums/fee_speed.dart';
 export 'src/model/fee/fee_quote.dart';
+export 'src/model/fee/aptos_fee.dart';
 export 'src/model/fee/evm_fee.dart';
 export 'src/model/fee/solana_fee.dart';
 export 'src/model/fee/tron_fee.dart';
@@ -72,6 +73,7 @@ export 'src/security/secret_reveal.dart';
 
 /// 各链的交易构造、签名与广播。审计的核心对象：
 /// 从「用户在确认页看到的金额」到「广播出去的那串字节」之间的全部变换都在这里。
+export 'src/transaction/aptos_transaction_service.dart';
 export 'src/transaction/evm_transaction_service.dart';
 export 'src/transaction/solana_transaction_service.dart';
 export 'src/transaction/tron_transaction_service.dart';
@@ -80,6 +82,7 @@ export 'src/transaction/tron_transaction_service.dart';
 /// 私钥的生命周期只在这一层展开，UI 拿不到也不需要拿到原始字节。
 export 'src/transaction/transfer/chain_transfer_service.dart';
 export 'src/transaction/transfer/transfer_result.dart';
+export 'src/transaction/transfer/aptos_transfer_service.dart';
 export 'src/transaction/transfer/evm_transfer_service.dart';
 export 'src/transaction/transfer/solana_transfer_service.dart';
 export 'src/transaction/transfer/tron_transfer_service.dart';

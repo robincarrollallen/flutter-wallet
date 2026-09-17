@@ -11,6 +11,7 @@ import '../../../../widgets/asset_icon.dart';
 import '../../../../widgets/network_fee_selector.dart';
 import 'package:wallet_core/wallet_core.dart';
 import '../../../../providers/modules/asset/balance_provider.dart';
+import '../../../../providers/modules/transaction/aptos_fee_provider.dart';
 import '../../../../providers/modules/transaction/evm_fee_provider.dart';
 import '../../../../providers/modules/transaction/solana_fee_provider.dart';
 import '../../../../providers/modules/transaction/tron_fee_provider.dart';
@@ -221,6 +222,12 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       // 取**当前档位**的报价：优先费随档位变，拿别的档去算 MAX 会差出那笔优先费。
       return ref.watch(solanaFeeProvider(_solanaFeeKey(asset, from))).value?.quoteFor(_feeSpeed).maxFee;
     }
+    if (asset.chain.kind == ChainKind.aptos) {
+      // 同 Tron / Solana：aptosFeeProvider 不轮询也不落盘，拿到即新鲜。
+      // 取 maxFee 而非 expectedFee 是关键：Aptos 按「gas 上限 × 单价」预扣，
+      // 用实际消耗去算 MAX 会让全额转出付不起预扣，交易连内存池都进不去。
+      return ref.watch(aptosFeeProvider(_aptosFeeKey(asset, from))).value?.quoteFor(_feeSpeed).maxFee;
+    }
     final view = ref.watch(evmFeeProvider(_feeKey(asset, from)));
     return view.stale ? null : view.quotes?[_feeSpeed]?.maxFee;
   }
@@ -238,8 +245,11 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   /// 优先费的分位数，所以「按近期区块中位小费出价」这套解释对它同样成立，
   /// 直接复用 [_feeSelector] 那个选择器。链不拥堵时三档都是 0 优先费、显示同一个数，
   /// 那是**事实**——此时确实加价也没用。
+  /// **Aptos 的三档同样是链上真给的**：`/estimate_gas_price` 直接返回
+  /// de-prioritized / regular / prioritized 三个 gas 单价（AIP-34），不是本地按倍数
+  /// 编出来的。所以它也走 [_feeSelector]。链空闲时三档同价、显示同一个数，那是事实。
   Widget _feeRow(ListedAsset asset, String from) => switch (asset.chain.kind) {
-    ChainKind.evm || ChainKind.solana => _feeSelector(asset, from),
+    ChainKind.evm || ChainKind.solana || ChainKind.aptos => _feeSelector(asset, from),
     ChainKind.tron => _tronFeeRow(asset, from),
     _ => const _DetailRow(label: '网络费', value: '由网络决定'),
   };
@@ -250,8 +260,18 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     if (asset.chain.kind == ChainKind.solana) {
       return ref.watch(solanaFeeProvider(_solanaFeeKey(asset, from))).value?.quotes;
     }
+    if (asset.chain.kind == ChainKind.aptos) {
+      return ref.watch(aptosFeeProvider(_aptosFeeKey(asset, from))).value?.quotes;
+    }
     return ref.watch(evmFeeProvider(_feeKey(asset, from))).quotes;
   }
+
+  /// 键里不带金额与代币：Aptos 的 gas 与转多少无关，且目前只支持原生币转账。
+  AptosFeeKey _aptosFeeKey(ListedAsset asset, String from) => (
+    chainId: asset.chain.id,
+    from: from,
+    to: widget.toAddress,
+  );
 
   SolanaFeeKey _solanaFeeKey(ListedAsset asset, String from) => (
     chainId: asset.chain.id,
@@ -374,8 +394,25 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     return switch (asset.chain.kind) {
       ChainKind.tron => _tronActivationNotice(asset, from),
       ChainKind.solana => _splAccountNotice(asset, from),
+      ChainKind.aptos => _aptosMaxNotice(asset, from),
       _ => null,
     };
+  }
+
+  /// Aptos 全额转出后账户里会剩下一点零头的解释；非 MAX 场景返回 null。
+  ///
+  /// Aptos 按「gas 上限 × 单价」**预扣**、按实际消耗结算，多冻的部分执行完退回。
+  /// 所以 MAX 只能按上限留出费用，实际消耗总会少一些，差额就留在了账户里。
+  /// 不说的话，用户会以为「全部转出」没转干净是个 bug——而想扣得刚好，就得赌实际
+  /// 消耗一分不差地等于上限，赌输了整笔交易 OUT_OF_GAS 失败且 gas 照扣。
+  String? _aptosMaxNotice(ListedAsset asset, String from) {
+    if (!_deductsFee) return null;
+    final estimate = ref.watch(aptosFeeProvider(_aptosFeeKey(asset, from))).value;
+    if (estimate == null) return null;
+    final quote = estimate.quoteFor(_feeSpeed);
+    final dust = formatTokenAmount(formatUnits(quote.maxFee - quote.expectedFee, asset.chain.decimals));
+    return 'Aptos 按 gas 上限预扣网络费、按实际消耗结算，'
+        '全额转出后账户预计会剩下约 $dust ${asset.chain.symbol}';
   }
 
   String? _tronActivationNotice(ListedAsset asset, String from) {

@@ -36,6 +36,7 @@ final walletServiceProvider = Provider<WalletService>((ref) {
       ChainKind.evm: EvmTransferService(keyResolver),
       ChainKind.tron: TronTransferService(keyResolver),
       ChainKind.solana: SolanaTransferService(keyResolver),
+      ChainKind.aptos: AptosTransferService(keyResolver),
     },
     catalog: ref.watch(tokenCatalogProvider),
   );
@@ -71,3 +72,6 @@ final tronTransactionServiceProvider = Provider<TronTransactionService>((ref) =>
 
 /// Solana 链上读写（费用与租金豁免估算、发交易）。
 final solanaTransactionServiceProvider = Provider<SolanaTransactionService>((ref) => const SolanaTransactionService());
+
+/// Aptos 链上读写（gas 行情与模拟执行、发交易）。
+final aptosTransactionServiceProvider = Provider<AptosTransactionService>((ref) => const AptosTransactionService());
