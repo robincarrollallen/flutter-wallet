@@ -58,9 +58,7 @@ class _FakeApi implements CoinGeckoApi {
   const _FakeApi();
 
   @override
-  Future<Markets> fetchMarkets(Iterable<String> ids, {String vsCurrency = 'usd'}) async => {
-    for (final id in ids) id: (price: 2.0, logoUrl: null),
-  };
+  Future<Markets> fetchMarkets(Iterable<String> ids, {String vsCurrency = 'usd'}) async => {for (final id in ids) id: (price: 2.0, logoUrl: null)};
 
   @override
   Future<ChainIcons> fetchChainIcons(Iterable<String> platformIds) async => const {};
@@ -78,11 +76,7 @@ Future<ProviderContainer> _container(_FakeBalances balances) async {
   final prefs = await SharedPreferences.getInstance();
 
   final container = ProviderContainer(
-    overrides: [
-      sharedPrefsProvider.overrideWithValue(prefs),
-      coinGeckoApiProvider.overrideWithValue(const _FakeApi()),
-      balanceProvider.overrideWith((ref, key) => balances.fetch(key)),
-    ],
+    overrides: [sharedPrefsProvider.overrideWithValue(prefs), coinGeckoApiProvider.overrideWithValue(const _FakeApi()), balanceProvider.overrideWith((ref, key) => balances.fetch(key))],
   );
   addTearDown(container.dispose);
 
@@ -112,8 +106,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('aggregateWalletTotal', () {
-    AccountBalance b(double amount, double price) =>
-        AccountBalance(address: 'a', amount: '$amount', symbol: 'X', price: price);
+    AccountBalance b(double amount, double price) => AccountBalance(address: 'a', amount: '$amount', symbol: 'X', price: price);
 
     test('全部成功：求和，不算部分失败', () {
       final r = aggregateWalletTotal([('a', b(2, 3)), ('b', b(1, 4))]);

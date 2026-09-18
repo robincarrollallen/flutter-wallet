@@ -15,14 +15,7 @@ class HotTermList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: EdgeInsets.all(8.s),
-      children: [
-        for (final term in terms)
-          ListTile(
-            leading: const Icon(Icons.local_fire_department_outlined),
-            title: Text(term),
-            onTap: () => ref.read(searchQueryProvider.notifier).update(term),
-          ),
-      ],
+      children: [for (final term in terms) ListTile(leading: const Icon(Icons.local_fire_department_outlined), title: Text(term), onTap: () => ref.read(searchQueryProvider.notifier).update(term))],
     );
   }
 }

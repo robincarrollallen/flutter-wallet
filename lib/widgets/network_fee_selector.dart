@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../core/format/amount_formatter.dart';
 import '../core/format/token_amount_formatter.dart';
 import '../core/responsive/screen_adapter.dart';
+
 import 'package:wallet_core/wallet_core.dart';
 
 /// 预估网络费选择器：一行按钮，展示当前档位与该档位的预计费用，

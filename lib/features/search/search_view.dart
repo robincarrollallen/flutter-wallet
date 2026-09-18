@@ -40,10 +40,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> with SingleTickerPr
       dividerColor: Colors.transparent,
       indicatorSize: TabBarIndicatorSize.tab,
       indicatorPadding: EdgeInsets.symmetric(vertical: 6.s),
-      indicator: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16.s),
-      ),
+      indicator: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(16.s)),
       labelColor: theme.colorScheme.onSurface,
       unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.35),
       tabs: [
@@ -55,8 +52,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> with SingleTickerPr
   }
 
   /// Tab内容列表
-  Widget _tabViews() =>
-      TabBarView(controller: _tabController, children: const [TokenTabView(), ContractTabView(), DappTabView()]);
+  Widget _tabViews() => TabBarView(controller: _tabController, children: const [TokenTabView(), ContractTabView(), DappTabView()]);
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +137,5 @@ class _PinnedTabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(_PinnedTabBarDelegate old) =>
-      height != old.height || background != old.background || child != old.child;
+  bool shouldRebuild(_PinnedTabBarDelegate old) => height != old.height || background != old.background || child != old.child;
 }

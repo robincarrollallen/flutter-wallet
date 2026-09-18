@@ -35,8 +35,7 @@ class MarketsState {
   /// 当前币种的行情：coinGeckoId -> (单价, 图标 URL)。没有任何数据时是空表。
   Markets get markets => current?.markets ?? const {};
 
-  MarketsState withSnapshot(String currency, MarketsSnapshot snapshot) =>
-      MarketsState(currency: this.currency, byCurrency: {...byCurrency, currency: snapshot});
+  MarketsState withSnapshot(String currency, MarketsSnapshot snapshot) => MarketsState(currency: this.currency, byCurrency: {...byCurrency, currency: snapshot});
 }
 
 /// 一份价格都没有、且这次请求也失败了。
@@ -115,10 +114,7 @@ class MarketsNotifier extends Notifier<MarketsState> with PersistentNotifier<Mar
         if (data is Map)
           for (final e in data.entries)
             if (e.key is String && e.value is Map && (e.value as Map)['price'] is num)
-              e.key as String: (
-                price: ((e.value as Map)['price'] as num).toDouble(),
-                logoUrl: (e.value as Map)['logoUrl'] as String?,
-              ),
+              e.key as String: (price: ((e.value as Map)['price'] as num).toDouble(), logoUrl: (e.value as Map)['logoUrl'] as String?),
       },
       at: at is int ? DateTime.fromMillisecondsSinceEpoch(at) : null,
       ids: ids is List ? ids.whereType<String>().toSet() : const {},
@@ -148,8 +144,7 @@ class MarketsNotifier extends Notifier<MarketsState> with PersistentNotifier<Mar
   ///
   /// 第 2 条比对「请求过的 id」而不是「行情里已有的 key」：CoinGecko 不认识的 id
   /// 永远不会出现在响应里，按 key 判会退化成每次都重取。
-  bool _isStale(MarketsSnapshot? s) =>
-      s == null || s.at == null || DateTime.now().difference(s.at!) >= _ttl || _ids.any((id) => !s.ids.contains(id));
+  bool _isStale(MarketsSnapshot? s) => s == null || s.at == null || DateTime.now().difference(s.at!) >= _ttl || _ids.any((id) => !s.ids.contains(id));
 
   /// 后台取数。返回是否拿到了新数据。
   Future<bool> _fetch(String currency) async {

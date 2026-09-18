@@ -1,5 +1,7 @@
 import 'package:wallet_core/chains.dart';
+
 import '../domain/transaction_record.dart';
+
 import 'package:wallet_core/wallet_core.dart';
 
 /// 各带参页面的路由参数。
@@ -52,14 +54,7 @@ final class SendAmountArgs {
 
 /// 发送流程第四步：确认并提交。
 final class SendConfirmArgs {
-  const SendConfirmArgs({
-    required this.asset,
-    required this.toAddress,
-    required this.amount,
-    this.isMaxAmount = false,
-    this.tokenLogoUrl,
-    this.chainLogoUrl,
-  });
+  const SendConfirmArgs({required this.asset, required this.toAddress, required this.amount, this.isMaxAmount = false, this.tokenLogoUrl, this.chainLogoUrl});
 
   final ListedAsset asset;
   final String toAddress;

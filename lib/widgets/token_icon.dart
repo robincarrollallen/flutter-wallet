@@ -30,14 +30,7 @@ class TokenIcon extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
       child: ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: url,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          placeholder: (context, _) => _fallback(context),
-          errorWidget: (context, _, _) => _fallback(context),
-        ),
+        child: CachedNetworkImage(imageUrl: url, width: size, height: size, fit: BoxFit.cover, placeholder: (context, _) => _fallback(context), errorWidget: (context, _, _) => _fallback(context)),
       ),
     );
   }

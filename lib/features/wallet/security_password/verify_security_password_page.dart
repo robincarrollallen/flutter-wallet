@@ -70,10 +70,7 @@ class _VerifySecurityPasswordPageState extends ConsumerState<VerifySecurityPassw
             decoration: const InputDecoration(labelText: '安全码', border: OutlineInputBorder()),
             onSubmitted: (_) => _submit(),
           ),
-          if (_error != null) ...[
-            SizedBox(height: 12.s),
-            Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
-          ],
+          if (_error != null) ...[SizedBox(height: 12.s), Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error))],
           SizedBox(height: 24.s),
           FilledButton(onPressed: _submitting ? null : _submit, child: const Text('确认')),
         ],

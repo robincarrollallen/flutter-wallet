@@ -10,7 +10,9 @@ import '../../../../providers/modules/asset/chain_icon_provider.dart';
 import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../providers/modules/asset/token_catalog_provider.dart';
 import '../../../../providers/core/service_provider.dart';
+
 import 'package:wallet_core/chains.dart';
+
 import '../../../../router/route_args.dart';
 import '../../../../router/routes.dart';
 import 'logic.dart';
@@ -101,21 +103,11 @@ class _SendScreenState extends ConsumerState<SendScreen> {
             Expanded(
               child: assets.isEmpty
                   ? Center(
-                      child: Text(
-                        '未找到相关资产',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                      ),
+                      child: Text('未找到相关资产', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
                     )
                   : sendable.isEmpty
                   ? Center(
-                      child: Text(
-                        '暂无可发送的资产，先通过「接收」充值吧',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                      ),
+                      child: Text('暂无可发送的资产，先通过「接收」充值吧', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
                     )
                   : ListView.builder(
                       padding: EdgeInsets.symmetric(vertical: 8.s),
@@ -127,8 +119,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                         showChainName: true,
                         markets: markets,
                         chainIcons: chainIcons,
-                        onTap: (tokenLogoUrl, chainLogoUrl) =>
-                            _open(sendable[i], tokenLogoUrl, chainLogoUrl, wallet?.addressFor(sendable[i].chain)),
+                        onTap: (tokenLogoUrl, chainLogoUrl) => _open(sendable[i], tokenLogoUrl, chainLogoUrl, wallet?.addressFor(sendable[i].chain)),
                       ),
                     ),
             ),

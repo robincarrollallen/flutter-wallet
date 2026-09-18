@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../../../data/datasource/remote/coingecko_api.dart' show ChainIcons;
 import '../../../enums/prefs_key.dart';
 import '../../core/coingecko_api_provider.dart';
@@ -16,21 +17,14 @@ typedef ChainIconsState = ({ChainIcons icons, DateTime? at, Set<String> ids});
 /// 各链自己的图标：平台 id -> 图标 URL。
 class ChainIconsNotifier extends Notifier<ChainIconsState> with PersistentNotifier<ChainIconsState> {
   static const _ttl = Duration(days: 7); // 缓存过期时长
-  static final _supportedPlatformIds = SupportedChains.all
-      .map((c) => c.coinGeckoPlatformId)
-      .whereType<String>()
-      .toSet(); // 需要图标的平台 id 合集(只取用到的平台，其余 400 多个不进缓存)
+  static final _supportedPlatformIds = SupportedChains.all.map((c) => c.coinGeckoPlatformId).whereType<String>().toSet(); // 需要图标的平台 id 合集(只取用到的平台，其余 400 多个不进缓存)
 
   @override
   PrefsKey get persistKey => PrefsKey.chainIcons; // 定义持久化标识<persistKey>(重写)
 
   /// 定义持久化内容(重写): 缓存时刻 `at`，数据内容 `data`，缓存对应ID合集 `ids`
   @override
-  Map<String, dynamic> toJson(ChainIconsState state) => {
-    'at': state.at?.millisecondsSinceEpoch,
-    'data': state.icons,
-    'ids': state.ids.toList(),
-  };
+  Map<String, dynamic> toJson(ChainIconsState state) => {'at': state.at?.millisecondsSinceEpoch, 'data': state.icons, 'ids': state.ids.toList()};
 
   /// 初始化设置(重写)
   @override
@@ -61,11 +55,7 @@ class ChainIconsNotifier extends Notifier<ChainIconsState> with PersistentNotifi
     return restored; // 立刻带着旧数据返回，UI 首帧即有图标。
   }
 
-  bool _isStale(ChainIconsState cached) =>
-      _isExpired(cached.at) ||
-      _supportedPlatformIds.any(
-        (id) => !cached.ids.contains(id),
-      ); // 是否持久化数据失效(1. 时间过期, 2. 允许链的 CoinGecko ID 集合是否与缓存的 ID 合集一致)
+  bool _isStale(ChainIconsState cached) => _isExpired(cached.at) || _supportedPlatformIds.any((id) => !cached.ids.contains(id)); // 是否持久化数据失效(1. 时间过期, 2. 允许链的 CoinGecko ID 集合是否与缓存的 ID 合集一致)
 
   bool _isExpired(DateTime? at) => at == null || DateTime.now().difference(at) >= _ttl; // 缓存是否过期
 

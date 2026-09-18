@@ -6,14 +6,7 @@ import 'token_icon.dart';
 /// 资产图标：主体为币/代币图标，右下角叠加所在链的小图标徽标。
 /// 多链资产场景通用（接收弹窗、搜索等）。
 class AssetIcon extends StatelessWidget {
-  const AssetIcon({
-    super.key,
-    required this.symbol,
-    required this.tokenLogoUrl,
-    required this.chainSymbol,
-    required this.chainLogoUrl,
-    this.size,
-  });
+  const AssetIcon({super.key, required this.symbol, required this.tokenLogoUrl, required this.chainSymbol, required this.chainLogoUrl, this.size});
 
   final String symbol;
   final String? tokenLogoUrl;

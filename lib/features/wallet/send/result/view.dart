@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/format/token_amount_formatter.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
+
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../../router/routes.dart';
 import 'state.dart';
 
@@ -16,13 +18,7 @@ import 'state.dart';
 /// 进页面即开始有界轮询上链状态（见 [SendResultStatusPoller]），状态本身读
 /// [transactionHistoryProvider]——用户停在这一页时能看到「确认中」自己变成「已确认」。
 class SendResultPage extends ConsumerStatefulWidget {
-  const SendResultPage({
-    super.key,
-    required this.asset,
-    required this.toAddress,
-    required this.amount,
-    required this.txHash,
-  });
+  const SendResultPage({super.key, required this.asset, required this.toAddress, required this.amount, required this.txHash});
 
   final ListedAsset asset;
   final String toAddress;
@@ -35,10 +31,7 @@ class SendResultPage extends ConsumerStatefulWidget {
 
 class _SendResultPageState extends ConsumerState<SendResultPage> {
   /// 轮询目标：链 + 哈希。构造一次复用，避免每帧建新记录导致 family 反复重建。
-  late final ({String chainId, String transactionHash}) _target = (
-    chainId: widget.asset.chain.id,
-    transactionHash: widget.txHash,
-  );
+  late final ({String chainId, String transactionHash}) _target = (chainId: widget.asset.chain.id, transactionHash: widget.txHash);
 
   @override
   void initState() {
@@ -61,22 +54,12 @@ class _SendResultPageState extends ConsumerState<SendResultPage> {
     final (icon, color, title, subtitle) = switch (status) {
       TransactionStatus.confirmed => (Icons.check_circle_rounded, theme.colorScheme.primary, '已确认', '交易已上链确认'),
       TransactionStatus.failed => (Icons.error_rounded, theme.colorScheme.error, '上链失败', '交易已广播但执行失败，gas 可能已消耗'),
-      TransactionStatus.pending => (
-        Icons.hourglass_top_rounded,
-        theme.colorScheme.tertiary,
-        '确认中',
-        '已广播，等待网络确认（可稍后在区块浏览器查看）',
-      ),
+      TransactionStatus.pending => (Icons.hourglass_top_rounded, theme.colorScheme.tertiary, '确认中', '已广播，等待网络确认（可稍后在区块浏览器查看）'),
       // 与「上链失败」分开说，因为两者的资金结局完全不同：这里交易根本没上链，
       // 手续费一分没扣、钱也没转出去。措辞必须先把这件事说清楚，
       // 否则用户会以为钱卡在半路，或者以为手续费白花了。
       // 也不能引导他去区块浏览器——那个哈希在链上压根不存在，只会更慌。
-      TransactionStatus.expired => (
-        Icons.schedule_rounded,
-        theme.colorScheme.error,
-        '未能上链',
-        '网络繁忙，交易在生效期内未被打包。资金未转出、手续费未扣除，可重新发起',
-      ),
+      TransactionStatus.expired => (Icons.schedule_rounded, theme.colorScheme.error, '未能上链', '网络繁忙，交易在生效期内未被打包。资金未转出、手续费未扣除，可重新发起'),
     };
 
     // 结果页是流程终点：禁用返回手势，避免退回金额/地址等中间步骤。
@@ -99,10 +82,7 @@ class _SendResultPageState extends ConsumerState<SendResultPage> {
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 SizedBox(height: 4.s),
-                Text(
-                  '${formatTokenAmount(amount)} ${asset.symbol} · ${asset.chain.name}',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
+                Text('${formatTokenAmount(amount)} ${asset.symbol} · ${asset.chain.name}', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 SizedBox(height: 24.s),
                 // —— 交易哈希：点击整块复制 —— //
                 InkWell(
@@ -111,17 +91,11 @@ class _SendResultPageState extends ConsumerState<SendResultPage> {
                   child: Container(
                     width: double.infinity,
                     padding: EdgeInsets.all(12.s),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12.s),
-                    ),
+                    decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12.s)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '交易哈希',
-                          style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                        ),
+                        Text('交易哈希', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                         SizedBox(height: 6.s),
                         Row(
                           children: [

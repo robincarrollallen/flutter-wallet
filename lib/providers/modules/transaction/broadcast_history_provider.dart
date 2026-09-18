@@ -60,6 +60,4 @@ class BroadcastHistoryNotifier extends Notifier<BroadcastState> with PersistentN
   }
 }
 
-final broadcastHistoryProvider = NotifierProvider<BroadcastHistoryNotifier, BroadcastState>(
-  BroadcastHistoryNotifier.new,
-);
+final broadcastHistoryProvider = NotifierProvider<BroadcastHistoryNotifier, BroadcastState>(BroadcastHistoryNotifier.new);

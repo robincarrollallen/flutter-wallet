@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../../../../providers/modules/asset/token_catalog_provider.dart';
 import '../pill/logic.dart';
 import '../pill/state.dart';
@@ -24,9 +25,5 @@ class TokenResults {
 final tokenResultsProvider = Provider.autoDispose<TokenResults>((ref) {
   final q = normalizeQuery(ref.watch(searchQueryProvider));
   final catalog = ref.watch(tokenCatalogProvider);
-  return TokenResults(
-    query: q,
-    chains: TokenSearchLogic.matchChains(q),
-    tokens: TokenSearchLogic.matchTokens(q, catalog),
-  );
+  return TokenResults(query: q, chains: TokenSearchLogic.matchChains(q), tokens: TokenSearchLogic.matchTokens(q, catalog));
 });

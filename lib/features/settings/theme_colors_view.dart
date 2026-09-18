@@ -46,12 +46,7 @@ class ThemeColorsScreen extends StatelessWidget {
         ('colorScheme.onTertiaryFixed', cs.onTertiaryFixed),
         ('colorScheme.onTertiaryFixedVariant', cs.onTertiaryFixedVariant),
       ],
-      'Error': [
-        ('colorScheme.error', cs.error),
-        ('colorScheme.onError', cs.onError),
-        ('colorScheme.errorContainer', cs.errorContainer),
-        ('colorScheme.onErrorContainer', cs.onErrorContainer),
-      ],
+      'Error': [('colorScheme.error', cs.error), ('colorScheme.onError', cs.onError), ('colorScheme.errorContainer', cs.errorContainer), ('colorScheme.onErrorContainer', cs.onErrorContainer)],
       'Surface': [
         ('colorScheme.surface', cs.surface),
         ('colorScheme.onSurface', cs.onSurface),
@@ -91,11 +86,7 @@ class ThemeColorsScreen extends StatelessWidget {
         ('secondaryHeaderColor', theme.secondaryHeaderColor),
         ('unselectedWidgetColor', theme.unselectedWidgetColor),
       ],
-      'App (ThemeExtension)': [
-        ('appColors.success', app.success),
-        ('appColors.onSuccess', app.onSuccess),
-        ('appColors.warning', app.warning),
-      ],
+      'App (ThemeExtension)': [('appColors.success', app.success), ('appColors.onSuccess', app.onSuccess), ('appColors.warning', app.warning)],
       // 已弃用但仍可访问，列出以保证完整；新代码请勿使用。
       'Deprecated': [
         // ignore: deprecated_member_use
@@ -116,10 +107,7 @@ class ThemeColorsScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.symmetric(vertical: 8.s),
         children: [
-          for (final entry in groups.entries) ...[
-            _SectionHeader(title: entry.key),
-            for (final (name, color) in entry.value) _ColorRow(name: name, color: color),
-          ],
+          for (final entry in groups.entries) ...[_SectionHeader(title: entry.key), for (final (name, color) in entry.value) _ColorRow(name: name, color: color)],
           SizedBox(height: 16.s),
         ],
       ),
@@ -178,10 +166,7 @@ class _ColorRow extends StatelessWidget {
                 SizedBox(height: 2.s),
                 Text(
                   _hex(color),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontFeatures: const [FontFeature.tabularFigures()]),
                 ),
               ],
             ),

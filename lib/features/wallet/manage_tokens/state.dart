@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../../../providers/modules/asset/token_catalog_provider.dart';
 
 /// 管理页的资产列表：**全量**目录，含已被隐藏的项。

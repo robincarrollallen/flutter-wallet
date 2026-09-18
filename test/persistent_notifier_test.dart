@@ -29,9 +29,7 @@ final _probeProvider = NotifierProvider<_ProbeNotifier, List<String>>(_ProbeNoti
 /// 建容器并完成一次 restore，返回 notifier 供检查恢复态。
 Future<_ProbeNotifier> _restoreWith(Map<String, Object> prefs) async {
   SharedPreferences.setMockInitialValues(prefs);
-  final container = ProviderContainer(
-    overrides: [sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance())],
-  );
+  final container = ProviderContainer(overrides: [sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance())]);
   addTearDown(container.dispose);
   container.read(_probeProvider); // 触发 build → restore
   return container.read(_probeProvider.notifier);

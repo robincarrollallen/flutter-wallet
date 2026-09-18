@@ -11,9 +11,7 @@ class TokenSearchLogic {
   /// 按名称 / 符号匹配受支持链。
   static List<Chain> matchChains(String q) {
     if (q.isEmpty) return const [];
-    return SupportedChains.all
-        .where((c) => c.name.toLowerCase().contains(q) || c.symbol.toLowerCase().contains(q))
-        .toList(growable: false);
+    return SupportedChains.all.where((c) => c.name.toLowerCase().contains(q) || c.symbol.toLowerCase().contains(q)).toList(growable: false);
   }
 
   /// 按名称 / 符号匹配目录中的代币（如 USDC），返回 (所在链, 代币) 对。

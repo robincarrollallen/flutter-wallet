@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../../../enums/prefs_key.dart';
 import '../../core/persistent_notifier.dart';
 import '../../core/token_catalog_api_provider.dart';

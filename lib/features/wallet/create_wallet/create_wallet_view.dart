@@ -47,10 +47,7 @@ class _CreateWalletViewState extends ConsumerState<CreateWalletView> {
         body: switch (state.phase) {
           CreatePhase.generating => const _GeneratingView(),
           CreatePhase.success => _SuccessView(onStart: _goHome),
-          CreatePhase.failed => _FailedView(
-            onRetry: () => ref.read(createWalletProvider.notifier).create(),
-            onBack: () => Navigator.of(context).maybePop(),
-          ),
+          CreatePhase.failed => _FailedView(onRetry: () => ref.read(createWalletProvider.notifier).create(), onBack: () => Navigator.of(context).maybePop()),
         },
       ),
     );
@@ -66,10 +63,7 @@ class _GeneratingView extends StatefulWidget {
 }
 
 class _GeneratingViewState extends State<_GeneratingView> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1400),
-  )..repeat();
+  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat();
 
   @override
   void dispose() {

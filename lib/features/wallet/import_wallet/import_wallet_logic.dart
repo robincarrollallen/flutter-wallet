@@ -41,8 +41,5 @@ class ImportWalletLogic {
   ];
 
   /// 页面要展示的导入入口（顺序即展示顺序）。
-  static const options = <ImportOption>[
-    ImportOption(kind: ImportKind.software, brands: softwareWallets),
-    ImportOption(kind: ImportKind.hardware, brands: hardwareWallets),
-  ];
+  static const options = <ImportOption>[ImportOption(kind: ImportKind.software, brands: softwareWallets), ImportOption(kind: ImportKind.hardware, brands: hardwareWallets)];
 }

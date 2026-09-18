@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../i18n/translations.g.dart';
 import '../../../providers/modules/asset/chain_icon_provider.dart';
@@ -61,20 +62,12 @@ class _ManageTokensScreenState extends ConsumerState<ManageTokensScreen> {
           Expanded(
             child: assets.isEmpty
                 ? Center(
-                    child: Text(
-                      t.manageTokens.empty,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
+                    child: Text(t.manageTokens.empty, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                   )
                 : ListView.builder(
                     padding: EdgeInsets.only(bottom: 24.s),
                     itemCount: assets.length,
-                    itemBuilder: (context, i) => _ManageTile(
-                      asset: assets[i],
-                      visible: !hidden.contains(assets[i].key),
-                      markets: markets,
-                      chainIcons: chainIcons,
-                    ),
+                    itemBuilder: (context, i) => _ManageTile(asset: assets[i], visible: !hidden.contains(assets[i].key), markets: markets, chainIcons: chainIcons),
                   ),
           ),
         ],

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../providers/core/service_provider.dart';
 import '../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../i18n/translations.g.dart';
@@ -23,9 +24,7 @@ class CreateWalletState {
 }
 
 /// 页面私有状态 (离开页面自动销毁)
-final createWalletProvider = NotifierProvider.autoDispose<CreateWalletNotifier, CreateWalletState>(
-  CreateWalletNotifier.new,
-);
+final createWalletProvider = NotifierProvider.autoDispose<CreateWalletNotifier, CreateWalletState>(CreateWalletNotifier.new);
 
 class CreateWalletNotifier extends Notifier<CreateWalletState> {
   @override
@@ -49,13 +48,7 @@ class CreateWalletNotifier extends Notifier<CreateWalletState> {
       final existing = ref.read(walletListProvider).length;
       final name = existing == 0 ? base : '$base ${existing + 1}';
 
-      final wallet = Wallet(
-        id: newWalletId(),
-        name: name,
-        source: WalletSource.mnemonic,
-        addresses: derived.addresses,
-        createdAt: DateTime.now(),
-      );
+      final wallet = Wallet(id: newWalletId(), name: name, source: WalletSource.mnemonic, addresses: derived.addresses, createdAt: DateTime.now());
 
       // 助记词 + 元数据 + 选中态一次性原子提交：要么全部生效，要么什么都不留。
       // 助记词进安全存储（Keychain / Keystore），不进入状态；

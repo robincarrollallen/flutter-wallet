@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet_core/chains.dart';
+
 import '../../services/history/bitcoin_transaction_history_service.dart';
 import '../../services/history/evm_transaction_history_service.dart';
 import '../../services/history/solana_transaction_history_service.dart';
@@ -23,14 +24,10 @@ import '../../config/app_config.dart';
 /// 这里的 Provider 会连带重建。区别只在于由谁来监听。
 
 /// 导出私钥 / 签名等流程的私钥解析入口。
-final privateKeyResolverProvider = Provider<PrivateKeyResolver>(
-  (ref) => PrivateKeyResolver(ref.watch(secureWalletStorageProvider)),
-);
+final privateKeyResolverProvider = Provider<PrivateKeyResolver>((ref) => PrivateKeyResolver(ref.watch(secureWalletStorageProvider)));
 
 /// 安全码的设置与校验。UI 一律走这里，不直接打安全存储。
-final securityPasswordServiceProvider = Provider<SecurityPasswordService>(
-  (ref) => SecurityPasswordService(ref.watch(securityPasswordStorageProvider)),
-);
+final securityPasswordServiceProvider = Provider<SecurityPasswordService>((ref) => SecurityPasswordService(ref.watch(securityPasswordStorageProvider)));
 
 /// 转账编排入口。接入新链时在 map 里加一行即可。
 final walletServiceProvider = Provider<WalletService>((ref) {
@@ -67,9 +64,7 @@ final transactionHistoryServiceProvider = Provider<TransactionHistoryService>((r
 });
 
 /// 新钱包落盘的「事务」封装，创建与导入共用。
-final walletCommitServiceProvider = Provider<WalletCommitService>(
-  (ref) => WalletCommitService(ref.watch(walletRegistryProvider), ref.watch(secureWalletStorageProvider)),
-);
+final walletCommitServiceProvider = Provider<WalletCommitService>((ref) => WalletCommitService(ref.watch(walletRegistryProvider), ref.watch(secureWalletStorageProvider)));
 
 /// EVM 链上读写（估费、gasLimit、发交易）。
 final evmTransactionServiceProvider = Provider<EvmTransactionService>((ref) => const EvmTransactionService());

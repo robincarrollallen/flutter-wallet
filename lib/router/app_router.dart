@@ -93,11 +93,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           transitionDuration: const Duration(milliseconds: 300),
           reverseTransitionDuration: const Duration(milliseconds: 250),
           transitionsBuilder: (_, animation, _, child) {
-            final curved = CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutCubic,
-              reverseCurve: Curves.easeInCubic,
-            );
+            final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
             return SlideTransition(
               position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(curved),
               child: child,
@@ -117,10 +113,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           transitionDuration: const Duration(milliseconds: 300),
           reverseTransitionDuration: const Duration(milliseconds: 300),
           transitionsBuilder: (_, animation, _, child) => SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, -1),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+            position: Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
             child: child,
           ),
           child: const SettingsPanel(),
@@ -140,9 +133,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           key: state.pageKey,
           fullscreenDialog: true,
           transitionsBuilder: (_, animation, _, child) => SlideTransition(
-            position: animation.drive(
-              Tween(begin: const Offset(0, 1), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic)),
-            ),
+            position: animation.drive(Tween(begin: const Offset(0, 1), end: Offset.zero).chain(CurveTween(curve: Curves.easeOutCubic))),
             child: child,
           ),
           child: const SendScreen(),
@@ -153,11 +144,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             redirect: _requireArgs<SendRecipientArgs>,
             builder: (_, state) {
               final args = state.extra! as SendRecipientArgs;
-              return SendRecipientPage(
-                asset: args.asset,
-                tokenLogoUrl: args.tokenLogoUrl,
-                chainLogoUrl: args.chainLogoUrl,
-              );
+              return SendRecipientPage(asset: args.asset, tokenLogoUrl: args.tokenLogoUrl, chainLogoUrl: args.chainLogoUrl);
             },
             routes: [
               GoRoute(
@@ -165,12 +152,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 redirect: _requireArgs<SendAmountArgs>,
                 builder: (_, state) {
                   final args = state.extra! as SendAmountArgs;
-                  return SendAmountPage(
-                    asset: args.asset,
-                    toAddress: args.toAddress,
-                    tokenLogoUrl: args.tokenLogoUrl,
-                    chainLogoUrl: args.chainLogoUrl,
-                  );
+                  return SendAmountPage(asset: args.asset, toAddress: args.toAddress, tokenLogoUrl: args.tokenLogoUrl, chainLogoUrl: args.chainLogoUrl);
                 },
                 routes: [
                   GoRoute(
@@ -193,12 +175,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         redirect: _requireArgs<SendResultArgs>,
                         builder: (_, state) {
                           final args = state.extra! as SendResultArgs;
-                          return SendResultPage(
-                            asset: args.asset,
-                            toAddress: args.toAddress,
-                            amount: args.amount,
-                            txHash: args.txHash,
-                          );
+                          return SendResultPage(asset: args.asset, toAddress: args.toAddress, amount: args.amount, txHash: args.txHash);
                         },
                       ),
                     ],

@@ -1,7 +1,9 @@
 import 'package:wallet_core/wallet_core.dart';
+
 import '../enums/transaction_direction.dart';
 
 export 'package:wallet_core/wallet_core.dart' show TransactionStatus;
+
 export '../enums/transaction_direction.dart';
 
 /// 一笔交易记录。字段全部来自发送时已知的信息 + 事后回填的上链状态。
@@ -151,14 +153,7 @@ class TransactionRecord {
     final toAddress = json['toAddress'];
     final amount = json['amount'];
     final submittedAt = DateTime.tryParse(json['submittedAt'] as String? ?? '');
-    if (transactionHash is! String ||
-        walletId is! String ||
-        chainId is! String ||
-        symbol is! String ||
-        fromAddress is! String ||
-        toAddress is! String ||
-        amount is! String ||
-        submittedAt == null) {
+    if (transactionHash is! String || walletId is! String || chainId is! String || symbol is! String || fromAddress is! String || toAddress is! String || amount is! String || submittedAt == null) {
       return null;
     }
 

@@ -7,7 +7,9 @@ import '../../../../widgets/amount_text.dart';
 import '../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../coins/logic.dart';
+
 import 'package:wallet_core/chains.dart';
+
 import '../../../../router/route_args.dart';
 import '../../../../router/routes.dart';
 
@@ -47,14 +49,7 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
     }
     context.push(
       AppRoute.sendConfirm,
-      extra: SendConfirmArgs(
-        asset: widget.asset,
-        toAddress: widget.toAddress,
-        amount: input,
-        isMaxAmount: _isMax,
-        tokenLogoUrl: widget.tokenLogoUrl,
-        chainLogoUrl: widget.chainLogoUrl,
-      ),
+      extra: SendConfirmArgs(asset: widget.asset, toAddress: widget.toAddress, amount: input, isMaxAmount: _isMax, tokenLogoUrl: widget.tokenLogoUrl, chainLogoUrl: widget.chainLogoUrl),
     );
   }
 
@@ -65,9 +60,7 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
     final wallet = ref.watch(activeWalletProvider);
     final address = wallet?.addressFor(asset.chain);
     // 进入本页前列表已拦截无地址场景，这里的 address 正常不为空；兜底按 0 处理。
-    final balanceAsync = address == null
-        ? null
-        : ref.watch(balanceProvider((asset.chain.id, address, asset.token?.identifier)));
+    final balanceAsync = address == null ? null : ref.watch(balanceProvider((asset.chain.id, address, asset.token?.identifier)));
     final balance = balanceAsync?.value?.amount ?? '0';
     // 法币折算：余额查询里已带实时单价。
     final price = balanceAsync?.value?.price ?? 0;
@@ -80,16 +73,9 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
             // —— 顶部头部：返回箭头 + 标题 —— //
             Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: '返回',
-                  onPressed: () => Navigator.of(context).maybePop(),
-                ),
+                IconButton(icon: const Icon(Icons.arrow_back), tooltip: '返回', onPressed: () => Navigator.of(context).maybePop()),
                 Expanded(
-                  child: Text(
-                    '发送 ${asset.symbol}',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ),
+                  child: Text('发送 ${asset.symbol}', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                 ),
                 SizedBox(width: 48.s),
               ],
@@ -118,18 +104,12 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
                         suffixText: asset.symbol,
                         filled: true,
                         fillColor: theme.colorScheme.surfaceContainerHighest,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.s),
-                          borderSide: BorderSide.none,
-                        ),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.s), borderSide: BorderSide.none),
                       ),
                     ),
                     SizedBox(height: 8.s),
                     // —— 输入金额的法币折算 —— //
-                    AmountText(
-                      inputValue * price,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
+                    AmountText(inputValue * price, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                     SizedBox(height: 16.s),
                     // —— 可用余额 + MAX —— //
                     Row(
@@ -138,12 +118,7 @@ class _SendAmountPageState extends ConsumerState<SendAmountPage> {
                           child: balanceAsync == null
                               ? Text('可用余额：0 ${asset.symbol}', style: theme.textTheme.bodyMedium)
                               : balanceAsync.when(
-                                  loading: () => Text(
-                                    '可用余额查询中…',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
+                                  loading: () => Text('可用余额查询中…', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                                   error: (_, _) => Text('可用余额：0 ${asset.symbol}', style: theme.textTheme.bodyMedium),
                                   // 刻意不走 formatTokenAmount：这里是用户决定转多少的依据，
                                   // 截断会让人对着一个比实际略小的数做判断。列表页求整齐，

@@ -1,5 +1,6 @@
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
+
 import '../../domain/transaction_record.dart';
 import 'chain_transaction_history_service.dart';
 
@@ -26,13 +27,7 @@ class SolanaTransactionHistoryService implements ChainTransactionHistoryService 
   bool get supportsHistory => true;
 
   @override
-  Future<TransactionHistoryPage> fetch({
-    required Chain chain,
-    required String address,
-    required String walletId,
-    String? cursor,
-    int limit = 25,
-  }) async {
+  Future<TransactionHistoryPage> fetch({required Chain chain, required String address, required String walletId, String? cursor, int limit = 25}) async {
     // 游标就是上一页最后一条签名：Solana 的翻页是「从这条往更早取」。
     final signatures = await jsonRpcCall(chain.endpoint, 'getSignaturesForAddress', [
       address,
@@ -57,21 +52,11 @@ class SolanaTransactionHistoryService implements ChainTransactionHistoryService 
           ],
         ),
     ];
-    final details = chain.supportsRpcBatch
-        ? await jsonRpcBatch(chain.endpoint, calls)
-        : await Future.wait(calls.map((call) => jsonRpcCall(chain.endpoint, call.method, call.params)));
+    final details = chain.supportsRpcBatch ? await jsonRpcBatch(chain.endpoint, calls) : await Future.wait(calls.map((call) => jsonRpcCall(chain.endpoint, call.method, call.params)));
 
     final records = [
       for (var index = 0; index < hashes.length; index++)
-        if (details[index] case final Map<String, dynamic> detail)
-          ?parseSolanaTransaction(
-            detail,
-            hash: hashes[index],
-            chain: chain,
-            address: address,
-            walletId: walletId,
-            catalog: _catalog,
-          ),
+        if (details[index] case final Map<String, dynamic> detail) ?parseSolanaTransaction(detail, hash: hashes[index], chain: chain, address: address, walletId: walletId, catalog: _catalog),
     ];
 
     // 满页才有下一页；游标取本页最后一条签名，而不是最后一条成功解析的记录——
@@ -84,14 +69,7 @@ class SolanaTransactionHistoryService implements ChainTransactionHistoryService 
 ///
 /// 金额不去解析指令，而是看余额差：一条交易可能含多条指令、多层 CPI，
 /// 余额差是唯一一个「这笔交易对我这个地址的净效果」的可靠口径。
-TransactionRecord? parseSolanaTransaction(
-  Map<String, dynamic> detail, {
-  required String hash,
-  required Chain chain,
-  required String address,
-  required String walletId,
-  TokenCatalog? catalog,
-}) {
+TransactionRecord? parseSolanaTransaction(Map<String, dynamic> detail, {required String hash, required Chain chain, required String address, required String walletId, TokenCatalog? catalog}) {
   final meta = detail['meta'];
   if (meta is! Map<String, dynamic>) return null;
 
@@ -100,16 +78,13 @@ TransactionRecord? parseSolanaTransaction(
   if (ownIndex < 0) return null;
 
   final blockTimeSeconds = detail['blockTime'];
-  final blockTime = blockTimeSeconds is int
-      ? DateTime.fromMillisecondsSinceEpoch(blockTimeSeconds * 1000, isUtc: true)
-      : DateTime.now().toUtc();
+  final blockTime = blockTimeSeconds is int ? DateTime.fromMillisecondsSinceEpoch(blockTimeSeconds * 1000, isUtc: true) : DateTime.now().toUtc();
   final fee = BigInt.tryParse('${meta['fee']}') ?? BigInt.zero;
   // 只有第一个账户（fee payer）承担手续费，别的账户看到的余额差里不含它。
   final paidFee = ownIndex == 0;
 
   final tokenDelta = _tokenDelta(meta, address: address, chainId: chain.id, catalog: catalog);
-  final (amount, tokenIdentifier, symbol) =
-      tokenDelta ?? _nativeDelta(meta, ownIndex, fee: fee, paidFee: paidFee, chain: chain);
+  final (amount, tokenIdentifier, symbol) = tokenDelta ?? _nativeDelta(meta, ownIndex, fee: fee, paidFee: paidFee, chain: chain);
   if (amount == BigInt.zero) return null;
 
   final outgoing = amount.isNegative;
@@ -144,13 +119,7 @@ List<String> _accountKeys(Map<String, dynamic> detail) {
 }
 
 /// 原生 SOL 的净变化。自己付了手续费时要把它刨掉，否则转出金额会虚高一个手续费。
-(BigInt, String?, String) _nativeDelta(
-  Map<String, dynamic> meta,
-  int ownIndex, {
-  required BigInt fee,
-  required bool paidFee,
-  required Chain chain,
-}) {
+(BigInt, String?, String) _nativeDelta(Map<String, dynamic> meta, int ownIndex, {required BigInt fee, required bool paidFee, required Chain chain}) {
   final pre = _balanceAt(meta['preBalances'], ownIndex);
   final post = _balanceAt(meta['postBalances'], ownIndex);
   final delta = post - pre;
@@ -167,12 +136,7 @@ BigInt _balanceAt(Object? balances, int index) {
 /// 符号只能靠 [catalog] 查：SPL 的余额条目只给 mint 和数量，节点不给符号。
 /// 这是 Solana 独有的缺口——EVM 从 Etherscan 的 `tokenSymbol`、Tron 从 TronGrid 的
 /// `token_info` 都能白拿到符号。
-(BigInt, String?, String)? _tokenDelta(
-  Map<String, dynamic> meta, {
-  required String address,
-  required String chainId,
-  required TokenCatalog? catalog,
-}) {
+(BigInt, String?, String)? _tokenDelta(Map<String, dynamic> meta, {required String address, required String chainId, required TokenCatalog? catalog}) {
   final pre = _ownTokenAmount(meta['preTokenBalances'], address);
   final post = _ownTokenAmount(meta['postTokenBalances'], address);
   if (pre == null && post == null) return null;
@@ -186,10 +150,7 @@ BigInt _balanceAt(Object? balances, int index) {
   return (delta, mint, symbol ?? (mint.length > 4 ? mint.substring(0, 4) : mint));
 }
 
-int _tokenDecimals(Map<String, dynamic> meta, String address) =>
-    _ownTokenAmount(meta['postTokenBalances'], address)?.decimals ??
-    _ownTokenAmount(meta['preTokenBalances'], address)?.decimals ??
-    0;
+int _tokenDecimals(Map<String, dynamic> meta, String address) => _ownTokenAmount(meta['postTokenBalances'], address)?.decimals ?? _ownTokenAmount(meta['preTokenBalances'], address)?.decimals ?? 0;
 
 ({BigInt amount, int decimals, String mint})? _ownTokenAmount(Object? balances, String address) {
   if (balances is! List) return null;
@@ -197,11 +158,7 @@ int _tokenDecimals(Map<String, dynamic> meta, String address) =>
     if (entry is! Map<String, dynamic> || entry['owner'] != address) continue;
     final uiAmount = entry['uiTokenAmount'];
     if (uiAmount is! Map<String, dynamic>) continue;
-    return (
-      amount: BigInt.tryParse('${uiAmount['amount']}') ?? BigInt.zero,
-      decimals: uiAmount['decimals'] as int? ?? 0,
-      mint: '${entry['mint']}',
-    );
+    return (amount: BigInt.tryParse('${uiAmount['amount']}') ?? BigInt.zero, decimals: uiAmount['decimals'] as int? ?? 0, mint: '${entry['mint']}');
   }
   return null;
 }
@@ -209,12 +166,7 @@ int _tokenDecimals(Map<String, dynamic> meta, String address) =>
 /// 对手方：自己转出时取余额增加最多的账户，自己收款时取减少最多的。
 ///
 /// 只能这么猜——一条交易里没有「收款人」这个字段，能看到的只有谁的余额动了多少。
-String _counterparty(
-  Map<String, dynamic> meta,
-  List<String> accountKeys, {
-  required int ownIndex,
-  required bool outgoing,
-}) {
+String _counterparty(Map<String, dynamic> meta, List<String> accountKeys, {required int ownIndex, required bool outgoing}) {
   final pre = meta['preBalances'];
   final post = meta['postBalances'];
   var bestIndex = -1;

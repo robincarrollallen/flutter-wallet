@@ -1,5 +1,6 @@
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
+
 import '../../domain/transaction_record.dart';
 import 'chain_transaction_history_service.dart';
 
@@ -26,13 +27,7 @@ class EvmTransactionHistoryService implements ChainTransactionHistoryService {
   bool get supportsHistory => apiKey.isNotEmpty;
 
   @override
-  Future<TransactionHistoryPage> fetch({
-    required Chain chain,
-    required String address,
-    required String walletId,
-    String? cursor,
-    int limit = 25,
-  }) async {
+  Future<TransactionHistoryPage> fetch({required Chain chain, required String address, required String walletId, String? cursor, int limit = 25}) async {
     // Etherscan V2 用 chainid 区分链，配不出这个数的链查不了。
     final chainId = chain.evmChainId;
     if (chainId == null) return TransactionHistoryPage.empty;
@@ -43,40 +38,16 @@ class EvmTransactionHistoryService implements ChainTransactionHistoryService {
       _request(chainId: chainId, action: 'tokentx', address: address, page: page, limit: limit),
     ]);
 
-    return parseEtherscanPage(
-      nativeResults: responses[0],
-      tokenResults: responses[1],
-      chain: chain,
-      address: address,
-      walletId: walletId,
-      page: page,
-      limit: limit,
-    );
+    return parseEtherscanPage(nativeResults: responses[0], tokenResults: responses[1], chain: chain, address: address, walletId: walletId, page: page, limit: limit);
   }
 
   /// 单次 Etherscan 调用，返回 `result` 数组。
   ///
   /// `status: "0"` 不一定是错：查不到交易的地址也走这条分支（message 为
   /// "No transactions found"），所以一律当空页处理，不抛。
-  Future<List<dynamic>> _request({
-    required int chainId,
-    required String action,
-    required String address,
-    required int page,
-    required int limit,
-  }) async {
-    final uri = Uri.parse(_etherscanV2Endpoint).replace(
-      queryParameters: {
-        'chainid': '$chainId',
-        'module': 'account',
-        'action': action,
-        'address': address,
-        'page': '$page',
-        'offset': '$limit',
-        'sort': 'desc',
-        'apikey': apiKey,
-      },
-    );
+  Future<List<dynamic>> _request({required int chainId, required String action, required String address, required int page, required int limit}) async {
+    final uri = Uri.parse(_etherscanV2Endpoint)
+        .replace(queryParameters: {'chainid': '$chainId', 'module': 'account', 'action': action, 'address': address, 'page': '$page', 'offset': '$limit', 'sort': 'desc', 'apikey': apiKey});
     final json = await getJson(uri);
     final result = json['result'];
     return result is List ? result : const [];
@@ -95,11 +66,9 @@ TransactionHistoryPage parseEtherscanPage({
 }) {
   final records = [
     for (final entry in nativeResults)
-      if (entry is Map<String, dynamic>)
-        ?_parseEntry(entry, chain: chain, address: address, walletId: walletId, isToken: false),
+      if (entry is Map<String, dynamic>) ?_parseEntry(entry, chain: chain, address: address, walletId: walletId, isToken: false),
     for (final entry in tokenResults)
-      if (entry is Map<String, dynamic>)
-        ?_parseEntry(entry, chain: chain, address: address, walletId: walletId, isToken: true),
+      if (entry is Map<String, dynamic>) ?_parseEntry(entry, chain: chain, address: address, walletId: walletId, isToken: true),
   ];
 
   // 满页就假定还有下一页。Etherscan 不给总数，少查一页空页的代价远小于
@@ -108,13 +77,7 @@ TransactionHistoryPage parseEtherscanPage({
   return TransactionHistoryPage(records: records, nextCursor: hasMore ? '${page + 1}' : null);
 }
 
-TransactionRecord? _parseEntry(
-  Map<String, dynamic> entry, {
-  required Chain chain,
-  required String address,
-  required String walletId,
-  required bool isToken,
-}) {
+TransactionRecord? _parseEntry(Map<String, dynamic> entry, {required Chain chain, required String address, required String walletId, required bool isToken}) {
   final hash = entry['hash'] as String?;
   final from = entry['from'] as String?;
   final to = entry['to'] as String?;
@@ -142,9 +105,7 @@ TransactionRecord? _parseEntry(
     feeAmount: _parseFee(entry, chain.decimals),
     blockNumber: int.tryParse('${entry['blockNumber']}'),
     status: _parseStatus(entry, isToken: isToken),
-    direction: from.toLowerCase() == address.toLowerCase()
-        ? TransactionDirection.outgoing
-        : TransactionDirection.incoming,
+    direction: from.toLowerCase() == address.toLowerCase() ? TransactionDirection.outgoing : TransactionDirection.incoming,
   );
 }
 

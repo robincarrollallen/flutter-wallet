@@ -10,9 +10,6 @@ class WalletManagementState {
   final double panelHeight;
 
   WalletManagementState copyWith({double? dragOffset, double? panelHeight}) {
-    return WalletManagementState(
-      dragOffset: dragOffset ?? this.dragOffset,
-      panelHeight: panelHeight ?? this.panelHeight,
-    );
+    return WalletManagementState(dragOffset: dragOffset ?? this.dragOffset, panelHeight: panelHeight ?? this.panelHeight);
   }
 }

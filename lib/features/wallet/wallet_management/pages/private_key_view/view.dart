@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../../../widgets/secret_guard.dart';
 
 import 'package:wallet_core/chains.dart';
@@ -120,10 +121,7 @@ class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> with Wi
                 Icon(Icons.warning_amber_rounded, size: 18.s, color: theme.colorScheme.error),
                 SizedBox(width: 8.s),
                 Expanded(
-                  child: Text(
-                    '私钥即财产，任何人拿到都能转走你的资产，切勿泄露或截图。',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
-                  ),
+                  child: Text('私钥即财产，任何人拿到都能转走你的资产，切勿泄露或截图。', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
                 ),
               ],
             ),
@@ -135,12 +133,7 @@ class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> with Wi
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           SizedBox(height: 16.s),
-          if (_failed)
-            const Center(child: Text('该钱包没有可导出的私钥或读取失败'))
-          else if (revealed)
-            _RevealedContent(privateKey: privateKey)
-          else
-            _HiddenPlaceholder(loading: _loading, onReveal: _reveal),
+          if (_failed) const Center(child: Text('该钱包没有可导出的私钥或读取失败')) else if (revealed) _RevealedContent(privateKey: privateKey) else _HiddenPlaceholder(loading: _loading, onReveal: _reveal),
         ],
       ),
     );
@@ -172,10 +165,7 @@ class _HiddenPlaceholder extends StatelessWidget {
               width: _qrBoxSize.s,
               height: _qrBoxSize.s,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8.s),
-              ),
+              decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8.s)),
               child: loading
                   ? const CircularProgressIndicator()
                   : Column(
@@ -183,10 +173,7 @@ class _HiddenPlaceholder extends StatelessWidget {
                       children: [
                         Icon(Icons.visibility_off_outlined, size: 48.s, color: theme.colorScheme.primary),
                         SizedBox(height: 12.s),
-                        Text(
-                          '点击展示私钥二维码',
-                          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary),
-                        ),
+                        Text('点击展示私钥二维码', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary)),
                       ],
                     ),
             ),
@@ -197,10 +184,7 @@ class _HiddenPlaceholder extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: EdgeInsets.all(12.s),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8.s),
-          ),
+          decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8.s)),
           child: Text(
             '••••••••••••••••••••••••••••••••',
             maxLines: 1,
@@ -239,10 +223,7 @@ class _RevealedContent extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: EdgeInsets.all(12.s),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8.s),
-          ),
+          decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8.s)),
           child: SecretGuard(child: SelectableText(privateKey, style: theme.textTheme.bodyMedium)),
         ),
         SizedBox(height: 16.s),
@@ -252,8 +233,7 @@ class _RevealedContent extends StatelessWidget {
             await copySensitiveToClipboard(privateKey);
             if (!context.mounted) return;
             // 明确告知会自动清除：用户才知道不必自己去清，也不会以为粘贴板坏了。
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text('私钥已复制，${kSensitiveClipboardLifetime.inSeconds} 秒后自动从剪贴板清除')));
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('私钥已复制，${kSensitiveClipboardLifetime.inSeconds} 秒后自动从剪贴板清除')));
           },
           icon: Icon(Icons.copy_rounded, size: 18.s),
           label: const Text('复制私钥'),

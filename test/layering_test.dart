@@ -18,11 +18,7 @@ void main() {
     // 违反的后果：审计范围被撑大。要确认密钥何时被读写，就得连带看一遍
     // Riverpod 的生命周期；而 shared_preferences 出现在包里，等于给
     // 「密钥被明文落盘」开了一条编译器不再拦截的路。
-    const forbidden = {
-      'flutter_riverpod': '状态管理必须留在 app：包内只提供纯类，谁持有、持有多久由 app 决定',
-      'shared_preferences': '非敏感持久化留在 app：包内没有任何理由碰明文键值存储',
-      'flutter_dotenv': '本机配置留在 app：包内不读环境，也就没有"配置里混进密钥"这一说',
-    };
+    const forbidden = {'flutter_riverpod': '状态管理必须留在 app：包内只提供纯类，谁持有、持有多久由 app 决定', 'shared_preferences': '非敏感持久化留在 app：包内没有任何理由碰明文键值存储', 'flutter_dotenv': '本机配置留在 app：包内不读环境，也就没有"配置里混进密钥"这一说'};
 
     final offenders = <String>[];
     for (final file in _dartFilesIn(packageLib)) {
@@ -47,8 +43,7 @@ void main() {
     // 等于让「app 能碰到哪些安全能力」重新变成一个需要逐文件排查的问题。
     final offenders = [
       for (final file in [..._dartFilesIn(appLib), ..._dartFilesIn(Directory('test'))])
-        if (_directivesOf(file).any((d) => d.contains('package:wallet_core/src/')))
-          '${file.path}：直接 import 了 src/，应改用 wallet_core.dart / chains.dart / rpc.dart',
+        if (_directivesOf(file).any((d) => d.contains('package:wallet_core/src/'))) '${file.path}：直接 import 了 src/，应改用 wallet_core.dart / chains.dart / rpc.dart',
     ];
 
     expect(offenders, isEmpty, reason: '穿透了包的公开面：\n${offenders.join('\n')}');
@@ -60,8 +55,7 @@ void main() {
     // chains.dart / rpc.dart 不导出安全核心，不成环，允许包内使用。
     final offenders = [
       for (final file in _dartFilesIn(packageLib))
-        if (file.path.contains('/src/') && _directivesOf(file).any((d) => d.endsWith("wallet_core.dart';")))
-          '${file.path}：import 了 wallet_core.dart 门面，应改成指向具体文件的相对 import',
+        if (file.path.contains('/src/') && _directivesOf(file).any((d) => d.endsWith("wallet_core.dart';"))) '${file.path}：import 了 wallet_core.dart 门面，应改成指向具体文件的相对 import',
     ];
 
     expect(offenders, isEmpty, reason: '包内出现门面循环：\n${offenders.join('\n')}');
@@ -100,8 +94,7 @@ void main() {
 
     final offenders = [
       for (final file in _dartFilesIn(appLib))
-        if (_directivesOf(file).any((d) => d.contains('shared_preferences')) && !allowed.contains(file.path))
-          '${file.path}：直接依赖 shared_preferences，落盘应经由 PersistentNotifier + PrefsKey',
+        if (_directivesOf(file).any((d) => d.contains('shared_preferences')) && !allowed.contains(file.path)) '${file.path}：直接依赖 shared_preferences，落盘应经由 PersistentNotifier + PrefsKey',
     ];
 
     expect(offenders, isEmpty, reason: '绕过了统一的落盘入口：\n${offenders.join('\n')}');
@@ -119,8 +112,7 @@ void main() {
 
     final offenders = [
       for (final file in services)
-        if (_directivesOf(file).any((directive) => directive.contains('flutter_riverpod')))
-          '${file.path}：service 不得认识 Riverpod，依赖一律走构造注入',
+        if (_directivesOf(file).any((directive) => directive.contains('flutter_riverpod'))) '${file.path}：service 不得认识 Riverpod，依赖一律走构造注入',
     ];
 
     expect(offenders, isEmpty, reason: '违反分层：\n${offenders.join('\n')}');
@@ -149,10 +141,7 @@ void main() {
   });
 
   test('导出私钥与备份助记词必须经过安全码', () {
-    for (final path in [
-      'lib/features/wallet/wallet_management/pages/export_private_key/view.dart',
-      'lib/features/wallet/wallet_management/pages/manual_backup/view.dart',
-    ]) {
+    for (final path in ['lib/features/wallet/wallet_management/pages/export_private_key/view.dart', 'lib/features/wallet/wallet_management/pages/manual_backup/view.dart']) {
       final source = File(path).readAsStringSync();
       expect(source, contains('confirmSecurityPassword'), reason: path);
       expect(source, isNot(contains('TODO: 安全码')), reason: path);

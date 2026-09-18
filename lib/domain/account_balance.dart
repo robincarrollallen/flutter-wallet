@@ -1,14 +1,7 @@
 /// 【状态数据】UI 直接使用的余额模型。
 /// 由 service 层从 BalanceResponse(DTO) 转换而来：原始最小单位 -> 可读金额。
 class AccountBalance {
-  const AccountBalance({
-    required this.address,
-    required this.amount,
-    required this.symbol,
-    this.price = 0,
-    this.logoUrl,
-    this.utxo,
-  });
+  const AccountBalance({required this.address, required this.amount, required this.symbol, this.price = 0, this.logoUrl, this.utxo});
 
   final String address;
 

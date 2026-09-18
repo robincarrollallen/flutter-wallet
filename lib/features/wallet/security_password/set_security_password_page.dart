@@ -61,10 +61,7 @@ class _SetSecurityPasswordPageState extends ConsumerState<SetSecurityPasswordPag
       child: ListView(
         padding: EdgeInsets.all(16.s),
         children: [
-          Text(
-            '安全码用于导出私钥、备份等敏感操作的身份校验，请牢记。',
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
+          Text('安全码用于导出私钥、备份等敏感操作的身份校验，请牢记。', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           SizedBox(height: 24.s),
           TextField(
             controller: _passwordController,
@@ -80,10 +77,7 @@ class _SetSecurityPasswordPageState extends ConsumerState<SetSecurityPasswordPag
             decoration: const InputDecoration(labelText: '确认安全码', hintText: '请再次输入', border: OutlineInputBorder()),
             onSubmitted: (_) => _submit(),
           ),
-          if (_error != null) ...[
-            SizedBox(height: 12.s),
-            Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
-          ],
+          if (_error != null) ...[SizedBox(height: 12.s), Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error))],
           SizedBox(height: 24.s),
           FilledButton(onPressed: _submitting ? null : _submit, child: const Text('确认')),
         ],

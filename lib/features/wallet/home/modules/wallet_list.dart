@@ -45,8 +45,7 @@ class WalletList extends ConsumerWidget {
           ),
           SliverList.builder(
             itemCount: assets.length,
-            itemBuilder: (context, i) =>
-                AssetTile(asset: assets[i], showChainName: true, markets: markets, chainIcons: chainIcons),
+            itemBuilder: (context, i) => AssetTile(asset: assets[i], showChainName: true, markets: markets, chainIcons: chainIcons),
           ),
           // 底部留白，避免最后一项被悬浮的毛玻璃导航栏遮挡。
           SliverToBoxAdapter(child: SizedBox(height: 96.s)),

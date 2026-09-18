@@ -23,38 +23,13 @@ class AppearanceScreen extends ConsumerWidget {
       body: ListView(
         children: [
           _SectionHeader(title: '模式'),
-          _OptionTile(
-            icon: Icons.brightness_auto_outlined,
-            label: '跟随系统',
-            selected: appearance.themeMode == ThemeMode.system,
-            onTap: () => notifier.setMode(ThemeMode.system),
-          ),
-          _OptionTile(
-            icon: Icons.light_mode_outlined,
-            label: '白天',
-            selected: appearance.themeMode == ThemeMode.light,
-            onTap: () => notifier.setMode(ThemeMode.light),
-          ),
-          _OptionTile(
-            icon: Icons.dark_mode_outlined,
-            label: '黑夜',
-            selected: appearance.themeMode == ThemeMode.dark,
-            onTap: () => notifier.setMode(ThemeMode.dark),
-          ),
+          _OptionTile(icon: Icons.brightness_auto_outlined, label: '跟随系统', selected: appearance.themeMode == ThemeMode.system, onTap: () => notifier.setMode(ThemeMode.system)),
+          _OptionTile(icon: Icons.light_mode_outlined, label: '白天', selected: appearance.themeMode == ThemeMode.light, onTap: () => notifier.setMode(ThemeMode.light)),
+          _OptionTile(icon: Icons.dark_mode_outlined, label: '黑夜', selected: appearance.themeMode == ThemeMode.dark, onTap: () => notifier.setMode(ThemeMode.dark)),
           const Divider(height: 1),
           _SectionHeader(title: '主题'),
-          _OptionTile(
-            icon: Icons.wb_sunny_outlined,
-            label: '亮色',
-            selected: appearance.themeName == AppThemeName.light,
-            onTap: () => notifier.setThemeName(AppThemeName.light),
-          ),
-          _OptionTile(
-            icon: Icons.nightlight_outlined,
-            label: '暗色',
-            selected: appearance.themeName == AppThemeName.dark,
-            onTap: () => notifier.setThemeName(AppThemeName.dark),
-          ),
+          _OptionTile(icon: Icons.wb_sunny_outlined, label: '亮色', selected: appearance.themeName == AppThemeName.light, onTap: () => notifier.setThemeName(AppThemeName.light)),
+          _OptionTile(icon: Icons.nightlight_outlined, label: '暗色', selected: appearance.themeName == AppThemeName.dark, onTap: () => notifier.setThemeName(AppThemeName.dark)),
         ],
       ),
     );

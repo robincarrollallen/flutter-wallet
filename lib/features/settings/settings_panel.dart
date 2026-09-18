@@ -50,21 +50,13 @@ class SettingsPanel extends StatelessWidget {
                   children: [
                     _SettingsTile(icon: Icons.tune, title: t.settings.general),
                     // 主题 / 模式：打开选择页（模式：跟随系统/白天/黑夜；主题：亮色/暗色）。
-                    _SettingsTile(
-                      icon: Icons.brightness_6_outlined,
-                      title: '主题 / 模式',
-                      onTap: () => context.push(AppRoute.settingsAppearance),
-                    ),
+                    _SettingsTile(icon: Icons.brightness_6_outlined, title: '主题 / 模式', onTap: () => context.push(AppRoute.settingsAppearance)),
                     // 币种：全应用金额折算所用的法币，行尾显示当前选择。
                     // 只用 Consumer 包这一行——整个面板是毛玻璃覆盖层，
                     // 若改成 ConsumerWidget，切币种会让整层重建。
                     Consumer(
-                      builder: (context, ref, _) => _SettingsTile(
-                        icon: Icons.attach_money,
-                        title: t.currency.title,
-                        trailingText: ref.watch(currencyProvider),
-                        onTap: () => context.push(AppRoute.settingsCurrency),
-                      ),
+                      builder: (context, ref, _) =>
+                          _SettingsTile(icon: Icons.attach_money, title: t.currency.title, trailingText: ref.watch(currencyProvider), onTap: () => context.push(AppRoute.settingsCurrency)),
                     ),
                     Consumer(
                       builder: (context, ref, _) => _SettingsTile(
@@ -83,11 +75,7 @@ class SettingsPanel extends StatelessWidget {
                     ),
                     _SettingsTile(icon: Icons.info_outline, title: t.settings.about),
                     // 调试入口：查看当前主题所有颜色及对应变量。
-                    _SettingsTile(
-                      icon: Icons.palette_outlined,
-                      title: '主题颜色（调试）',
-                      onTap: () => context.push(AppRoute.settingsThemeColors),
-                    ),
+                    _SettingsTile(icon: Icons.palette_outlined, title: '主题颜色（调试）', onTap: () => context.push(AppRoute.settingsThemeColors)),
                   ],
                 ),
               ),
@@ -121,10 +109,7 @@ class _SettingsTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (value != null) ...[
-            Text(value, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            SizedBox(width: 4.s),
-          ],
+          if (value != null) ...[Text(value, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)), SizedBox(width: 4.s)],
           const Icon(Icons.chevron_right),
         ],
       ),

@@ -36,15 +36,7 @@ void main() {
     };
 
     test('原生转账：方向、金额、手续费、区块高度都解析出来', () {
-      final page = parseEtherscanPage(
-        nativeResults: [nativeEntry()],
-        tokenResults: const [],
-        chain: chain,
-        address: own,
-        walletId: _wallet,
-        page: 1,
-        limit: 25,
-      );
+      final page = parseEtherscanPage(nativeResults: [nativeEntry()], tokenResults: const [], chain: chain, address: own, walletId: _wallet, page: 1, limit: 25);
 
       final record = page.records.single;
       expect(record.direction, TransactionDirection.outgoing);
@@ -131,24 +123,8 @@ void main() {
     });
 
     test('满页给出下一页页码，不满页表示到底', () {
-      final full = parseEtherscanPage(
-        nativeResults: List.filled(2, nativeEntry()),
-        tokenResults: const [],
-        chain: chain,
-        address: own,
-        walletId: _wallet,
-        page: 3,
-        limit: 2,
-      );
-      final partial = parseEtherscanPage(
-        nativeResults: [nativeEntry()],
-        tokenResults: const [],
-        chain: chain,
-        address: own,
-        walletId: _wallet,
-        page: 3,
-        limit: 2,
-      );
+      final full = parseEtherscanPage(nativeResults: List.filled(2, nativeEntry()), tokenResults: const [], chain: chain, address: own, walletId: _wallet, page: 3, limit: 2);
+      final partial = parseEtherscanPage(nativeResults: [nativeEntry()], tokenResults: const [], chain: chain, address: own, walletId: _wallet, page: 3, limit: 2);
 
       expect(full.nextCursor, '4');
       expect(partial.nextCursor, isNull);
@@ -197,13 +173,7 @@ void main() {
     });
 
     test('收款方向：不是 fee payer 时不记手续费', () {
-      final record = parseSolanaTransaction(
-        detail(ownIndex: 1),
-        hash: '0xsig',
-        chain: chain,
-        address: own,
-        walletId: _wallet,
-      )!;
+      final record = parseSolanaTransaction(detail(ownIndex: 1), hash: '0xsig', chain: chain, address: own, walletId: _wallet)!;
 
       expect(record.direction, TransactionDirection.incoming);
       expect(record.amount, '1');
@@ -272,14 +242,7 @@ void main() {
         ],
       });
 
-      final record = parseSolanaTransaction(
-        withToken,
-        hash: '0xsig',
-        chain: chain,
-        address: own,
-        walletId: _wallet,
-        catalog: _catalog,
-      )!;
+      final record = parseSolanaTransaction(withToken, hash: '0xsig', chain: chain, address: own, walletId: _wallet, catalog: _catalog)!;
 
       expect(record.symbol, 'USDC');
       expect(record.tokenIdentifier, mint, reason: 'mint 仍要原样留着，详情页拿它去浏览器核对');
@@ -297,14 +260,7 @@ void main() {
         ],
       });
 
-      final record = parseSolanaTransaction(
-        withToken,
-        hash: '0xsig',
-        chain: chain,
-        address: own,
-        walletId: _wallet,
-        catalog: _catalog,
-      )!;
+      final record = parseSolanaTransaction(withToken, hash: '0xsig', chain: chain, address: own, walletId: _wallet, catalog: _catalog)!;
 
       expect(record.symbol, 'Unli');
     });
@@ -431,20 +387,8 @@ void main() {
         'meta': {'fingerprint': 'fp-token'},
       };
 
-      final more = parseTronPage(
-        nativeResponse: withNext,
-        tokenResponse: lastPage,
-        chain: chain,
-        address: ownBase58,
-        walletId: _wallet,
-      );
-      final done = parseTronPage(
-        nativeResponse: lastPage,
-        tokenResponse: lastPage,
-        chain: chain,
-        address: ownBase58,
-        walletId: _wallet,
-      );
+      final more = parseTronPage(nativeResponse: withNext, tokenResponse: lastPage, chain: chain, address: ownBase58, walletId: _wallet);
+      final done = parseTronPage(nativeResponse: lastPage, tokenResponse: lastPage, chain: chain, address: ownBase58, walletId: _wallet);
 
       expect(more.nextCursor, 'fp-native|');
       expect(done.nextCursor, isNull);
@@ -456,11 +400,7 @@ void main() {
     const own = 'tb1qown';
     const other = 'tb1qother';
 
-    Map<String, dynamic> transaction({
-      required List<dynamic> vin,
-      required List<dynamic> vout,
-      bool confirmed = true,
-    }) => {
+    Map<String, dynamic> transaction({required List<dynamic> vin, required List<dynamic> vout, bool confirmed = true}) => {
       'txid': '0xbtc',
       'fee': 1000,
       'vin': vin,

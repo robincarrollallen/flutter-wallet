@@ -5,13 +5,13 @@ import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fake_secure_storage.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet/providers/modules/wallet/wallet_provider.dart';
 import 'package:wallet/providers/core/prefs_provider.dart';
 import 'package:wallet/providers/core/service_provider.dart';
 import 'package:wallet/providers/core/storage_provider.dart';
-
 
 /// 内存版钱包列表 / 选中态，行为对齐 [WalletListNotifier] 与 [CurrentWalletIdNotifier]
 /// （包括 remove 会连带清除敏感数据），并可注入元数据写入失败。
@@ -75,9 +75,7 @@ class _ThrowingWalletListNotifier extends WalletListNotifier {
 Wallet _wallet(String id) => Wallet(id: id, name: 'W-$id', addresses: const {'evm': '0xabc'});
 
 /// 组装被测 service：假安全存储 + 假钱包列表，不经过 Riverpod。
-(WalletCommitService, _FakeWalletRegistry, FakeSecureStoragePlatform) _build({
-  Map<String, String> secrets = const {},
-}) {
+(WalletCommitService, _FakeWalletRegistry, FakeSecureStoragePlatform) _build({Map<String, String> secrets = const {}}) {
   final platform = FakeSecureStoragePlatform(initial: secrets);
   FlutterSecureStoragePlatform.instance = platform;
 
@@ -87,11 +85,7 @@ Wallet _wallet(String id) => Wallet(id: id, name: 'W-$id', addresses: const {'ev
 }
 
 /// 端到端场景专用：走真实 notifier + SharedPreferences 的容器。
-Future<(ProviderContainer, FakeSecureStoragePlatform)> _setUpContainer({
-  Map<String, Object> prefs = const {},
-  Map<String, String> secrets = const {},
-  List<Override> overrides = const [],
-}) async {
+Future<(ProviderContainer, FakeSecureStoragePlatform)> _setUpContainer({Map<String, Object> prefs = const {}, Map<String, String> secrets = const {}, List<Override> overrides = const []}) async {
   SharedPreferences.setMockInitialValues(prefs);
   final sharedPreferences = await SharedPreferences.getInstance();
 
@@ -99,11 +93,7 @@ Future<(ProviderContainer, FakeSecureStoragePlatform)> _setUpContainer({
   FlutterSecureStoragePlatform.instance = platform;
 
   final container = ProviderContainer(
-    overrides: [
-      sharedPrefsProvider.overrideWithValue(sharedPreferences),
-      secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage())),
-      ...overrides,
-    ],
+    overrides: [sharedPrefsProvider.overrideWithValue(sharedPreferences), secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage())), ...overrides],
   );
   addTearDown(container.dispose);
   return (container, platform);
@@ -132,10 +122,7 @@ void main() {
 
       platform.throwOnWrite = true;
 
-      await expectLater(
-        service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)),
-      );
+      await expectLater(service.commit(wallet: _wallet('w1'), mnemonic: 'seed'), throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)));
 
       expect(registry.wallets.map((w) => w.id), ['old']);
       expect(registry.selectedId, 'old');
@@ -146,10 +133,7 @@ void main() {
       final (service, registry, platform) = _build();
       platform.silentlyDropWrites = true;
 
-      await expectLater(
-        service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)),
-      );
+      await expectLater(service.commit(wallet: _wallet('w1'), mnemonic: 'seed'), throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)));
 
       expect(registry.wallets, isEmpty);
       expect(registry.selectedId, isNull);
@@ -168,10 +152,7 @@ void main() {
       final (service, registry, platform) = _build();
       platform.throwOnRead = true;
 
-      await expectLater(
-        service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)),
-      );
+      await expectLater(service.commit(wallet: _wallet('w1'), mnemonic: 'seed'), throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)));
       expect(registry.wallets, isEmpty);
     });
 
@@ -179,10 +160,7 @@ void main() {
       final (service, registry, platform) = _build();
       registry.throwOnAdd = true;
 
-      await expectLater(
-        service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.persistFailed)),
-      );
+      await expectLater(service.commit(wallet: _wallet('w1'), mnemonic: 'seed'), throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.persistFailed)));
 
       // 密钥已经写进去了，回滚必须把它删掉，否则就是孤儿。
       expect(platform.store, isEmpty);
@@ -194,10 +172,7 @@ void main() {
       final (service, registry, platform) = _build();
       registry.throwOnFirstSelect = true;
 
-      await expectLater(
-        service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.persistFailed)),
-      );
+      await expectLater(service.commit(wallet: _wallet('w1'), mnemonic: 'seed'), throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.persistFailed)));
 
       // 这是最容易漏的一条：失败发生在钱包已经进入列表之后。
       expect(registry.wallets, isEmpty);
@@ -209,10 +184,7 @@ void main() {
       registry.throwOnAdd = true;
       platform.throwOnDelete = true; // 回滚里的 deleteSecrets 也失败
 
-      await expectLater(
-        service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.persistFailed)),
-      );
+      await expectLater(service.commit(wallet: _wallet('w1'), mnemonic: 'seed'), throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.persistFailed)));
 
       // 密钥删不掉是可接受的降级——它连同提交标记一起留下，下次启动的对账认标记清理。
       expect(platform.store.keys, containsAll(['wallet.w1.mnemonic', 'wallet.w1.pending']));
@@ -231,10 +203,7 @@ void main() {
       final (service, registry, platform) = _build();
       platform.throwOnWrite = true;
 
-      await expectLater(
-        service.commit(wallet: _wallet('w1'), mnemonic: 'seed'),
-        throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)),
-      );
+      await expectLater(service.commit(wallet: _wallet('w1'), mnemonic: 'seed'), throwsA(isA<WalletCommitException>().having((e) => e.reason, 'reason', WalletCommitFailure.secretWriteFailed)));
 
       // 没有标记的密钥永远清不掉，所以宁可整笔提交失败，也不能留下这种残留。
       expect(platform.store, isEmpty);
@@ -282,14 +251,7 @@ void main() {
 
   group('purgeOrphanSecrets', () {
     test('删除带提交标记、且无钱包引用的孤儿密钥', () async {
-      final (service, _, platform) = _build(
-        secrets: {
-          'wallet.ghost.mnemonic': 'orphan seed',
-          'wallet.ghost.pending': 'at',
-          'wallet.ghost2.pk': '0xorphan',
-          'wallet.ghost2.pending': 'at',
-        },
-      );
+      final (service, _, platform) = _build(secrets: {'wallet.ghost.mnemonic': 'orphan seed', 'wallet.ghost.pending': 'at', 'wallet.ghost2.pk': '0xorphan', 'wallet.ghost2.pending': 'at'});
 
       expect(await service.purgeOrphanSecrets(), 2, reason: '返回值只计密钥，不含标记');
       expect(platform.store, isEmpty, reason: '标记也一并清掉，不留垃圾');
@@ -298,22 +260,14 @@ void main() {
     // 本次修复的核心：判据是「带标记」而不是「不在列表里」。没有标记的密钥可能是
     // 删 App 重装后幸存下来的真钱包，删掉就等于销毁用户最后的恢复路径。
     test('无提交标记的密钥一律不删，哪怕不在钱包列表里', () async {
-      final (service, _, platform) = _build(
-        secrets: {'wallet.survivor.mnemonic': 'real money seed', 'wallet.survivor2.pk': '0xreal'},
-      );
+      final (service, _, platform) = _build(secrets: {'wallet.survivor.mnemonic': 'real money seed', 'wallet.survivor2.pk': '0xreal'});
 
       expect(await service.purgeOrphanSecrets(), 0);
       expect(platform.store, {'wallet.survivor.mnemonic': 'real money seed', 'wallet.survivor2.pk': '0xreal'});
     });
 
     test('保留在列表中的钱包的密钥，不误删', () async {
-      final (service, registry, platform) = _build(
-        secrets: {
-          'wallet.keep.mnemonic': 'good seed',
-          'wallet.ghost.mnemonic': 'orphan seed',
-          'wallet.ghost.pending': 'at',
-        },
-      );
+      final (service, registry, platform) = _build(secrets: {'wallet.keep.mnemonic': 'good seed', 'wallet.ghost.mnemonic': 'orphan seed', 'wallet.ghost.pending': 'at'});
       registry.add(_wallet('keep'));
 
       expect(await service.purgeOrphanSecrets(), 1);
@@ -322,9 +276,7 @@ void main() {
 
     // 撤标记那一步失败留下的陈旧标记：钱包已在列表里，说明提交其实成功了。
     test('标记残留但钱包在列表里：只清标记，密钥保留', () async {
-      final (service, registry, platform) = _build(
-        secrets: {'wallet.keep.mnemonic': 'good seed', 'wallet.keep.pending': 'at'},
-      );
+      final (service, registry, platform) = _build(secrets: {'wallet.keep.mnemonic': 'good seed', 'wallet.keep.pending': 'at'});
       registry.add(_wallet('keep'));
 
       expect(await service.purgeOrphanSecrets(), 0);
@@ -340,16 +292,11 @@ void main() {
     });
 
     test('钱包列表不可信时（删 App 重装）一条都不删', () async {
-      final (service, registry, platform) = _build(
-        secrets: {'wallet.ghost.mnemonic': 'orphan seed', 'wallet.ghost.pending': 'at'},
-      );
+      final (service, registry, platform) = _build(secrets: {'wallet.ghost.mnemonic': 'orphan seed', 'wallet.ghost.pending': 'at'});
       registry.listTrusted = false;
 
       expect(await service.purgeOrphanSecrets(), 0);
-      expect(platform.store, {
-        'wallet.ghost.mnemonic': 'orphan seed',
-        'wallet.ghost.pending': 'at',
-      }, reason: '空列表此时是「不知道」而非「确实没有」，连标记都不该动');
+      expect(platform.store, {'wallet.ghost.mnemonic': 'orphan seed', 'wallet.ghost.pending': 'at'}, reason: '空列表此时是「不知道」而非「确实没有」，连标记都不该动');
     });
 
     test('不触碰不属于本类键格式的数据', () async {
@@ -360,14 +307,7 @@ void main() {
     });
 
     test('walletId 含点号时仍能正确切分，不误删', () async {
-      final (service, registry, platform) = _build(
-        secrets: {
-          'wallet.a.b.mnemonic': 'keep me',
-          'wallet.a.b.pending': 'at',
-          'wallet.c.d.pk': 'orphan',
-          'wallet.c.d.pending': 'at',
-        },
-      );
+      final (service, registry, platform) = _build(secrets: {'wallet.a.b.mnemonic': 'keep me', 'wallet.a.b.pending': 'at', 'wallet.c.d.pk': 'orphan', 'wallet.c.d.pending': 'at'});
       registry.add(_wallet('a.b'));
 
       expect(await service.purgeOrphanSecrets(), 1);
@@ -375,9 +315,7 @@ void main() {
     });
 
     test('同一钱包的助记词与私钥都是孤儿时，两条都删', () async {
-      final (service, _, platform) = _build(
-        secrets: {'wallet.ghost.mnemonic': 'seed', 'wallet.ghost.pk': '0x1', 'wallet.ghost.pending': 'at'},
-      );
+      final (service, _, platform) = _build(secrets: {'wallet.ghost.mnemonic': 'seed', 'wallet.ghost.pk': '0x1', 'wallet.ghost.pending': 'at'});
 
       expect(await service.purgeOrphanSecrets(), 2);
       expect(platform.store, isEmpty);
@@ -417,14 +355,9 @@ void main() {
   group('崩溃残留场景（端到端）', () {
     test('密钥已写、元数据未落盘就被杀：重启后对账清掉孤儿助记词', () async {
       // 第一段生命周期：只让密钥落地，元数据写入失败（等价于写元数据前进程被杀）。
-      final (crashed, platform) = await _setUpContainer(
-        overrides: [walletListProvider.overrideWith(_ThrowingWalletListNotifier.new)],
-      );
+      final (crashed, platform) = await _setUpContainer(overrides: [walletListProvider.overrideWith(_ThrowingWalletListNotifier.new)]);
       platform.throwOnDelete = true; // 连回滚也没机会执行，密钥就此残留
-      await expectLater(
-        crashed.read(walletCommitServiceProvider).commit(wallet: _wallet('w1'), mnemonic: 'lost seed'),
-        throwsA(isA<WalletCommitException>()),
-      );
+      await expectLater(crashed.read(walletCommitServiceProvider).commit(wallet: _wallet('w1'), mnemonic: 'lost seed'), throwsA(isA<WalletCommitException>()));
       expect(platform.store['wallet.w1.mnemonic'], 'lost seed', reason: '前置条件：孤儿密钥确实残留了');
       expect(platform.store['wallet.w1.pending'], isNotNull, reason: '前置条件：提交标记也残留了，这是可清理的凭据');
 
@@ -433,10 +366,7 @@ void main() {
       platform.throwOnDelete = false;
       SharedPreferences.setMockInitialValues({'flutter.wallet.list': '{"wallets":[]}'});
       final restarted = ProviderContainer(
-        overrides: [
-          sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance()),
-          secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage())),
-        ],
+        overrides: [sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance()), secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage()))],
       );
       addTearDown(restarted.dispose);
 
@@ -454,10 +384,7 @@ void main() {
       // 第二段生命周期：prefs 容器被清空（键根本不存在），Keychain 原样保留。
       SharedPreferences.setMockInitialValues({});
       final reinstalled = ProviderContainer(
-        overrides: [
-          sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance()),
-          secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage())),
-        ],
+        overrides: [sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance()), secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage()))],
       );
       addTearDown(reinstalled.dispose);
 
@@ -476,10 +403,7 @@ void main() {
       platform.throwOnDelete = false;
       SharedPreferences.setMockInitialValues({});
       final reinstalled = ProviderContainer(
-        overrides: [
-          sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance()),
-          secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage())),
-        ],
+        overrides: [sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance()), secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage()))],
       );
       addTearDown(reinstalled.dispose);
 
@@ -494,10 +418,7 @@ void main() {
       // 用第一段生命周期真实落盘的 prefs 重建容器，模拟重启。
       final persisted = first.read(sharedPrefsProvider);
       final restarted = ProviderContainer(
-        overrides: [
-          sharedPrefsProvider.overrideWithValue(persisted),
-          secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage())),
-        ],
+        overrides: [sharedPrefsProvider.overrideWithValue(persisted), secureWalletStorageProvider.overrideWithValue(SecureWalletStorage(const FlutterSecureStorage()))],
       );
       addTearDown(restarted.dispose);
 

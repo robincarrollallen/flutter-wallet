@@ -17,33 +17,15 @@ class AmountText extends ConsumerWidget {
   /// 掩码字符。
   static const String maskChar = '*';
 
-  const AmountText(
-    this.value, {
-    super.key,
-    this.showSymbol = true,
-    this.symbol,
-    this.decimals = 2,
-    this.maskLength = 3,
-    this.style,
-    this.textAlign,
-    this.maxLines,
-    this.overflow,
-  }) : raw = null;
+  const AmountText(this.value, {super.key, this.showSymbol = true, this.symbol, this.decimals = 2, this.maskLength = 3, this.style, this.textAlign, this.maxLines, this.overflow}) : raw = null;
 
   /// 直接展示一段已格式化好的文案，仅套用隐藏掩码（不再格式化数值）。
-  const AmountText.raw(
-    String text, {
-    super.key,
-    this.maskLength = 3,
-    this.style,
-    this.textAlign,
-    this.maxLines,
-    this.overflow,
-  }) : raw = text,
-       value = 0,
-       showSymbol = false,
-       symbol = null,
-       decimals = 0;
+  const AmountText.raw(String text, {super.key, this.maskLength = 3, this.style, this.textAlign, this.maxLines, this.overflow})
+    : raw = text,
+      value = 0,
+      showSymbol = false,
+      symbol = null,
+      decimals = 0;
 
   /// 待格式化的数值（[raw] 为 null 时生效）。
   final double value;
@@ -68,15 +50,7 @@ class AmountText extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hidden = ref.watch(balanceHiddenProvider);
-    final text = hidden
-        ? maskChar * maskLength
-        : (raw ??
-              formatAmount(
-                value,
-                showSymbol: showSymbol,
-                symbol: symbol ?? ref.watch(currencySymbolProvider),
-                decimals: decimals,
-              ));
+    final text = hidden ? maskChar * maskLength : (raw ?? formatAmount(value, showSymbol: showSymbol, symbol: symbol ?? ref.watch(currencySymbolProvider), decimals: decimals));
     return Text(text, style: style, textAlign: textAlign, maxLines: maxLines, overflow: overflow);
   }
 }

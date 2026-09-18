@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../providers/core/service_provider.dart';
 import '../../../i18n/translations.g.dart';
 import 'import_mnemonic_logic.dart';
@@ -23,17 +24,12 @@ class ImportMnemonicState {
   final bool submitting;
 
   ImportMnemonicState copyWith({MnemonicError? error, bool clearError = false, bool? submitting}) {
-    return ImportMnemonicState(
-      error: clearError ? null : (error ?? this.error),
-      submitting: submitting ?? this.submitting,
-    );
+    return ImportMnemonicState(error: clearError ? null : (error ?? this.error), submitting: submitting ?? this.submitting);
   }
 }
 
 /// 页面私有状态管理：离开页面自动销毁，下次进入是干净状态。
-final importMnemonicProvider = NotifierProvider.autoDispose<ImportMnemonicNotifier, ImportMnemonicState>(
-  ImportMnemonicNotifier.new,
-);
+final importMnemonicProvider = NotifierProvider.autoDispose<ImportMnemonicNotifier, ImportMnemonicState>(ImportMnemonicNotifier.new);
 
 class ImportMnemonicNotifier extends Notifier<ImportMnemonicState> {
   @override
@@ -62,9 +58,7 @@ class ImportMnemonicNotifier extends Notifier<ImportMnemonicState> {
     // 按类型在后台 isolate 派生（BIP44 重运算 / 私钥派生均避免阻塞 UI）。
     final bool isPrivateKey = ImportMnemonicLogic.detectType(secret) == SecretType.privateKey;
     // 私钥：保留大小写原样；助记词：规整为小写单空格。
-    final String normalized = isPrivateKey
-        ? PrivateKeyService.normalize(secret)
-        : ImportMnemonicLogic.normalize(secret);
+    final String normalized = isPrivateKey ? PrivateKeyService.normalize(secret) : ImportMnemonicLogic.normalize(secret);
 
     final DerivedWallet derived;
     try {
@@ -92,13 +86,7 @@ class ImportMnemonicNotifier extends Notifier<ImportMnemonicState> {
     // 敏感数据进安全存储（Keychain / Keystore），不进入状态。
     // 私钥导入：只存私钥；助记词导入：只存助记词（私钥按需现场派生，不预存）。
     try {
-      await ref
-          .read(walletCommitServiceProvider)
-          .commit(
-            wallet: wallet,
-            mnemonic: isPrivateKey ? null : normalized,
-            privateKey: isPrivateKey ? derived.primaryPrivateKey : null,
-          );
+      await ref.read(walletCommitServiceProvider).commit(wallet: wallet, mnemonic: isPrivateKey ? null : normalized, privateKey: isPrivateKey ? derived.primaryPrivateKey : null);
     } on WalletCommitException {
       state = state.copyWith(submitting: false, error: const MnemonicError(MnemonicErrorKind.saveFailed));
       return false;

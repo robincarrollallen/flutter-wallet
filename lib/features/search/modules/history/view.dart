@@ -30,10 +30,7 @@ class SearchHistoryModule extends ConsumerWidget {
               ),
               GestureDetector(
                 onTap: () => ref.read(searchHistoryProvider.notifier).clear(),
-                child: Text(
-                  t.search.clearHistory,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
+                child: Text(t.search.clearHistory, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
               ),
             ],
           ),
@@ -43,11 +40,7 @@ class SearchHistoryModule extends ConsumerWidget {
             runSpacing: 4.s,
             children: [
               for (final term in history)
-                InputChip(
-                  label: Text(term),
-                  onPressed: () => ref.read(searchQueryProvider.notifier).update(term),
-                  onDeleted: () => ref.read(searchHistoryProvider.notifier).remove(term),
-                ),
+                InputChip(label: Text(term), onPressed: () => ref.read(searchQueryProvider.notifier).update(term), onDeleted: () => ref.read(searchHistoryProvider.notifier).remove(term)),
             ],
           ),
         ],

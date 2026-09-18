@@ -1,4 +1,5 @@
 import 'package:wallet_core/chains.dart';
+
 import '../../../domain/transaction_record.dart';
 
 // 交易历史纯逻辑：与状态/UI 无关，便于单测与复用。
@@ -39,11 +40,7 @@ List<TransactionRecord> sortByTimeDescending(Iterable<TransactionRecord> records
 ///
 /// 「以新为准」是给远程合并用的——链上查回来的状态一定比本地广播时记下的更权威。
 /// 但 [submittedAt] 保留本地的：本机知道自己何时按下发送，远程只知道打包时刻。
-List<TransactionRecord> mergeTransactions(
-  Iterable<TransactionRecord> existing,
-  Iterable<TransactionRecord> incoming, {
-  int maximum = maximumTransactionHistoryCount,
-}) {
+List<TransactionRecord> mergeTransactions(Iterable<TransactionRecord> existing, Iterable<TransactionRecord> incoming, {int maximum = maximumTransactionHistoryCount}) {
   final merged = {for (final record in existing) record.identity: record};
   for (final fresh in incoming) {
     final local = merged[fresh.identity];
@@ -74,12 +71,7 @@ List<TransactionRecord> mergeTransactions(
 }
 
 /// 按钱包 / 链 / 收发方向筛选。条件为 null 表示该维度不限。
-List<TransactionRecord> filterTransactions(
-  Iterable<TransactionRecord> records, {
-  String? walletId,
-  String? chainId,
-  TransactionDirection? direction,
-}) {
+List<TransactionRecord> filterTransactions(Iterable<TransactionRecord> records, {String? walletId, String? chainId, TransactionDirection? direction}) {
   return List.unmodifiable(
     records.where((record) {
       if (walletId != null && record.walletId != walletId) return false;
@@ -114,7 +106,5 @@ String shortenAddress(String address, {int headLength = 6, int tailLength = 4}) 
 /// 待回填状态的记录：只有 pending 需要再查链，且一次最多查 [maximum] 条，
 /// 避免历史很长时下拉刷新打出几百个 RPC 请求。
 List<TransactionRecord> pendingRecordsToRefresh(Iterable<TransactionRecord> records, {int maximum = 20}) {
-  return List.unmodifiable(
-    sortByTimeDescending(records).where((record) => record.status == TransactionStatus.pending).take(maximum),
-  );
+  return List.unmodifiable(sortByTimeDescending(records).where((record) => record.status == TransactionStatus.pending).take(maximum));
 }

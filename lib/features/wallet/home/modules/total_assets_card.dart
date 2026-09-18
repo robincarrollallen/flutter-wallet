@@ -8,8 +8,10 @@ import '../../../../i18n/translations.g.dart';
 import '../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../providers/modules/asset/balance_visibility_provider.dart';
 import '../../../../providers/modules/wallet/wallet_provider.dart';
+
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../../domain/wallet_avatar.dart';
 import '../../../../domain/wallet_total.dart';
 import '../../../../router/route_args.dart';
@@ -45,8 +47,7 @@ class TotalAssetsCard extends ConsumerWidget {
                   IconButton(
                     icon: Icon(Icons.copy_rounded, size: 20.s, color: theme.colorScheme.onPrimaryContainer),
                     tooltip: '地址管理',
-                    onPressed: () =>
-                        context.push(AppRoute.addressManagement, extra: AddressManagementArgs(wallet: wallet)),
+                    onPressed: () => context.push(AppRoute.addressManagement, extra: AddressManagementArgs(wallet: wallet)),
                   ),
                 ],
               ),
@@ -54,20 +55,13 @@ class TotalAssetsCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  t.home.totalAssets,
-                  style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-                ),
+                Text(t.home.totalAssets, style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
                 // 睁眼/闭眼：切换全局金额与代币数量的隐藏显示。
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
                   constraints: BoxConstraints(minWidth: 32.s, minHeight: 32.s),
-                  icon: Icon(
-                    hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    size: 18.s,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
+                  icon: Icon(hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18.s, color: theme.colorScheme.onPrimaryContainer),
                   tooltip: hidden ? '显示金额' : '隐藏金额',
                   onPressed: () => ref.read(balanceHiddenProvider.notifier).toggle(),
                 ),
@@ -81,21 +75,9 @@ class TotalAssetsCard extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _ActionButton(
-                    icon: Icons.arrow_upward_rounded,
-                    label: t.home.actions.send,
-                    onTap: () => context.push(AppRoute.send),
-                  ),
-                  _ActionButton(
-                    icon: Icons.arrow_downward_rounded,
-                    label: t.home.actions.receive,
-                    onTap: () => ReceiveSheet.show(context),
-                  ),
-                  _ActionButton(
-                    icon: Icons.history_rounded,
-                    label: t.home.actions.history,
-                    onTap: () => context.push(AppRoute.transactionHistory),
-                  ),
+                  _ActionButton(icon: Icons.arrow_upward_rounded, label: t.home.actions.send, onTap: () => context.push(AppRoute.send)),
+                  _ActionButton(icon: Icons.arrow_downward_rounded, label: t.home.actions.receive, onTap: () => ReceiveSheet.show(context)),
+                  _ActionButton(icon: Icons.history_rounded, label: t.home.actions.history, onTap: () => context.push(AppRoute.transactionHistory)),
                   _ActionButton(icon: Icons.grid_view_rounded, label: t.home.actions.more),
                 ],
               ),
@@ -127,10 +109,7 @@ class _Total extends StatelessWidget {
     final v = total.value; // riverpod 3：value 可空且不会因 error 抛出
 
     if (v == null && total.hasError) {
-      return Text(
-        t.balance.unavailable,
-        style: theme.textTheme.headlineMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-      );
+      return Text(t.balance.unavailable, style: theme.textTheme.headlineMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer));
     }
 
     final value = v ?? WalletTotal.empty;
@@ -138,10 +117,7 @@ class _Total extends StatelessWidget {
       children: [
         AmountText(
           value.value,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            color: theme.colorScheme.onPrimaryContainer,
-            fontWeight: FontWeight.bold,
-          ),
+          style: theme.textTheme.headlineMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
         ),
         // 部分链取数失败：数字仍然出，但必须标明它是不完整的——
         // 否则用户会把缩水后的金额当成真实资产。tooltip 里报出具体链名。
@@ -153,10 +129,7 @@ class _Total extends StatelessWidget {
               children: [
                 Icon(Icons.error_outline, size: 14.s, color: theme.colorScheme.onPrimaryContainer),
                 SizedBox(width: 4.s),
-                Text(
-                  t.home.partialAssets,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-                ),
+                Text(t.home.partialAssets, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
               ],
             ),
           ),
@@ -191,10 +164,7 @@ class _ActionButton extends StatelessWidget {
             Container(
               width: 44.s,
               height: 44.s,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.surface.withValues(alpha: 0.85),
-              ),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: theme.colorScheme.surface.withValues(alpha: 0.85)),
               child: Icon(icon, size: 22.s, color: theme.colorScheme.primary),
             ),
             SizedBox(height: 6.s),
@@ -234,10 +204,7 @@ class _WalletNamePill extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
                 ),
               ),
               Icon(Icons.chevron_right, size: 18.s, color: theme.colorScheme.onSurface),

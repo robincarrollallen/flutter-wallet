@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../../providers/core/service_provider.dart';
 import '../../../../providers/modules/transaction/transaction_history_provider.dart';
 
@@ -19,10 +20,7 @@ const int sendResultMaxPolls = 20;
 ///
 /// 结果页读它而不是读路由参数：状态只有 [transactionHistoryProvider] 一个来源，
 /// 结果页与历史页看到的永远是同一份，不会两处不一致。
-final sendResultStatusProvider = Provider.family<TransactionStatus, ({String chainId, String transactionHash})>((
-  ref,
-  target,
-) {
+final sendResultStatusProvider = Provider.family<TransactionStatus, ({String chainId, String transactionHash})>((ref, target) {
   final identity = '${target.chainId}:${target.transactionHash}';
   final record = ref.watch(transactionHistoryProvider).where((record) => record.identity == identity).firstOrNull;
   return record?.status ?? TransactionStatus.pending;
@@ -62,16 +60,11 @@ class SendResultStatusPoller {
     _polls++;
 
     // 失效高度存在历史记录里：判定「交易已过期」要靠它，没有它就只能一直等下去。
-    final record = _ref
-        .read(transactionHistoryProvider)
-        .where((record) => record.identity == '$chainId:$transactionHash')
-        .firstOrNull;
+    final record = _ref.read(transactionHistoryProvider).where((record) => record.identity == '$chainId:$transactionHash').firstOrNull;
 
     final TransactionStatus status;
     try {
-      status = await _ref
-          .read(walletServiceProvider)
-          .queryTransactionStatus(chainId, transactionHash, validUntilBlock: record?.validUntilBlock);
+      status = await _ref.read(walletServiceProvider).queryTransactionStatus(chainId, transactionHash, validUntilBlock: record?.validUntilBlock);
     } catch (_) {
       // 节点抖动不该中断轮询，也不该惊动用户——这一轮跳过，等下一轮。
       return;
@@ -84,9 +77,8 @@ class SendResultStatusPoller {
 }
 
 /// 按「链 + 哈希」建轮询器。autoDispose：结果页销毁后连同轮询器一起回收。
-final sendResultStatusPollerProvider = Provider.autoDispose
-    .family<SendResultStatusPoller, ({String chainId, String transactionHash})>((ref, target) {
-      final poller = SendResultStatusPoller(ref, chainId: target.chainId, transactionHash: target.transactionHash);
-      ref.onDispose(poller.stop);
-      return poller;
-    });
+final sendResultStatusPollerProvider = Provider.autoDispose.family<SendResultStatusPoller, ({String chainId, String transactionHash})>((ref, target) {
+  final poller = SendResultStatusPoller(ref, chainId: target.chainId, transactionHash: target.transactionHash);
+  ref.onDispose(poller.stop);
+  return poller;
+});

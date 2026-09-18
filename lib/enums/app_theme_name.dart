@@ -9,8 +9,7 @@ enum AppThemeName {
 
   ThemeMode get mode => this == AppThemeName.light ? ThemeMode.light : ThemeMode.dark; // 该主题对应的展示模式（亮色→白天，暗色→黑夜）
 
-  Color get seedColor =>
-      this == AppThemeName.light ? Colors.deepPurple : Colors.teal; // 主题种子色<喂给 ColorScheme.fromSeed(seedColor: ...)>
+  Color get seedColor => this == AppThemeName.light ? Colors.deepPurple : Colors.teal; // 主题种子色<喂给 ColorScheme.fromSeed(seedColor: ...)>
 
   /// 浅色主题 ThemeData（供 MaterialApp.theme）。
   ThemeData get lightTheme => _build(

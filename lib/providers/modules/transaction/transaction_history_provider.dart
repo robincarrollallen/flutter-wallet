@@ -9,8 +9,7 @@ import '../../core/persistent_notifier.dart';
 ///
 /// 目前只有发送成功时会写入；后续接入区块浏览器 API 后，收款方向的记录走
 /// [merge] 并进来，列表与详情无需改动。
-class TransactionHistoryNotifier extends Notifier<List<TransactionRecord>>
-    with PersistentNotifier<List<TransactionRecord>> {
+class TransactionHistoryNotifier extends Notifier<List<TransactionRecord>> with PersistentNotifier<List<TransactionRecord>> {
   @override
   List<TransactionRecord> build() => restore(const []);
 
@@ -18,17 +17,13 @@ class TransactionHistoryNotifier extends Notifier<List<TransactionRecord>>
   PrefsKey get persistKey => PrefsKey.transactionHistory;
 
   @override
-  Map<String, dynamic> toJson(List<TransactionRecord> state) => {
-    'records': state.map((record) => record.toJson()).toList(),
-  };
+  Map<String, dynamic> toJson(List<TransactionRecord> state) => {'records': state.map((record) => record.toJson()).toList()};
 
   @override
   List<TransactionRecord> fromJson(Map<String, dynamic> json, List<TransactionRecord> fallback) {
     final raw = json['records'];
     if (raw is! List) return fallback;
-    return sortByTimeDescending(
-      raw.whereType<Map<String, dynamic>>().map(TransactionRecord.fromJson).whereType<TransactionRecord>(),
-    );
+    return sortByTimeDescending(raw.whereType<Map<String, dynamic>>().map(TransactionRecord.fromJson).whereType<TransactionRecord>());
   }
 
   /// 记录一笔刚广播出去的交易。同链同哈希视为同一笔，覆盖旧值。
@@ -52,6 +47,4 @@ class TransactionHistoryNotifier extends Notifier<List<TransactionRecord>>
   void clear() => state = const [];
 }
 
-final transactionHistoryProvider = NotifierProvider<TransactionHistoryNotifier, List<TransactionRecord>>(
-  TransactionHistoryNotifier.new,
-);
+final transactionHistoryProvider = NotifierProvider<TransactionHistoryNotifier, List<TransactionRecord>>(TransactionHistoryNotifier.new);

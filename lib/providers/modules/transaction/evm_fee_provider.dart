@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../enums/prefs_key.dart';
 import '../../core/persistent_notifier.dart';
 import '../../core/service_provider.dart';
@@ -49,12 +50,8 @@ class EvmGasBasisNotifier extends Notifier<EvmFeeCache> with PersistentNotifier<
     final basisJson = json['basis'];
     final gasLimitJson = json['gasLimits'];
     return (
-      basis: basisJson is! Map
-          ? fallback.basis
-          : {for (final entry in basisJson.entries) '${entry.key}': ?EvmGasBasis.fromJson(entry.value)},
-      gasLimits: gasLimitJson is! Map
-          ? fallback.gasLimits
-          : {for (final entry in gasLimitJson.entries) '${entry.key}': ?BigInt.tryParse('${entry.value}')},
+      basis: basisJson is! Map ? fallback.basis : {for (final entry in basisJson.entries) '${entry.key}': ?EvmGasBasis.fromJson(entry.value)},
+      gasLimits: gasLimitJson is! Map ? fallback.gasLimits : {for (final entry in gasLimitJson.entries) '${entry.key}': ?BigInt.tryParse('${entry.value}')},
     );
   }
 
@@ -64,8 +61,7 @@ class EvmGasBasisNotifier extends Notifier<EvmFeeCache> with PersistentNotifier<
     return restore((basis: const {}, gasLimits: const {}));
   }
 
-  static String gasLimitKey(EvmFeeKey key) =>
-      '${key.chainId}:${key.to.toLowerCase()}:${key.tokenIdentifier?.toLowerCase() ?? 'native'}';
+  static String gasLimitKey(EvmFeeKey key) => '${key.chainId}:${key.to.toLowerCase()}:${key.tokenIdentifier?.toLowerCase() ?? 'native'}';
 
   /// 重抓某条链的基准（以及该收款方 + 该资产的 gasLimit）并落盘。
   /// 失败不清空旧值——旧报价带 stale 标记继续展示，好过整行变 `--`。
@@ -102,13 +98,7 @@ class EvmGasBasisNotifier extends Notifier<EvmFeeCache> with PersistentNotifier<
     final token = key.tokenIdentifier;
     if (token == null) return service.resolveNativeGasLimit(chain, from: key.from, to: key.to);
     if (key.from.isEmpty || key.to.isEmpty) return null;
-    return service.resolveTokenGasLimit(
-      chain,
-      from: key.from,
-      contract: token,
-      to: key.to,
-      amount: BigInt.one,
-    );
+    return service.resolveTokenGasLimit(chain, from: key.from, contract: token, to: key.to, amount: BigInt.one);
   }
 }
 
@@ -153,10 +143,7 @@ final evmFeeProvider = Provider.autoDispose.family<EvmFeeView, EvmFeeKey>((ref, 
   if (basis == null || gasLimit == null) return (quotes: null, stale: false);
 
   return (
-    quotes: {
-      for (final speed in FeeSpeed.values)
-        speed: EvmFeeQuote(speed: speed, rate: basis.rateFor(speed), gasLimit: gasLimit),
-    },
+    quotes: {for (final speed in FeeSpeed.values) speed: EvmFeeQuote(speed: speed, rate: basis.rateFor(speed), gasLimit: gasLimit)},
     stale: DateTime.now().difference(basis.fetchedAt) >= _freshFor,
   );
 });

@@ -7,7 +7,9 @@ import '../../../../../widgets/amount_text.dart';
 import '../../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../../providers/modules/market/currency_provider.dart';
 import '../../../../../providers/modules/wallet/wallet_provider.dart';
+
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../../../core/format/wallet_source_label.dart';
 import '../../../../../i18n/translations.g.dart';
 import '../backup_method/view.dart';
@@ -52,10 +54,7 @@ class WalletDetailPage extends ConsumerWidget {
                           clipBehavior: Clip.none,
                           children: [
                             Container(
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerHighest,
-                                shape: BoxShape.circle,
-                              ),
+                              decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, shape: BoxShape.circle),
                               child: WalletAvatar(iconName: current.icon, size: 72.s),
                             ),
                             Positioned(
@@ -240,9 +239,7 @@ class WalletDetailPage extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest,
                             shape: BoxShape.circle,
-                            border: option.key == current.icon
-                                ? Border.all(color: theme.colorScheme.primary, width: 2.s)
-                                : null,
+                            border: option.key == current.icon ? Border.all(color: theme.colorScheme.primary, width: 2.s) : null,
                           ),
                           child: WalletAvatar(iconName: option.key, size: 32.s),
                         ),
@@ -372,11 +369,7 @@ class _NavigationRow extends StatelessWidget {
           children: [
             Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
             const Spacer(),
-            if (hint != null)
-              Text(
-                hint!,
-                style: theme.textTheme.bodyMedium?.copyWith(color: hintColor ?? theme.colorScheme.onSurfaceVariant),
-              ),
+            if (hint != null) Text(hint!, style: theme.textTheme.bodyMedium?.copyWith(color: hintColor ?? theme.colorScheme.onSurfaceVariant)),
             SizedBox(width: 4.s),
             Icon(Icons.chevron_right, size: 20.s, color: theme.colorScheme.onSurfaceVariant),
           ],

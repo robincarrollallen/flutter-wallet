@@ -1,6 +1,8 @@
 import '../../domain/transaction_record.dart';
+
 import 'package:wallet_core/wallet_core.dart';
 import 'package:wallet_core/chains.dart';
+
 import 'chain_transaction_history_service.dart';
 
 export 'chain_transaction_history_service.dart';
@@ -62,9 +64,6 @@ class TransactionHistoryService {
     }
 
     final perChain = await Future.wait(queries);
-    return WalletHistoryPage(
-      records: [for (final outcome in perChain) ...outcome.page.records],
-      nextCursors: {for (final outcome in perChain) outcome.chainId: ?outcome.page.nextCursor},
-    );
+    return WalletHistoryPage(records: [for (final outcome in perChain) ...outcome.page.records], nextCursors: {for (final outcome in perChain) outcome.chainId: ?outcome.page.nextCursor});
   }
 }

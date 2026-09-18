@@ -29,35 +29,15 @@ class WalletAvatarCatalog {
 
   static const all = <WalletAvatarOption>[
     WalletAvatarOption(key: defaultKey, label: '默认', icon: Icons.account_balance_wallet),
-    WalletAvatarOption(
-      key: 'metamask',
-      label: 'M',
-      asset: 'assets/icons/wallets/metamask.webp',
-      color: Color(0xFFF6851B),
-    ),
+    WalletAvatarOption(key: 'metamask', label: 'M', asset: 'assets/icons/wallets/metamask.webp', color: Color(0xFFF6851B)),
     WalletAvatarOption(key: 'trust', label: 'T', asset: 'assets/icons/wallets/trust.webp', color: Color(0xFF3375BB)),
-    WalletAvatarOption(
-      key: 'coinbase',
-      label: 'C',
-      asset: 'assets/icons/wallets/coinbase.webp',
-      color: Color(0xFF0052FF),
-    ),
+    WalletAvatarOption(key: 'coinbase', label: 'C', asset: 'assets/icons/wallets/coinbase.webp', color: Color(0xFF0052FF)),
     WalletAvatarOption(key: 'bitget', label: 'B', asset: 'assets/icons/wallets/bitget.webp', color: Color(0xFF00F0FF)),
     WalletAvatarOption(key: 'okx', label: 'O', asset: 'assets/icons/wallets/okx.webp', color: Color(0xFF000000)),
     WalletAvatarOption(key: 'ledger', label: 'L', asset: 'assets/icons/wallets/ledger.webp', color: Color(0xFF000000)),
     WalletAvatarOption(key: 'trezor', label: 'T', asset: 'assets/icons/wallets/trezor.webp', color: Color(0xFF00C389)),
-    WalletAvatarOption(
-      key: 'keystone',
-      label: 'K',
-      asset: 'assets/icons/wallets/keystone.webp',
-      color: Color(0xFFFF5C00),
-    ),
-    WalletAvatarOption(
-      key: 'safepal',
-      label: 'S',
-      asset: 'assets/icons/wallets/safepal.webp',
-      color: Color(0xFF4A6CF7),
-    ),
+    WalletAvatarOption(key: 'keystone', label: 'K', asset: 'assets/icons/wallets/keystone.webp', color: Color(0xFFFF5C00)),
+    WalletAvatarOption(key: 'safepal', label: 'S', asset: 'assets/icons/wallets/safepal.webp', color: Color(0xFF4A6CF7)),
     WalletAvatarOption(key: 'onekey', label: 'O', asset: 'assets/icons/wallets/onekey.webp', color: Color(0xFF00B812)),
   ];
 

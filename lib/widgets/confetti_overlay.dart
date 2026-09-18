@@ -25,16 +25,7 @@ class _ConfettiOverlayState extends State<ConfettiOverlay> with SingleTickerProv
   // 用固定种子，避免依赖被禁用的 Math.random 之外还能稳定复现布局。
   List<_Piece> _buildPieces() {
     final rnd = math.Random(42);
-    const colors = [
-      Color(0xFFE53935),
-      Color(0xFF8E24AA),
-      Color(0xFF3949AB),
-      Color(0xFF00ACC1),
-      Color(0xFF43A047),
-      Color(0xFFFDD835),
-      Color(0xFFFB8C00),
-      Color(0xFFEC407A),
-    ];
+    const colors = [Color(0xFFE53935), Color(0xFF8E24AA), Color(0xFF3949AB), Color(0xFF00ACC1), Color(0xFF43A047), Color(0xFFFDD835), Color(0xFFFB8C00), Color(0xFFEC407A)];
     return List.generate(widget.pieces, (i) {
       return _Piece(
         // 起点横向分布在全宽，纵向略高于顶部。
@@ -62,24 +53,14 @@ class _ConfettiOverlayState extends State<ConfettiOverlay> with SingleTickerProv
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: _controller,
-        builder: (context, _) =>
-            CustomPaint(size: Size.infinite, painter: _ConfettiPainter(_pieces, _controller.value)),
+        builder: (context, _) => CustomPaint(size: Size.infinite, painter: _ConfettiPainter(_pieces, _controller.value)),
       ),
     );
   }
 }
 
 class _Piece {
-  const _Piece({
-    required this.startX,
-    required this.startY,
-    required this.driftX,
-    required this.fallY,
-    required this.color,
-    required this.size,
-    required this.rotations,
-    required this.delay,
-  });
+  const _Piece({required this.startX, required this.startY, required this.driftX, required this.fallY, required this.color, required this.size, required this.rotations, required this.delay});
 
   final double startX; // 0..1，相对宽度
   final double startY; // 相对高度

@@ -84,9 +84,7 @@ class ImportMnemonicLogic {
       return const MnemonicError(MnemonicErrorKind.empty);
     }
     if (type == SecretType.privateKey) {
-      return PrivateKeyService.detect(input.trim()) == PrivateKeyKind.unknown
-          ? const MnemonicError(MnemonicErrorKind.invalidPrivateKey)
-          : null;
+      return PrivateKeyService.detect(input.trim()) == PrivateKeyKind.unknown ? const MnemonicError(MnemonicErrorKind.invalidPrivateKey) : null;
     }
 
     final n = normalize(input);

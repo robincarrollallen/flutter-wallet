@@ -5,9 +5,13 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../providers/modules/asset/chain_icon_provider.dart';
+
 import 'package:wallet_core/chains.dart';
+
 import '../../../widgets/token_icon.dart';
+
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../providers/modules/market/markets_provider.dart';
 
 /// 地址管理页：列出当前钱包在各条链上的地址，支持复制与查看二维码。
@@ -72,10 +76,7 @@ class _AddressTile extends StatelessWidget {
                 Expanded(
                   child: Text(chain.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                 ),
-                Text(
-                  chain.symbol,
-                  style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
+                Text(chain.symbol, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
               ],
             ),
             SizedBox(height: 8.s),
@@ -83,12 +84,7 @@ class _AddressTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: SelectableText(
-                    hasAddress ? address! : '（未派生地址）',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: hasAddress ? null : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                  child: SelectableText(hasAddress ? address! : '（未派生地址）', style: theme.textTheme.bodySmall?.copyWith(color: hasAddress ? null : theme.colorScheme.onSurfaceVariant)),
                 ),
                 if (hasAddress) ...[
                   SizedBox(width: 8.s),

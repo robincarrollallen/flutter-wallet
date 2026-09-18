@@ -50,11 +50,7 @@ class CreateWalletSheet extends StatelessWidget {
             leading: const Icon(Icons.usb_outlined),
             title: Text(t.createWallet.hardware.title),
             subtitle: Text(t.createWallet.hardware.subtitle),
-            onTap: () => _closeSheetAndGo(
-              context,
-              AppRoute.placeholder,
-              extra: PlaceholderArgs(title: t.createWallet.hardware.title),
-            ),
+            onTap: () => _closeSheetAndGo(context, AppRoute.placeholder, extra: PlaceholderArgs(title: t.createWallet.hardware.title)),
           ),
           SizedBox(height: 8.s),
         ],

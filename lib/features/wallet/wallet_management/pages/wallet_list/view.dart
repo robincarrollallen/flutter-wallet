@@ -65,11 +65,7 @@ class WalletListPage extends ConsumerWidget {
             padding: EdgeInsets.fromLTRB(16.s, 4.s, 16.s, 16.s),
             child: SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => _showCreateWalletSheet(context),
-                icon: const Icon(Icons.add),
-                label: const Text('创建新钱包'),
-              ),
+              child: FilledButton.icon(onPressed: () => _showCreateWalletSheet(context), icon: const Icon(Icons.add), label: const Text('创建新钱包')),
             ),
           ),
         ],

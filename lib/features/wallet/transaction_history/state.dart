@@ -31,16 +31,13 @@ class TransactionHistoryFilterNotifier extends Notifier<TransactionHistoryFilter
 
   void selectChain(String? chainId) => state = TransactionHistoryFilter(chainId: chainId, direction: state.direction);
 
-  void selectDirection(TransactionDirection? direction) =>
-      state = TransactionHistoryFilter(chainId: state.chainId, direction: direction);
+  void selectDirection(TransactionDirection? direction) => state = TransactionHistoryFilter(chainId: state.chainId, direction: direction);
 
   /// 一键回到「全部链 + 全部类型」。筛空了的空态给用户的出口。
   void clear() => state = const TransactionHistoryFilter();
 }
 
-final transactionHistoryFilterProvider = NotifierProvider<TransactionHistoryFilterNotifier, TransactionHistoryFilter>(
-  TransactionHistoryFilterNotifier.new,
-);
+final transactionHistoryFilterProvider = NotifierProvider<TransactionHistoryFilterNotifier, TransactionHistoryFilter>(TransactionHistoryFilterNotifier.new);
 
 /// 当前钱包的全部历史记录，未按链筛选。链选择器的选项从这里取。
 final walletTransactionHistoryProvider = Provider<List<TransactionRecord>>((ref) {
@@ -50,13 +47,7 @@ final walletTransactionHistoryProvider = Provider<List<TransactionRecord>>((ref)
 /// 应用链与方向筛选后的历史记录，最新在前。
 final filteredTransactionHistoryProvider = Provider<List<TransactionRecord>>((ref) {
   final filter = ref.watch(transactionHistoryFilterProvider);
-  return sortByTimeDescending(
-    filterTransactions(
-      ref.watch(walletTransactionHistoryProvider),
-      chainId: filter.chainId,
-      direction: filter.direction,
-    ),
-  );
+  return sortByTimeDescending(filterTransactions(ref.watch(walletTransactionHistoryProvider), chainId: filter.chainId, direction: filter.direction));
 });
 
 /// 链选择器的可选项：当前钱包持有地址的链 + 历史里出现过的链。
@@ -66,10 +57,7 @@ final filteredTransactionHistoryProvider = Provider<List<TransactionRecord>>((re
 /// 并上历史里出现过的链是兜底：某条链后来被移出钱包，它的旧记录仍然筛得到。
 final selectableChainsProvider = Provider<List<String>>((ref) {
   final walletChainIds = ref.watch(activeWalletProvider)?.chainsWithAddress.map((chain) => chain.id) ?? const [];
-  return List.unmodifiable({
-    ...walletChainIds,
-    for (final record in ref.watch(walletTransactionHistoryProvider)) record.chainId,
-  });
+  return List.unmodifiable({...walletChainIds, for (final record in ref.watch(walletTransactionHistoryProvider)) record.chainId});
 });
 
 /// 翻页进度。游标按链分开存：各链翻页快慢天然不同步，合成一个全局游标会互相拖累。
@@ -156,7 +144,4 @@ class TransactionHistoryPagingNotifier extends Notifier<TransactionHistoryPaging
   }
 }
 
-final transactionHistoryPagingProvider =
-    NotifierProvider<TransactionHistoryPagingNotifier, TransactionHistoryPagingState>(
-      TransactionHistoryPagingNotifier.new,
-    );
+final transactionHistoryPagingProvider = NotifierProvider<TransactionHistoryPagingNotifier, TransactionHistoryPagingState>(TransactionHistoryPagingNotifier.new);

@@ -64,9 +64,7 @@ Future<(ProviderContainer, _FakeApi, SharedPreferences)> _container({Duration? a
     );
   }
   final api = _FakeApi(result: remote ?? [_dai]);
-  final container = ProviderContainer(
-    overrides: [sharedPrefsProvider.overrideWithValue(prefs), tokenCatalogApiProvider.overrideWithValue(api)],
-  );
+  final container = ProviderContainer(overrides: [sharedPrefsProvider.overrideWithValue(prefs), tokenCatalogApiProvider.overrideWithValue(api)]);
   addTearDown(container.dispose);
   return (container, api, prefs);
 }
@@ -108,10 +106,7 @@ void main() {
     });
 
     test('请求失败（空列表）：state 与落盘都保持旧目录', () async {
-      final (c, api, prefs) = await _container(
-        age: RemoteTokensNotifier.ttl + const Duration(minutes: 1),
-        remote: const [],
-      );
+      final (c, api, prefs) = await _container(age: RemoteTokensNotifier.ttl + const Duration(minutes: 1), remote: const []);
 
       expect(_tokens(c).single.symbol, 'USDC', reason: '过期也必须先返回旧目录');
       expect(api.calls, 1);
@@ -147,9 +142,7 @@ void main() {
       SharedPreferences.setMockInitialValues({PrefsKey.tokenCatalog.value: 'not json'});
       final prefs = await SharedPreferences.getInstance();
       final api = _FakeApi(result: [_dai]);
-      final c = ProviderContainer(
-        overrides: [sharedPrefsProvider.overrideWithValue(prefs), tokenCatalogApiProvider.overrideWithValue(api)],
-      );
+      final c = ProviderContainer(overrides: [sharedPrefsProvider.overrideWithValue(prefs), tokenCatalogApiProvider.overrideWithValue(api)]);
       addTearDown(c.dispose);
 
       expect(_tokens(c).length, BundledTokenCatalog.all.length);
@@ -167,9 +160,7 @@ void main() {
       });
       final prefs = await SharedPreferences.getInstance();
       final api = _FakeApi(result: [_dai]);
-      final c = ProviderContainer(
-        overrides: [sharedPrefsProvider.overrideWithValue(prefs), tokenCatalogApiProvider.overrideWithValue(api)],
-      );
+      final c = ProviderContainer(overrides: [sharedPrefsProvider.overrideWithValue(prefs), tokenCatalogApiProvider.overrideWithValue(api)]);
       addTearDown(c.dispose);
 
       expect(_tokens(c).single.symbol, 'USDC');

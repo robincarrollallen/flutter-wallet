@@ -9,7 +9,9 @@ import '../../../../providers/modules/transaction/recent_address_provider.dart';
 import '../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../domain/wallet_avatar.dart';
 import '../coins/logic.dart';
+
 import 'package:wallet_core/chains.dart';
+
 import '../../../../router/route_args.dart';
 import '../../../../router/routes.dart';
 
@@ -67,12 +69,7 @@ class _SendRecipientPageState extends ConsumerState<SendRecipientPage> {
     }
     context.push(
       AppRoute.sendAmount,
-      extra: SendAmountArgs(
-        asset: widget.asset,
-        toAddress: address,
-        tokenLogoUrl: widget.tokenLogoUrl,
-        chainLogoUrl: widget.chainLogoUrl,
-      ),
+      extra: SendAmountArgs(asset: widget.asset, toAddress: address, tokenLogoUrl: widget.tokenLogoUrl, chainLogoUrl: widget.chainLogoUrl),
     );
   }
 
@@ -88,16 +85,9 @@ class _SendRecipientPageState extends ConsumerState<SendRecipientPage> {
             // —— 顶部头部：返回箭头 + 标题 —— //
             Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: '返回',
-                  onPressed: () => Navigator.of(context).maybePop(),
-                ),
+                IconButton(icon: const Icon(Icons.arrow_back), tooltip: '返回', onPressed: () => Navigator.of(context).maybePop()),
                 Expanded(
-                  child: Text(
-                    '发送 ${asset.symbol}',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ),
+                  child: Text('发送 ${asset.symbol}', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                 ),
                 SizedBox(width: 48.s), // 平衡左侧返回按钮，让标题视觉居中。
               ],
@@ -129,10 +119,7 @@ class _SendRecipientPageState extends ConsumerState<SendRecipientPage> {
                               errorText: _error,
                               filled: true,
                               fillColor: theme.colorScheme.surfaceContainerHighest,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12.s),
-                                borderSide: BorderSide.none,
-                              ),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.s), borderSide: BorderSide.none),
                             ),
                           ),
                           if (_controller.text.isNotEmpty)
@@ -170,11 +157,7 @@ class _SendRecipientPageState extends ConsumerState<SendRecipientPage> {
                           ),
                           SizedBox(width: 12.s),
                           Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _paste,
-                              icon: const Icon(Icons.content_paste_rounded),
-                              label: const Text('粘贴'),
-                            ),
+                            child: OutlinedButton.icon(onPressed: _paste, icon: const Icon(Icons.content_paste_rounded), label: const Text('粘贴')),
                           ),
                         ],
                       ),
@@ -255,8 +238,7 @@ class _RecentList extends ConsumerWidget {
     return ListView.builder(
       padding: EdgeInsets.symmetric(vertical: 8.s),
       itemCount: addresses.length,
-      itemBuilder: (context, i) =>
-          _AddressTile(icon: Icons.history_rounded, title: addresses[i], onTap: () => onSelect(addresses[i])),
+      itemBuilder: (context, i) => _AddressTile(icon: Icons.history_rounded, title: addresses[i], onTap: () => onSelect(addresses[i])),
     );
   }
 }
@@ -355,10 +337,7 @@ class _EmptyHint extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Center(
-      child: Text(
-        message,
-        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-      ),
+      child: Text(message, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
     );
   }
 }

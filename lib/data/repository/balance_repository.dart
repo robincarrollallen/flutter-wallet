@@ -1,7 +1,9 @@
 import 'package:wallet_core/chains.dart';
+
 import '../../domain/account_balance.dart';
 import '../../domain/btc_utxo.dart';
 import '../datasource/remote/bitcoin_utxo_api.dart';
+
 import 'package:wallet_core/rpc.dart';
 
 /// 账户余额的统一入口：把数据源返回的原始最小单位换算成领域对象。
@@ -37,11 +39,7 @@ class BalanceRepository {
       address: addresses.first,
       amount: readable(set.total),
       symbol: chain.symbol,
-      utxo: UtxoBreakdown(
-        confirmed: readable(set.confirmed),
-        pending: readable(set.pending),
-        spendable: readable(set.spendable),
-      ),
+      utxo: UtxoBreakdown(confirmed: readable(set.confirmed), pending: readable(set.pending), spendable: readable(set.spendable)),
     );
   }
 
@@ -54,12 +52,7 @@ class BalanceRepository {
   Future<Map<String, AccountBalance>> getTokenBalances(Chain chain, List<Token> tokens, String address) async {
     final raw = await _api.fetchTokenBalances(chain, tokens, address);
     return {
-      for (final token in tokens)
-        TokenCatalog.identityKey(token): AccountBalance(
-          address: address,
-          amount: formatUnits(raw[token.identifier] ?? BigInt.zero, token.decimals),
-          symbol: token.symbol,
-        ),
+      for (final token in tokens) TokenCatalog.identityKey(token): AccountBalance(address: address, amount: formatUnits(raw[token.identifier] ?? BigInt.zero, token.decimals), symbol: token.symbol),
     };
   }
 }

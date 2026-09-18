@@ -37,18 +37,11 @@ class _FakeApi implements CoinGeckoApi {
 ///
 /// [ids] 是「上次抓这份缓存时请求过的 coinGeckoId」，默认与当前目录一致（不缺币）。
 /// 落盘的旧价格固定 1.0，远端新价格固定 [remote]，两者不同才分得清用的是哪一份。
-Future<(ProviderContainer, _FakeApi, SharedPreferences)> _container({
-  Duration? age,
-  double? remote = 9.0,
-  List<String>? ids,
-  String currency = defaultCurrencyCode,
-}) async {
+Future<(ProviderContainer, _FakeApi, SharedPreferences)> _container({Duration? age, double? remote = 9.0, List<String>? ids, String currency = defaultCurrencyCode}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final api = _FakeApi(remote);
-  final container = ProviderContainer(
-    overrides: [sharedPrefsProvider.overrideWithValue(prefs), coinGeckoApiProvider.overrideWithValue(api)],
-  );
+  final container = ProviderContainer(overrides: [sharedPrefsProvider.overrideWithValue(prefs), coinGeckoApiProvider.overrideWithValue(api)]);
   addTearDown(container.dispose);
 
   // 目录 id 要从容器里现取（远程目录 loading 时用打包目录兜底），
@@ -160,9 +153,7 @@ void main() {
       SharedPreferences.setMockInitialValues({PrefsKey.markets.value: 'not json'});
       final prefs = await SharedPreferences.getInstance();
       final api = _FakeApi(9.0);
-      final c = ProviderContainer(
-        overrides: [sharedPrefsProvider.overrideWithValue(prefs), coinGeckoApiProvider.overrideWithValue(api)],
-      );
+      final c = ProviderContainer(overrides: [sharedPrefsProvider.overrideWithValue(prefs), coinGeckoApiProvider.overrideWithValue(api)]);
       addTearDown(c.dispose);
 
       expect(c.read(marketsProvider).markets, isEmpty);

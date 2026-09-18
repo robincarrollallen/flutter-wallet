@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../../../core/format/token_amount_formatter.dart';
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../domain/transaction_record.dart';
@@ -102,16 +103,10 @@ class _DirectionFilterBar extends ConsumerWidget {
         child: MenuAnchor(
           alignmentOffset: Offset(0, 4.s),
           menuChildren: [
-            for (final option in <TransactionDirection?>[
-              null,
-              TransactionDirection.outgoing,
-              TransactionDirection.incoming,
-            ])
+            for (final option in <TransactionDirection?>[null, TransactionDirection.outgoing, TransactionDirection.incoming])
               MenuItemButton(
                 leadingIcon: Icon(_directionIcon(option), size: 20.s, color: theme.colorScheme.onSurfaceVariant),
-                trailingIcon: option == selected
-                    ? Icon(Icons.check_rounded, size: 20.s, color: theme.colorScheme.primary)
-                    : null,
+                trailingIcon: option == selected ? Icon(Icons.check_rounded, size: 20.s, color: theme.colorScheme.primary) : null,
                 onPressed: () => ref.read(transactionHistoryFilterProvider.notifier).selectDirection(option),
                 child: Text(_directionLabel(t, option)),
               ),
@@ -129,10 +124,7 @@ class _DirectionFilterBar extends ConsumerWidget {
                   children: [
                     Icon(_directionIcon(selected), size: 18.s, color: theme.colorScheme.onSurfaceVariant),
                     SizedBox(width: 6.s),
-                    Text(
-                      _directionLabel(t, selected),
-                      style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurface),
-                    ),
+                    Text(_directionLabel(t, selected), style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurface)),
                     Icon(Icons.arrow_drop_down_rounded, size: 20.s, color: theme.colorScheme.onSurfaceVariant),
                   ],
                 ),
@@ -189,10 +181,7 @@ class _ChainFilterAction extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (selectedChain == null)
-                    Icon(Icons.language, size: 22.s, color: theme.colorScheme.onSurfaceVariant)
-                  else
-                    _ChainAvatar(chain: selectedChain, size: 22.s),
+                  if (selectedChain == null) Icon(Icons.language, size: 22.s, color: theme.colorScheme.onSurfaceVariant) else _ChainAvatar(chain: selectedChain, size: 22.s),
                   Icon(Icons.arrow_drop_down_rounded, size: 22.s, color: theme.colorScheme.onSurfaceVariant),
                 ],
               ),
@@ -214,9 +203,7 @@ class _ChainAvatar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final logoUrl =
-        ref.watch(chainIconsProvider).icons[chain.coinGeckoPlatformId] ??
-        ref.watch(marketsProvider).markets[chain.coinGeckoId]?.logoUrl;
+    final logoUrl = ref.watch(chainIconsProvider).icons[chain.coinGeckoPlatformId] ?? ref.watch(marketsProvider).markets[chain.coinGeckoId]?.logoUrl;
     return TokenIcon(symbol: chain.symbol, logoUrl: logoUrl, size: size);
   }
 }
@@ -333,14 +320,8 @@ class _LoadMoreFooter extends ConsumerWidget {
       child: Center(
         child: switch ((paging.isLoadingMore, paging.hasMore)) {
           (true, _) => SizedBox(height: 20.s, width: 20.s, child: const CircularProgressIndicator(strokeWidth: 2)),
-          (false, true) => TextButton(
-            onPressed: () => ref.read(transactionHistoryPagingProvider.notifier).loadMore(),
-            child: Text(t.transactionHistory.loadMore),
-          ),
-          (false, false) => Text(
-            t.transactionHistory.noMoreRecords,
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
+          (false, true) => TextButton(onPressed: () => ref.read(transactionHistoryPagingProvider.notifier).loadMore(), child: Text(t.transactionHistory.loadMore)),
+          (false, false) => Text(t.transactionHistory.noMoreRecords, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         },
       ),
     );
@@ -360,16 +341,9 @@ class _EmptyState extends ConsumerWidget {
 
     return Column(
       children: [
-        Icon(
-          filteredOut ? Icons.filter_alt_off_outlined : Icons.receipt_long_outlined,
-          size: 48.s,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
+        Icon(filteredOut ? Icons.filter_alt_off_outlined : Icons.receipt_long_outlined, size: 48.s, color: theme.colorScheme.onSurfaceVariant),
         SizedBox(height: 12.s),
-        Text(
-          filteredOut ? t.transactionHistory.emptyFiltered : t.transactionHistory.empty,
-          style: theme.textTheme.titleMedium,
-        ),
+        Text(filteredOut ? t.transactionHistory.emptyFiltered : t.transactionHistory.empty, style: theme.textTheme.titleMedium),
         SizedBox(height: 4.s),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 48.s),
@@ -379,13 +353,7 @@ class _EmptyState extends ConsumerWidget {
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ),
-        if (filteredOut) ...[
-          SizedBox(height: 16.s),
-          TextButton(
-            onPressed: () => ref.read(transactionHistoryFilterProvider.notifier).clear(),
-            child: Text(t.transactionHistory.clearFilters),
-          ),
-        ],
+        if (filteredOut) ...[SizedBox(height: 16.s), TextButton(onPressed: () => ref.read(transactionHistoryFilterProvider.notifier).clear(), child: Text(t.transactionHistory.clearFilters))],
       ],
     );
   }
@@ -406,10 +374,7 @@ class _DaySection extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(16.s, 16.s, 16.s, 8.s),
-          child: Text(
-            _dayLabel(context, day),
-            style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
+          child: Text(_dayLabel(context, day), style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         ),
         for (final record in records) _TransactionRow(record: record),
       ],
@@ -434,28 +399,18 @@ class _TransactionRow extends ConsumerWidget {
       onTap: () => context.push(AppRoute.transactionDetail, extra: TransactionDetailArgs(record: record)),
       leading: CircleAvatar(
         backgroundColor: theme.colorScheme.surfaceContainerHighest,
-        child: Icon(
-          isOutgoing ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-          size: 20.s,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
+        child: Icon(isOutgoing ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded, size: 20.s, color: theme.colorScheme.onSurfaceVariant),
       ),
       title: Text(
         '${isOutgoing ? t.transactionHistory.directionOutgoing : t.transactionHistory.directionIncoming} '
         '${displaySymbolOf(record, ref.watch(tokenCatalogProvider))}',
       ),
-      subtitle: Text(
-        '${shortenAddress(counterparty)} · ${_chainNameOf(record.chainId)}',
-        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-      ),
+      subtitle: Text('${shortenAddress(counterparty)} · ${_chainNameOf(record.chainId)}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text(
-            '${isOutgoing ? '-' : '+'}${formatTokenAmount(record.amount)}',
-            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
+          Text('${isOutgoing ? '-' : '+'}${formatTokenAmount(record.amount)}', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
           SizedBox(height: 2.s),
           Text(statusLabel, style: theme.textTheme.bodySmall?.copyWith(color: statusColor)),
         ],

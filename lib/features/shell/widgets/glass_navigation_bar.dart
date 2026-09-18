@@ -50,12 +50,7 @@ class GlassNavigationBar extends ConsumerWidget {
             children: [
               for (var i = 0; i < kTabs.length; i++)
                 Expanded(
-                  child: _NavigationItem(
-                    item: kTabs[i],
-                    label: kTabs[i].label(t),
-                    selected: i == current,
-                    onTap: () => ref.read(tabIndexProvider.notifier).select(i),
-                  ),
+                  child: _NavigationItem(item: kTabs[i], label: kTabs[i].label(t), selected: i == current, onTap: () => ref.read(tabIndexProvider.notifier).select(i)),
                 ),
             ],
           ),
@@ -91,10 +86,7 @@ class _NavigationItem extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              ),
+              style: theme.textTheme.labelSmall?.copyWith(color: color, fontWeight: selected ? FontWeight.w600 : FontWeight.w400),
             ),
           ],
         ),

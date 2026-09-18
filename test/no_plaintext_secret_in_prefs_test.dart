@@ -33,12 +33,7 @@ void main() {
   test('创建助记词钱包后，prefs 里没有助记词的任何一个词', () async {
     final (container, platform) = await _setUp();
 
-    final wallet = Wallet(
-      id: newWalletId(),
-      name: '哨兵钱包',
-      source: WalletSource.mnemonic,
-      addresses: const {'ethereum': '0x0000000000000000000000000000000000000001'},
-    );
+    final wallet = Wallet(id: newWalletId(), name: '哨兵钱包', source: WalletSource.mnemonic, addresses: const {'ethereum': '0x0000000000000000000000000000000000000001'});
     await container.read(walletCommitServiceProvider).commit(wallet: wallet, mnemonic: mnemonic);
 
     // 前置断言：流程真的跑完了。没有这两条，下面的"搜不到"可能只是因为什么都没发生。
@@ -54,12 +49,7 @@ void main() {
     // 固定值而非随机生成：失败时的报错要能直接指出是哪一串泄漏了。
     const privateKey = '0x4646464646464646464646464646464646464646464646464646464646464646';
 
-    final wallet = Wallet(
-      id: newWalletId(),
-      name: '导入哨兵',
-      source: WalletSource.importedPrivateKey,
-      addresses: const {'ethereum': '0x0000000000000000000000000000000000000002'},
-    );
+    final wallet = Wallet(id: newWalletId(), name: '导入哨兵', source: WalletSource.importedPrivateKey, addresses: const {'ethereum': '0x0000000000000000000000000000000000000002'});
     await container.read(walletCommitServiceProvider).commit(wallet: wallet, privateKey: privateKey);
 
     expect(platform.store.values, contains(privateKey), reason: '私钥没进安全存储，说明流程没走完');
@@ -67,10 +57,7 @@ void main() {
 
     // 三种形态一起搜：只搜原串的话，"我做了个编码所以算脱敏了"这种改法能溜过去。
     final stripped = privateKey.substring(2);
-    _expectNoSecrets(
-      container,
-      secrets: [privateKey, stripped, base64Encode(utf8.encode(privateKey)), base64Encode(utf8.encode(stripped))],
-    );
+    _expectNoSecrets(container, secrets: [privateKey, stripped, base64Encode(utf8.encode(privateKey)), base64Encode(utf8.encode(stripped))]);
   });
 
   test('设置并校验安全码后，prefs 里没有安全码明文', () async {
@@ -93,22 +80,13 @@ void main() {
     final (container, _) = await _setUp();
     await container.read(sharedPrefsProvider).setString('leaky.key', '备份用：$mnemonic');
 
-    expect(
-      () => _expectNoSecrets(container, secrets: [mnemonic]),
-      throwsA(isA<TestFailure>()),
-      reason: '哨兵已经明文躺在 prefs 里，守卫却没报——它是失效的',
-    );
+    expect(() => _expectNoSecrets(container, secrets: [mnemonic]), throwsA(isA<TestFailure>()), reason: '哨兵已经明文躺在 prefs 里，守卫却没报——它是失效的');
   });
 
   test('Wallet.toJson 的字段集合是一份精确白名单', () {
     // 这是结构性的那一层：上面三条测的是"当前流程没泄漏"，这条测的是
     // "以后谁想往落盘结构里加字段，必须先改这个测试并在 review 里解释为什么"。
-    final json = Wallet(
-      id: 'w1',
-      name: 'n',
-      source: WalletSource.mnemonic,
-      addresses: const {'ethereum': '0x1'},
-    ).toJson();
+    final json = Wallet(id: 'w1', name: 'n', source: WalletSource.mnemonic, addresses: const {'ethereum': '0x1'}).toJson();
 
     expect(json.keys.toSet(), {'id', 'name', 'source', 'addresses', 'createdAt', 'icon', 'backupMethods'});
   });

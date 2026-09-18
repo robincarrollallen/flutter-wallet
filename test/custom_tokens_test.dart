@@ -54,17 +54,7 @@ void main() {
       c.read(customTokensProvider.notifier).add(_foo);
       c
           .read(customTokensProvider.notifier)
-          .remove(
-            Token(
-              chainId: _foo.chainId,
-              symbol: 'X',
-              name: 'X',
-              standard: TokenStandard.erc20,
-              identifier: _foo.identifier.toUpperCase(),
-              coinGeckoId: '',
-              decimals: 18,
-            ),
-          );
+          .remove(Token(chainId: _foo.chainId, symbol: 'X', name: 'X', standard: TokenStandard.erc20, identifier: _foo.identifier.toUpperCase(), coinGeckoId: '', decimals: 18));
       expect(c.read(customTokensProvider), isEmpty);
     });
 

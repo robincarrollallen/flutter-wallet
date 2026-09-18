@@ -39,15 +39,10 @@ Map<String, Object?> _utxoJson(String txid, int vout, int value, {required bool 
   'txid': txid,
   'vout': vout,
   'value': value,
-  'status': {
-    'confirmed': confirmed,
-    if (confirmed) 'block_height': height ?? 2900000,
-    if (confirmed) 'block_hash': '00'.padRight(64, '0'),
-  },
+  'status': {'confirmed': confirmed, if (confirmed) 'block_height': height ?? 2900000, if (confirmed) 'block_hash': '00'.padRight(64, '0')},
 };
 
-Utxo _utxo(String txid, int value, {required bool confirmed}) =>
-    Utxo(txid: txid, vout: 0, value: BigInt.from(value), confirmed: confirmed, address: 'tb1q');
+Utxo _utxo(String txid, int value, {required bool confirmed}) => Utxo(txid: txid, vout: 0, value: BigInt.from(value), confirmed: confirmed, address: 'tb1q');
 
 void main() {
   // 绑定是 SharedPreferences 打桩的前提，但它会顺手装一个 HttpOverrides——
@@ -116,23 +111,13 @@ void main() {
     });
 
     test('自己的未确认找零：同时计入 pending 与 spendable', () {
-      final set = UtxoSet(
-        [_utxo('aa', 70000, confirmed: true), _utxo('mine', 25000, confirmed: false)],
-        ownTxids: const {'mine'},
-      );
+      final set = UtxoSet([_utxo('aa', 70000, confirmed: true), _utxo('mine', 25000, confirmed: false)], ownTxids: const {'mine'});
       expect(set.pending, BigInt.from(25000));
       expect(set.spendable, BigInt.from(95000), reason: '父交易是自己签的，花它只是再挂一节 mempool 链');
     });
 
     test('两种未确认混在一起时只放行自己的那笔', () {
-      final set = UtxoSet(
-        [
-          _utxo('aa', 70000, confirmed: true),
-          _utxo('mine', 25000, confirmed: false),
-          _utxo('zz', 40000, confirmed: false),
-        ],
-        ownTxids: const {'mine'},
-      );
+      final set = UtxoSet([_utxo('aa', 70000, confirmed: true), _utxo('mine', 25000, confirmed: false), _utxo('zz', 40000, confirmed: false)], ownTxids: const {'mine'});
       expect(set.pending, BigInt.from(65000));
       expect(set.spendable, BigInt.from(95000));
       expect(set.total, BigInt.from(135000));
@@ -146,11 +131,7 @@ void main() {
     });
 
     test('total == confirmed + pending（与旧的 chain_stats+mempool_stats 口径等价）', () {
-      final set = UtxoSet([
-        _utxo('aa', 70000, confirmed: true),
-        _utxo('bb', 1234, confirmed: true),
-        _utxo('zz', 25000, confirmed: false),
-      ]);
+      final set = UtxoSet([_utxo('aa', 70000, confirmed: true), _utxo('bb', 1234, confirmed: true), _utxo('zz', 25000, confirmed: false)]);
       expect(set.total, set.confirmed + set.pending);
     });
 
@@ -159,10 +140,7 @@ void main() {
     test('待确认支出：被花掉的输出从列表消失，total 立刻减少', () {
       final before = UtxoSet([_utxo('aa', 70000, confirmed: true), _utxo('bb', 30000, confirmed: true)]);
       // 花掉 bb，找零 25000 回到自己手上（手续费 5000）。
-      final after = UtxoSet(
-        [_utxo('aa', 70000, confirmed: true), _utxo('mine', 25000, confirmed: false)],
-        ownTxids: const {'mine'},
-      );
+      final after = UtxoSet([_utxo('aa', 70000, confirmed: true), _utxo('mine', 25000, confirmed: false)], ownTxids: const {'mine'});
 
       expect(before.total - after.total, BigInt.from(5000), reason: '差额正是手续费，而不是整笔支出');
       expect(after.confirmed, BigInt.from(70000), reason: 'bb 已被花掉，不再计入已确认');
@@ -227,10 +205,7 @@ void main() {
           ..close(),
       );
 
-      expect(
-        () => api.fetchUtxos(_bitcoinAt(s), const ['tb1qxyz']),
-        throwsA(isA<HttpStatusException>().having((e) => e.statusCode, 'statusCode', 500)),
-      );
+      expect(() => api.fetchUtxos(_bitcoinAt(s), const ['tb1qxyz']), throwsA(isA<HttpStatusException>().having((e) => e.statusCode, 'statusCode', 500)));
     });
   });
 

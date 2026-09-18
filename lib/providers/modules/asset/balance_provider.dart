@@ -2,9 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
+
 import '../../../data/repository/balance_repository.dart';
 import '../../../domain/account_balance.dart';
+
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../domain/wallet_total.dart';
 import '../market/markets_provider.dart';
 import '../transaction/broadcast_history_provider.dart';
@@ -47,10 +50,7 @@ Future<void> refreshHomeData(WidgetRef ref, {String? walletId}) async {
 /// 若哪天有页面要看隐藏代币的余额，不该因为它被隐藏就查不到；反正合并进同一批
 /// 请求，多带几个代币不多一次往返。未接入的代币标准在此就地滤掉——
 /// 混进去会让整批抛 [UnimplementedError]，把同链已支持的代币一起拖下水。
-final chainTokenBalancesProvider = FutureProvider.family<Map<String, AccountBalance>, (String, String)>((
-  ref,
-  key,
-) async {
+final chainTokenBalancesProvider = FutureProvider.family<Map<String, AccountBalance>, (String, String)>((ref, key) async {
   final (chainId, address) = key;
   final chain = SupportedChains.byId(chainId);
   final tokens = [
@@ -82,15 +82,11 @@ final balanceProvider = FutureProvider.family<AccountBalance, (String, String, S
   final markets = ref.watch(marketsProvider).markets;
   final marketsFuture = markets.isNotEmpty ? null : (ref.read(marketsProvider.notifier).ready..ignore());
   // 自广播记录同样要在 await 之前读：它是同步 Notifier，这里取到的就是当前值。
-  final ownTxids = token == null && chain.kind == ChainKind.bitcoin
-      ? ref.watch(broadcastHistoryProvider).keys.toSet()
-      : const <String>{};
+  final ownTxids = token == null && chain.kind == ChainKind.bitcoin ? ref.watch(broadcastHistoryProvider).keys.toSet() : const <String>{};
   final baseFuture = switch (token) {
     // BTC 走 UTXO 路径：余额是集合的投影，还要带回三口径明细。
     // 地址传成单元素列表——数据层按集合设计，以后加找零链这里改一行就够。
-    null when chain.kind == ChainKind.bitcoin => const BalanceRepository(
-      ChainBalanceApi(),
-    ).getBitcoinBalance(chain, [address], ownTxids),
+    null when chain.kind == ChainKind.bitcoin => const BalanceRepository(ChainBalanceApi()).getBitcoinBalance(chain, [address], ownTxids),
     null => const BalanceRepository(ChainBalanceApi()).getBalance(chain, address),
     _ => _tokenBalance(ref, chain, token, address),
   };
@@ -131,8 +127,7 @@ Token? _findToken(Ref ref, String chainId, String identifier) {
 /// 已支持的标准若地址真的没持仓，`balanceOf` 返回的也是 0，同样走这里，语义无歧义。
 Future<AccountBalance> _tokenBalance(Ref ref, Chain chain, Token token, String address) async {
   final balances = await ref.watch(chainTokenBalancesProvider((chain.id, address)).future);
-  return balances[TokenCatalog.identityKey(token)] ??
-      AccountBalance(address: address, amount: '0', symbol: token.symbol);
+  return balances[TokenCatalog.identityKey(token)] ?? AccountBalance(address: address, amount: '0', symbol: token.symbol);
 }
 
 /// 关掉 Riverpod 3.x 的自动重试。
@@ -183,8 +178,7 @@ final walletTotalProvider = FutureProvider.family<WalletTotal, String>((ref, wal
   // 无地址的链（该钱包未派生出地址）整条跳过：查不了也不算失败。
   final pending = <(String, Future<AccountBalance>)>[
     for (final asset in ref.watch(visibleAssetsProvider(null)))
-      if (wallet.addressFor(asset.chain) case final address?)
-        (asset.chain.id, ref.watch(balanceProvider((asset.chain.id, address, asset.token?.identifier)).future)),
+      if (wallet.addressFor(asset.chain) case final address?) (asset.chain.id, ref.watch(balanceProvider((asset.chain.id, address, asset.token?.identifier)).future)),
   ];
 
   await marketsFuture;
@@ -192,10 +186,7 @@ final walletTotalProvider = FutureProvider.family<WalletTotal, String>((ref, wal
   // 不能直接把原始 Future 交给 Future.wait：它虽然默认 eagerError=false，
   // 但仍会在全部完成后重新抛出第一个错误，一条链失败就整单归零。
   // 所以在进 wait 之前就把异常就地转成 null，wait 本身永远看不到错误。
-  final results = await Future.wait([
-    for (final (chainId, future) in pending)
-      future.then<(String, AccountBalance?)>((b) => (chainId, b), onError: (_, _) => (chainId, null)),
-  ]);
+  final results = await Future.wait([for (final (chainId, future) in pending) future.then<(String, AccountBalance?)>((b) => (chainId, b), onError: (_, _) => (chainId, null))]);
 
   return aggregateWalletTotal(results);
 });

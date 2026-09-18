@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../providers/modules/wallet/wallet_provider.dart';
+
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../widgets/panel/view.dart';
 import '../../../../../core/navigation/panel_routes.dart';
 import '../cloud_backup/view.dart';
@@ -31,13 +33,7 @@ class BackupMethodPage extends ConsumerWidget {
       child: ListView(
         padding: EdgeInsets.all(16.s),
         children: [
-          _MethodCard(
-            icon: Icons.edit_note,
-            title: '手动备份',
-            subtitle: '抄写助记词并离线保存，安全性最高',
-            backedUp: methods.contains(BackupMethod.manual),
-            onTap: () => _onSelect(context, BackupChoice.manual),
-          ),
+          _MethodCard(icon: Icons.edit_note, title: '手动备份', subtitle: '抄写助记词并离线保存，安全性最高', backedUp: methods.contains(BackupMethod.manual), onTap: () => _onSelect(context, BackupChoice.manual)),
           _MethodCard(
             icon: Icons.cloud_upload_outlined,
             title: '云备份',
@@ -113,20 +109,12 @@ class _ManualBackupNoticeSheetState extends State<_ManualBackupNoticeSheet> {
                 SizedBox(width: 8.s),
                 Text(
                   '备份需知',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.error,
-                  ),
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.error),
                 ),
               ],
             ),
             SizedBox(height: 16.s),
-            for (var i = 0; i < _notices.length; i++)
-              _NoticeCard(
-                text: _notices[i],
-                checked: _checked[i],
-                onTap: () => setState(() => _checked[i] = !_checked[i]),
-              ),
+            for (var i = 0; i < _notices.length; i++) _NoticeCard(text: _notices[i], checked: _checked[i], onTap: () => setState(() => _checked[i] = !_checked[i])),
             SizedBox(height: 8.s),
             SizedBox(
               width: double.infinity,
@@ -181,10 +169,7 @@ class _NoticeCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   // 选中：主色；未选中：与卡片同色（视觉上「融入」背景）。
                   color: checked ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
-                  border: Border.all(
-                    color: checked ? theme.colorScheme.primary : theme.colorScheme.outline,
-                    width: 1.5.s,
-                  ),
+                  border: Border.all(color: checked ? theme.colorScheme.primary : theme.colorScheme.outline, width: 1.5.s),
                 ),
                 child: checked ? Icon(Icons.check, size: 14.s, color: theme.colorScheme.onPrimary) : null,
               ),
@@ -198,13 +183,7 @@ class _NoticeCard extends StatelessWidget {
 
 /// 备份方式卡片：左侧图标 + 标题（主）/ 说明（副）+ 备份状态文本 + 右侧箭头。
 class _MethodCard extends StatelessWidget {
-  const _MethodCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.backedUp,
-    required this.onTap,
-  });
+  const _MethodCard({required this.icon, required this.title, required this.subtitle, required this.backedUp, required this.onTap});
 
   final IconData icon;
   final String title;
@@ -240,20 +219,14 @@ class _MethodCard extends StatelessWidget {
                   children: [
                     Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                     SizedBox(height: 2.s),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
+                    Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),
               SizedBox(width: 8.s),
               Text(
                 backedUp ? '已备份' : '未备份',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: backedUp ? context.appColors.success : theme.colorScheme.error,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.bodySmall?.copyWith(color: backedUp ? context.appColors.success : theme.colorScheme.error, fontWeight: FontWeight.w600),
               ),
               SizedBox(width: 4.s),
               Icon(Icons.chevron_right, size: 20.s, color: theme.colorScheme.onSurfaceVariant),

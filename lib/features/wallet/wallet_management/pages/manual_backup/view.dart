@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../../../widgets/secret_guard.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
@@ -112,10 +113,7 @@ class _ManualBackupPageState extends ConsumerState<ManualBackupPage> with Widget
               children: [
                 Container(
                   padding: EdgeInsets.all(12.s),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(12.s),
-                  ),
+                  decoration: BoxDecoration(color: theme.colorScheme.errorContainer, borderRadius: BorderRadius.circular(12.s)),
                   child: Row(
                     spacing: 6.s,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,8 +159,7 @@ class _ManualBackupPageState extends ConsumerState<ManualBackupPage> with Widget
   }
 }
 
-BoxDecoration _revealBoxDecoration(ThemeData theme) =>
-    BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8.s));
+BoxDecoration _revealBoxDecoration(ThemeData theme) => BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8.s));
 
 /// 隐藏态：闭眼图标 + 「点击展示助记词」提示，点击触发读取。
 class _HiddenPlaceholder extends StatelessWidget {

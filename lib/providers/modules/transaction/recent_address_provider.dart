@@ -38,11 +38,7 @@ class RecentAddressesNotifier extends Notifier<List<RecentAddress>> with Persist
   List<RecentAddress> fromJson(Map<String, dynamic> json, List<RecentAddress> fallback) {
     final raw = json['entries'];
     if (raw is! List) return fallback;
-    return raw
-        .whereType<Map<String, dynamic>>()
-        .map(RecentAddress.fromJson)
-        .whereType<RecentAddress>()
-        .toList(growable: false);
+    return raw.whereType<Map<String, dynamic>>().map(RecentAddress.fromJson).whereType<RecentAddress>().toList(growable: false);
   }
 
   /// 记录一次发送成功的收款地址：同链同地址去重并置顶。
@@ -52,15 +48,9 @@ class RecentAddressesNotifier extends Notifier<List<RecentAddress>> with Persist
   }
 }
 
-final recentAddressesProvider = NotifierProvider<RecentAddressesNotifier, List<RecentAddress>>(
-  RecentAddressesNotifier.new,
-);
+final recentAddressesProvider = NotifierProvider<RecentAddressesNotifier, List<RecentAddress>>(RecentAddressesNotifier.new);
 
 /// 指定链下的最近使用地址（保持最新在前）。
 final recentAddressesOfChainProvider = Provider.family<List<String>, String>((ref, chainId) {
-  return ref
-      .watch(recentAddressesProvider)
-      .where((e) => e.chainId == chainId)
-      .map((e) => e.address)
-      .toList(growable: false);
+  return ref.watch(recentAddressesProvider).where((e) => e.chainId == chainId).map((e) => e.address).toList(growable: false);
 });

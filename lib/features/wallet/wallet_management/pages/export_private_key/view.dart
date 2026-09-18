@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wallet_core/chains.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
+
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../widgets/panel/view.dart';
 import '../../../../../core/navigation/panel_routes.dart';
 import '../../../security_password/require_security_password.dart';
@@ -23,14 +25,7 @@ class ExportPrivateKeyPage extends ConsumerWidget {
       showBack: true,
       child: ListView(
         padding: EdgeInsets.all(16.s),
-        children: [
-          for (final chain in wallet.chainsWithAddress)
-            _ChainCard(
-              chain: chain,
-              address: wallet.addressFor(chain),
-              onTap: () => _onSelectChain(context, ref, chain),
-            ),
-        ],
+        children: [for (final chain in wallet.chainsWithAddress) _ChainCard(chain: chain, address: wallet.addressFor(chain), onTap: () => _onSelectChain(context, ref, chain))],
       ),
     );
   }
@@ -106,10 +101,7 @@ class _ChainIcon extends StatelessWidget {
       decoration: BoxDecoration(color: theme.colorScheme.primaryContainer, shape: BoxShape.circle),
       child: Text(
         chain.symbol.characters.first,
-        style: theme.textTheme.titleMedium?.copyWith(
-          color: theme.colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.bold,
-        ),
+        style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
       ),
     );
   }

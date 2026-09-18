@@ -78,24 +78,10 @@ class _VerifyMnemonicPageState extends ConsumerState<VerifyMnemonicPage> {
               child: ListView(
                 padding: EdgeInsets.all(16.s),
                 children: [
-                  Text(
-                    '请按抄写的顺序依次点击下方助记词，验证你已正确备份。',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
+                  Text('请按抄写的顺序依次点击下方助记词，验证你已正确备份。', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                   SizedBox(height: 16.s),
-                  _AnswerArea(
-                    picked: [for (final i in _picked) _pool[i]],
-                    total: _words.length,
-                    hasError: hasError,
-                    onUndo: _picked.isEmpty ? null : _undo,
-                  ),
-                  if (hasError) ...[
-                    SizedBox(height: 12.s),
-                    Text(
-                      '顺序不正确，请点击右上角撤销后重新选择。',
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
-                    ),
-                  ],
+                  _AnswerArea(picked: [for (final i in _picked) _pool[i]], total: _words.length, hasError: hasError, onUndo: _picked.isEmpty ? null : _undo),
+                  if (hasError) ...[SizedBox(height: 12.s), Text('顺序不正确，请点击右上角撤销后重新选择。', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error))],
                   SizedBox(height: 24.s),
                   _WordPool(pool: _pool, pickedIndexes: _picked.toSet(), onPick: _pick),
                 ],
@@ -150,10 +136,7 @@ class _AnswerArea extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                '已选 ${picked.length}/$total',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
+              Text('已选 ${picked.length}/$total', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
               const Spacer(),
               if (onUndo != null)
                 InkWell(
@@ -176,10 +159,7 @@ class _AnswerArea extends StatelessWidget {
           Wrap(
             spacing: 8.s,
             runSpacing: 8.s,
-            children: [
-              for (var i = 0; i < picked.length; i++)
-                _WordChip(index: i + 1, word: picked[i], filled: true, highlightError: hasError),
-            ],
+            children: [for (var i = 0; i < picked.length; i++) _WordChip(index: i + 1, word: picked[i], filled: true, highlightError: hasError)],
           ),
         ],
       ),
@@ -217,13 +197,7 @@ class _WordPool extends StatelessWidget {
 
 /// 助记词小卡片：词池态 / 已用态 / 答案态（可选序号、可标红）。
 class _WordChip extends StatelessWidget {
-  const _WordChip({
-    required this.word,
-    this.index,
-    this.used = false,
-    this.filled = false,
-    this.highlightError = false,
-  });
+  const _WordChip({required this.word, this.index, this.used = false, this.filled = false, this.highlightError = false});
 
   final String word;
   final int? index;
@@ -259,17 +233,10 @@ class _WordChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (index != null) ...[
-            Text('$index', style: theme.textTheme.bodySmall?.copyWith(color: fg.withValues(alpha: 0.7))),
-            SizedBox(width: 6.s),
-          ],
+          if (index != null) ...[Text('$index', style: theme.textTheme.bodySmall?.copyWith(color: fg.withValues(alpha: 0.7))), SizedBox(width: 6.s)],
           Text(
             word,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w600,
-              decoration: used ? TextDecoration.lineThrough : null,
-            ),
+            style: theme.textTheme.bodyMedium?.copyWith(color: fg, fontWeight: FontWeight.w600, decoration: used ? TextDecoration.lineThrough : null),
           ),
         ],
       ),

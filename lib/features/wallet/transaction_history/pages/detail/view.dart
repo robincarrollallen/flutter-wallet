@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../../../../../core/format/token_amount_formatter.dart';
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../domain/transaction_record.dart';
@@ -55,9 +56,7 @@ class TransactionDetailScreen extends ConsumerWidget {
           // 详情页的主要用途之一。所以两个都列，复制仍然只复制地址。
           _DetailRow(
             label: t.transactionHistory.fieldToken,
-            value: record.isNativeCoin
-                ? '$symbol · ${t.transactionHistory.nativeCoin}'
-                : '$symbol · ${record.tokenIdentifier!}',
+            value: record.isNativeCoin ? '$symbol · ${t.transactionHistory.nativeCoin}' : '$symbol · ${record.tokenIdentifier!}',
             copyable: !record.isNativeCoin,
             copyValue: record.tokenIdentifier,
           ),
@@ -65,16 +64,10 @@ class TransactionDetailScreen extends ConsumerWidget {
           _DetailRow(label: t.transactionHistory.fieldTo, value: record.toAddress, copyable: true),
           _DetailRow(label: t.transactionHistory.fieldHash, value: record.transactionHash, copyable: true),
           // 以下三项要查链 / 查浏览器才有值，没回填就整行不渲染，不留空位。
-          if (record.feeAmount != null)
-            _DetailRow(
-              label: t.transactionHistory.fieldFee,
-              value: '${formatTokenAmount(record.feeAmount!)} ${chain?.symbol ?? ''}'.trim(),
-            ),
-          if (record.blockNumber != null)
-            _DetailRow(label: t.transactionHistory.fieldBlock, value: '${record.blockNumber}'),
+          if (record.feeAmount != null) _DetailRow(label: t.transactionHistory.fieldFee, value: '${formatTokenAmount(record.feeAmount!)} ${chain?.symbol ?? ''}'.trim()),
+          if (record.blockNumber != null) _DetailRow(label: t.transactionHistory.fieldBlock, value: '${record.blockNumber}'),
           _DetailRow(label: t.transactionHistory.fieldTime, value: _formatTime(record.submittedAt)),
-          if (record.confirmedAt != null)
-            _DetailRow(label: t.transactionHistory.fieldConfirmedAt, value: _formatTime(record.confirmedAt!)),
+          if (record.confirmedAt != null) _DetailRow(label: t.transactionHistory.fieldConfirmedAt, value: _formatTime(record.confirmedAt!)),
           if (explorerUrl != null) ...[
             SizedBox(height: 24.s),
             FilledButton.tonalIcon(
@@ -126,16 +119,10 @@ class _DetailRow extends StatelessWidget {
           children: [
             SizedBox(
               width: 88.s,
-              child: Text(
-                label,
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
+              child: Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ),
             Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
-            if (copyable) ...[
-              SizedBox(width: 8.s),
-              Icon(Icons.copy_rounded, size: 16.s, color: theme.colorScheme.onSurfaceVariant),
-            ],
+            if (copyable) ...[SizedBox(width: 8.s), Icon(Icons.copy_rounded, size: 16.s, color: theme.colorScheme.onSurfaceVariant)],
           ],
         ),
       ),

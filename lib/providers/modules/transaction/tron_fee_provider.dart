@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../core/service_provider.dart';
 import '../asset/token_catalog_provider.dart';
 

@@ -60,11 +60,7 @@ class _WalletManagementScreenState extends ConsumerState<WalletManagementScreen>
 
   /// 把当前展开进度写入共享 notifier。
   void _syncPanelProgress() {
-    ref.read(walletPanelProgressProvider).value = WalletManagementLogic.panelProgress(
-      routeValue: _routeAnimation?.value ?? 1.0,
-      dragOffset: _state.dragOffset,
-      panelHeight: _state.panelHeight,
-    );
+    ref.read(walletPanelProgressProvider).value = WalletManagementLogic.panelProgress(routeValue: _routeAnimation?.value ?? 1.0, dragOffset: _state.dragOffset, panelHeight: _state.panelHeight);
   }
 
   @override
@@ -76,10 +72,7 @@ class _WalletManagementScreenState extends ConsumerState<WalletManagementScreen>
 
   /// 用动画把 dragOffset 从当前值过渡到 [target]。
   void _animateTo(double target, {VoidCallback? onDone}) {
-    _animation = Tween<double>(
-      begin: _state.dragOffset,
-      end: target,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _animation = Tween<double>(begin: _state.dragOffset, end: target).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _controller
       ..reset()
       ..forward().whenComplete(() => onDone?.call());
@@ -93,11 +86,7 @@ class _WalletManagementScreenState extends ConsumerState<WalletManagementScreen>
   }
 
   void _onDragEnd(DragEndDetails details, double panelHeight) {
-    final shouldClose = WalletManagementLogic.shouldClose(
-      dragOffset: _state.dragOffset,
-      panelHeight: panelHeight,
-      velocity: details.primaryVelocity ?? 0,
-    );
+    final shouldClose = WalletManagementLogic.shouldClose(dragOffset: _state.dragOffset, panelHeight: panelHeight, velocity: details.primaryVelocity ?? 0);
     if (shouldClose) {
       // 继续下滑移出屏幕后关闭。
       _animateTo(
@@ -159,20 +148,14 @@ class _WalletManagementScreenState extends ConsumerState<WalletManagementScreen>
                           child: Container(
                             width: 36.s,
                             height: 4.s,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(2.s),
-                            ),
+                            decoration: BoxDecoration(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(2.s)),
                           ),
                         ),
                         // 面板内容区：嵌套 Navigator，子页在面板内滑动切换。
                         Expanded(
                           child: NavigatorPopHandler(
                             onPopWithResult: (_) => _nestedNavKey.currentState?.maybePop(),
-                            child: Navigator(
-                              key: _nestedNavKey,
-                              onGenerateRoute: (_) => panelRootRoute<void>(const WalletListPage()),
-                            ),
+                            child: Navigator(key: _nestedNavKey, onGenerateRoute: (_) => panelRootRoute<void>(const WalletListPage())),
                           ),
                         ),
                       ],

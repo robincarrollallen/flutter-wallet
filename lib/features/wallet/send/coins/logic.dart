@@ -14,11 +14,7 @@ class SendLogic {
   ///
   /// 代币只列出 [transfers] 已声明支持代币转账的链。把发不出去的代币列进来，
   /// 用户点进去才被拦下，比看不到更糟。接入新链时在 `walletServiceProvider` 的 map 加一行即可。
-  static List<ListedAsset> assetsOf(
-    Chain? chain,
-    TokenCatalog catalog,
-    Map<ChainKind, ChainTransferService> transfers,
-  ) => [
+  static List<ListedAsset> assetsOf(Chain? chain, TokenCatalog catalog, Map<ChainKind, ChainTransferService> transfers) => [
     for (final asset in ListedAsset.fromCatalog(catalog, chain: chain))
       if (asset.token == null || (transfers[asset.chain.kind]?.supportsToken ?? false)) asset,
   ];
@@ -44,10 +40,7 @@ class SendLogic {
   /// [fiatValueOf] 返回该资产的法币价值：null 表示余额仍在加载
   /// （留在可发送组尾部，数据到达后自动重排）；0（含无地址按 0 处理）
   /// 归入零余额组，保持链默认顺序。可发送组按价值降序排列。
-  static (List<ListedAsset> sendable, List<ListedAsset> rest) partition(
-    List<ListedAsset> assets,
-    double? Function(ListedAsset) fiatValueOf,
-  ) {
+  static (List<ListedAsset> sendable, List<ListedAsset> rest) partition(List<ListedAsset> assets, double? Function(ListedAsset) fiatValueOf) {
     final sendable = <ListedAsset>[];
     final rest = <ListedAsset>[];
     for (final a in assets) {

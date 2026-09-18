@@ -29,11 +29,7 @@ Route<T> panelSlideRoute<T>(Widget page) {
 /// 面板根页（钱包列表）路由：无进入动画，但被子页覆盖时同样淡出，
 /// 与 [panelSlideRoute] 保持一致，避免列表与透明子页重叠。
 Route<T> panelRootRoute<T>(Widget page) {
-  return PageRouteBuilder<T>(
-    transitionDuration: Duration.zero,
-    pageBuilder: (_, _, _) => page,
-    transitionsBuilder: (_, _, secondaryAnimation, child) => _coveredFade(secondaryAnimation, child),
-  );
+  return PageRouteBuilder<T>(transitionDuration: Duration.zero, pageBuilder: (_, _, _) => page, transitionsBuilder: (_, _, secondaryAnimation, child) => _coveredFade(secondaryAnimation, child));
 }
 
 /// 当本页被新页覆盖（secondaryAnimation 0→1）时，让其 opacity 1→0 淡出。

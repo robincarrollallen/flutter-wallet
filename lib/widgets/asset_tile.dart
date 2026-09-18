@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../core/format/amount_formatter.dart';
 import '../core/format/token_amount_formatter.dart';
 import '../core/responsive/screen_adapter.dart';
@@ -19,14 +20,7 @@ import '../providers/modules/market/markets_provider.dart';
 ///
 /// 首页代币列表与接收页共用。点击由 [onTap] 决定；为空则不可点。
 class AssetTile extends ConsumerWidget {
-  const AssetTile({
-    super.key,
-    required this.asset,
-    required this.showChainName,
-    required this.markets,
-    required this.chainIcons,
-    this.onTap,
-  });
+  const AssetTile({super.key, required this.asset, required this.showChainName, required this.markets, required this.chainIcons, this.onTap});
 
   final ListedAsset asset;
   final bool showChainName;
@@ -43,12 +37,7 @@ class AssetTile extends ConsumerWidget {
     final chainLogoUrl = chainIcons[asset.chain.coinGeckoPlatformId] ?? markets[asset.chain.coinGeckoId]?.logoUrl;
     final subtitle = _subtitle(ref);
     return ListTile(
-      leading: AssetIcon(
-        symbol: asset.symbol,
-        tokenLogoUrl: tokenLogoUrl,
-        chainSymbol: asset.chain.symbol,
-        chainLogoUrl: chainLogoUrl,
-      ),
+      leading: AssetIcon(symbol: asset.symbol, tokenLogoUrl: tokenLogoUrl, chainSymbol: asset.chain.symbol, chainLogoUrl: chainLogoUrl),
       title: Row(
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
@@ -128,11 +117,7 @@ class _AssetAmount extends ConsumerWidget {
         AmountText(fiatValue, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         // 用 AmountText.raw 而不是裸 Text：待确认的钱同样是持仓，
         // 必须跟着「隐藏余额」开关一起被掩码，否则一开隐藏就从这里漏出去。
-        if (utxo != null && utxo.hasPending)
-          AmountText.raw(
-            '${t.balance.pending} +${formatTokenAmount(utxo.pending)}',
-            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.tertiary),
-          ),
+        if (utxo != null && utxo.hasPending) AmountText.raw('${t.balance.pending} +${formatTokenAmount(utxo.pending)}', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.tertiary)),
       ],
     );
   }

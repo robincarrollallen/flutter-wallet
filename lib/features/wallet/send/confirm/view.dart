@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:wallet_core/chains.dart';
+
 import '../../../../core/format/amount_formatter.dart';
 import '../../../../core/format/token_amount_formatter.dart';
 import '../../../../core/responsive/screen_adapter.dart';
 import '../../../../widgets/app_toast.dart';
 import '../../../../widgets/asset_icon.dart';
 import '../../../../widgets/network_fee_selector.dart';
+
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../providers/modules/transaction/aptos_fee_provider.dart';
 import '../../../../providers/modules/transaction/evm_fee_provider.dart';
@@ -26,15 +29,7 @@ import '../../../../router/routes.dart';
 
 /// 确认发送子页：汇总资产 / 发送方 / 收款方 / 金额，确认后提交交易。
 class SendConfirmPage extends ConsumerStatefulWidget {
-  const SendConfirmPage({
-    super.key,
-    required this.asset,
-    required this.toAddress,
-    required this.amount,
-    this.isMaxAmount = false,
-    this.tokenLogoUrl,
-    this.chainLogoUrl,
-  });
+  const SendConfirmPage({super.key, required this.asset, required this.toAddress, required this.amount, this.isMaxAmount = false, this.tokenLogoUrl, this.chainLogoUrl});
 
   final ListedAsset asset;
   final String toAddress;
@@ -129,8 +124,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   }
 
   /// 本次转账的报价查询键：带资产维度——原生币与代币的 gasLimit 不是一个量级。
-  EvmFeeKey _feeKey(ListedAsset asset, String from) =>
-      (chainId: asset.chain.id, from: from, to: widget.toAddress, tokenIdentifier: asset.token?.identifier);
+  EvmFeeKey _feeKey(ListedAsset asset, String from) => (chainId: asset.chain.id, from: from, to: widget.toAddress, tokenIdentifier: asset.token?.identifier);
 
   /// 本次是否会从转出额里扣手续费：只有**原生币**的 MAX 才会。
   ///
@@ -150,8 +144,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   ///
   /// 注意 [_freshMaxFee] 对 EVM 的 **stale 报价**也返回 null，所以这条同时覆盖
   /// 「报价过期」——两条链共用。
-  bool _feePendingForDeduction(ListedAsset asset, String from) =>
-      _deductsFee && from.isNotEmpty && _freshMaxFee(asset, from) == null;
+  bool _feePendingForDeduction(ListedAsset asset, String from) => _deductsFee && from.isNotEmpty && _freshMaxFee(asset, from) == null;
 
   /// 全额转出（MAX）时的发送上限：可用余额 − 费用上限。
   /// 费用或余额尚未就绪、以及扣完不为正时回退用户输入值，由发送时的链上校验兜底。
@@ -268,20 +261,9 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
 
   /// 键里不带金额：Aptos 的 gas 与转多少无关（见 `AptosTransactionService`）。
   /// 代币要带上——代币与原生的 gas 上限差两个数量级，共用一份报价会差得离谱。
-  AptosFeeKey _aptosFeeKey(ListedAsset asset, String from) => (
-    chainId: asset.chain.id,
-    from: from,
-    to: widget.toAddress,
-    tokenIdentifier: asset.token?.identifier,
-  );
+  AptosFeeKey _aptosFeeKey(ListedAsset asset, String from) => (chainId: asset.chain.id, from: from, to: widget.toAddress, tokenIdentifier: asset.token?.identifier);
 
-  SolanaFeeKey _solanaFeeKey(ListedAsset asset, String from) => (
-    chainId: asset.chain.id,
-    from: from,
-    to: widget.toAddress,
-    amount: widget.amount,
-    tokenIdentifier: asset.token?.identifier,
-  );
+  SolanaFeeKey _solanaFeeKey(ListedAsset asset, String from) => (chainId: asset.chain.id, from: from, to: widget.toAddress, amount: widget.amount, tokenIdentifier: asset.token?.identifier);
 
   /// Tron 的费用行：单一数值，不可切换（这条链没有档位可选）。
   ///
@@ -295,28 +277,18 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
 
     if (estimate.isFree) {
       // 代币转账的免费是「能量也够」，与原生币只看带宽不是一回事，说清楚是哪一项。
-      final detail = estimate.energyNeeded > 0
-          ? '剩余能量 ${estimate.energyAvailable}，本次需 ${estimate.energyNeeded}'
-          : '剩余带宽 ${estimate.bandwidthAvailable}，本次需 ${estimate.bandwidthNeeded}';
+      final detail = estimate.energyNeeded > 0 ? '剩余能量 ${estimate.energyAvailable}，本次需 ${estimate.energyNeeded}' : '剩余带宽 ${estimate.bandwidthAvailable}，本次需 ${estimate.bandwidthNeeded}';
       return _DetailRow(label: '网络费', value: '免费（$detail）');
     }
 
     final price = ref.watch(balanceProvider((asset.chain.id, from, null))).value?.price ?? 0.0;
     final fee = formatUnits(estimate.feeSun, asset.chain.decimals);
     // 与费用选择器同一口径：不足一分的费用显示 `<$0.01`，不舍成会被误解的 `$0.00`。
-    final fiat = price <= 0
-        ? ''
-        : '（${formatFiatFee(double.parse(fee) * price, symbol: ref.watch(currencySymbolProvider))}）';
+    final fiat = price <= 0 ? '' : '（${formatFiatFee(double.parse(fee) * price, symbol: ref.watch(currencySymbolProvider))}）';
     return _DetailRow(label: '网络费', value: '≈ ${formatTokenAmount(fee)} ${asset.chain.symbol}$fiat');
   }
 
-  TronFeeKey _tronFeeKey(ListedAsset asset, String from) => (
-    chainId: asset.chain.id,
-    from: from,
-    to: widget.toAddress,
-    amount: widget.amount,
-    tokenIdentifier: asset.token?.identifier,
-  );
+  TronFeeKey _tronFeeKey(ListedAsset asset, String from) => (chainId: asset.chain.id, from: from, to: widget.toAddress, amount: widget.amount, tokenIdentifier: asset.token?.identifier);
 
   /// 收款方账户未激活的提示；无需提示时返回 null。
   ///
@@ -333,8 +305,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   ///
   /// 目前两条，都是「链上必然拒绝」而非「可能有风险」——只有这种确定性的失败才配
   /// 禁用按钮。不确定的一律放行，由各链的交易服务在发送那一刻的链上数据前把关。
-  String? _blockingShortfall(ListedAsset asset, String from) =>
-      _feeShortfall(asset, from) ?? _rentShortfall(asset, from);
+  String? _blockingShortfall(ListedAsset asset, String from) => _feeShortfall(asset, from) ?? _rentShortfall(asset, from);
 
   /// Solana 的租金豁免校验：不满足时返回提示文案，满足或无从判断时返回 null。
   ///
@@ -362,9 +333,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     }
 
     if (estimate.shortfallFor(amount) > BigInt.zero) {
-      final minimum = formatTokenAmount(
-        formatUnits(estimate.rentExemptMinimum - estimate.recipientBalance, asset.chain.decimals),
-      );
+      final minimum = formatTokenAmount(formatUnits(estimate.rentExemptMinimum - estimate.recipientBalance, asset.chain.decimals));
       return '收款方是新账户，Solana 要求账户余额不低于租金豁免线，'
           '本次至少需转 $minimum ${asset.chain.symbol}';
     }
@@ -489,11 +458,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
             // —— 顶部头部：返回箭头 + 标题 —— //
             Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: '返回',
-                  onPressed: _submitting ? null : () => Navigator.of(context).maybePop(),
-                ),
+                IconButton(icon: const Icon(Icons.arrow_back), tooltip: '返回', onPressed: _submitting ? null : () => Navigator.of(context).maybePop()),
                 Expanded(
                   child: Text('确认发送', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                 ),
@@ -506,13 +471,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                 child: Column(
                   children: [
                     // —— 资产标识 + 发送金额 —— //
-                    AssetIcon(
-                      symbol: asset.symbol,
-                      tokenLogoUrl: widget.tokenLogoUrl,
-                      chainSymbol: asset.chain.symbol,
-                      chainLogoUrl: widget.chainLogoUrl,
-                      size: 48.s,
-                    ),
+                    AssetIcon(symbol: asset.symbol, tokenLogoUrl: widget.tokenLogoUrl, chainSymbol: asset.chain.symbol, chainLogoUrl: widget.chainLogoUrl, size: 48.s),
                     SizedBox(height: 12.s),
                     Text(
                       // 刻意不走 formatTokenAmount：这是即将上链的金额，
@@ -521,10 +480,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                       style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 4.s),
-                    Text(
-                      asset.chain.name,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
+                    Text(asset.chain.name, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                     // —— 全额转出：说明金额已扣除网络费用 —— //
                     // 条件按「真的扣掉了」判，而不是「本次允许扣」：报价未就绪，
                     // 以及 Tron 这类没有 gas 报价模型的链，sendable 会原样等于输入值，
@@ -541,10 +497,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                     // —— 明细卡片 —— //
                     Container(
                       padding: EdgeInsets.all(16.s),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12.s),
-                      ),
+                      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12.s)),
                       child: Column(
                         children: [
                           _DetailRow(label: '发送方', value: from),
@@ -592,13 +545,7 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
                       width: double.infinity,
                       child: FilledButton(
                         onPressed: _submitting || shortfall != null || feePending ? null : _submit,
-                        child: _submitting
-                            ? SizedBox(
-                                width: 18.s,
-                                height: 18.s,
-                                child: const CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('确认发送'),
+                        child: _submitting ? SizedBox(width: 18.s, height: 18.s, child: const CircularProgressIndicator(strokeWidth: 2)) : const Text('确认发送'),
                       ),
                     ),
                   ],

@@ -7,6 +7,7 @@ import '../../../i18n/translations.g.dart';
 import '../../../router/routes.dart';
 import 'import_mnemonic_logic.dart';
 import 'import_mnemonic_state.dart';
+
 import 'package:wallet_core/wallet_core.dart';
 
 /// 把校验错误类型映射为当前语言的文案。
@@ -120,19 +121,14 @@ class _ImportMnemonicViewState extends ConsumerState<ImportMnemonicView> {
                       Icon(Icons.info_outline, size: 16.s, color: theme.colorScheme.onSurfaceVariant),
                       SizedBox(width: 6.s),
                       Expanded(
-                        child: Text(
-                          t.import.mnemonic.warning,
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                        ),
+                        child: Text(t.import.mnemonic.warning, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                       ),
                     ],
                   ),
                   SizedBox(height: 24.s),
                   FilledButton(
                     onPressed: canSubmit ? onImport : null,
-                    child: state.submitting
-                        ? SizedBox(width: 18.s, height: 18.s, child: const CircularProgressIndicator(strokeWidth: 2))
-                        : Text(t.import.mnemonic.submit),
+                    child: state.submitting ? SizedBox(width: 18.s, height: 18.s, child: const CircularProgressIndicator(strokeWidth: 2)) : Text(t.import.mnemonic.submit),
                   ),
                 ],
               ),

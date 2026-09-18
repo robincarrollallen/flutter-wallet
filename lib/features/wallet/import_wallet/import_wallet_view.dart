@@ -39,11 +39,7 @@ class ImportWalletScreen extends StatelessWidget {
         separatorBuilder: (_, _) => SizedBox(height: 12.s),
         itemBuilder: (context, index) {
           final option = options[index];
-          return _ImportOptionCard(
-            title: _title(t, option.kind),
-            brands: option.brands,
-            onTap: () => _open(context, t, option.kind),
-          );
+          return _ImportOptionCard(title: _title(t, option.kind), brands: option.brands, onTap: () => _open(context, t, option.kind));
         },
       ),
     );
@@ -105,13 +101,7 @@ class _WalletLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8.s),
-      child: Image.asset(
-        brand.asset,
-        width: _size.s,
-        height: _size.s,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _fallback(),
-      ),
+      child: Image.asset(brand.asset, width: _size.s, height: _size.s, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => _fallback()),
     );
   }
 

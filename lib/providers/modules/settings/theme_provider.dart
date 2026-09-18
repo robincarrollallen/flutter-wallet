@@ -13,8 +13,7 @@ class Appearance {
   final AppThemeName themeName; // 选中的配色（亮色 / 暗色），驱动 MaterialApp 的 theme / darkTheme 取向
   final ThemeMode themeMode; // 显示模式（跟随系统 / 白天 / 黑夜），驱动 MaterialApp 的 themeMode
 
-  Appearance copyWith({AppThemeName? themeName, ThemeMode? themeMode}) =>
-      Appearance(themeName: themeName ?? this.themeName, themeMode: themeMode ?? this.themeMode);
+  Appearance copyWith({AppThemeName? themeName, ThemeMode? themeMode}) => Appearance(themeName: themeName ?? this.themeName, themeMode: themeMode ?? this.themeMode);
 }
 
 /// 外观（主题 + 模式）状态，用 PersistentNotifier 持久化两个字段。
@@ -24,17 +23,12 @@ class AppearanceNotifier extends Notifier<Appearance> with PersistentNotifier<Ap
 
   /// 定义持久化内容(重写)
   @override
-  Map<String, dynamic> toJson(Appearance state) => {
-    'themeName': state.themeName.name,
-    'themeMode': state.themeMode.name,
-  };
+  Map<String, dynamic> toJson(Appearance state) => {'themeName': state.themeName.name, 'themeMode': state.themeMode.name};
 
   /// 还原状态
   @override
-  Appearance fromJson(Map<String, dynamic> json, Appearance fallback) => fallback.copyWith(
-    themeName: AppThemeName.values.asNameMap()[json['themeName']],
-    themeMode: ThemeMode.values.asNameMap()[json['themeMode']],
-  );
+  Appearance fromJson(Map<String, dynamic> json, Appearance fallback) =>
+      fallback.copyWith(themeName: AppThemeName.values.asNameMap()[json['themeName']], themeMode: ThemeMode.values.asNameMap()[json['themeMode']]);
 
   /// 初始化设置
   @override

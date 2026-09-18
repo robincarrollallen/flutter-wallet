@@ -50,11 +50,7 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: theme.colorScheme.inversePrimary,
         // 左侧：设置按钮，从顶部下滑出全屏毛玻璃设置面板（盖住底部导航栏）。
-        leading: IconButton(
-          icon: const Icon(Icons.settings_outlined),
-          tooltip: t.home.settings,
-          onPressed: () => context.push(AppRoute.settings),
-        ),
+        leading: IconButton(icon: const Icon(Icons.settings_outlined), tooltip: t.home.settings, onPressed: () => context.push(AppRoute.settings)),
         // 中间：搜索栏，点击后 Hero 变形放大到搜索页输入框，其余淡出。
         title: GestureDetector(
           onTap: () => context.push(AppRoute.search),
@@ -72,11 +68,7 @@ class HomeScreen extends ConsumerWidget {
         actions: [
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.s),
-            child: IconButton(
-              icon: const Icon(Icons.qr_code_scanner),
-              tooltip: t.home.scan,
-              onPressed: () => context.push(AppRoute.scan),
-            ),
+            child: IconButton(icon: const Icon(Icons.qr_code_scanner), tooltip: t.home.scan, onPressed: () => context.push(AppRoute.scan)),
           ),
         ],
       ),

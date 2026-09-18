@@ -5,18 +5,14 @@ import '../../../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../../../widgets/amount_text.dart';
 import '../../../../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../../../../providers/modules/market/currency_provider.dart';
+
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../../../../../../domain/wallet_avatar.dart';
 
 /// 单个钱包行：点击行=切换钱包
 class WalletTile extends ConsumerWidget {
-  const WalletTile({
-    super.key,
-    required this.wallet,
-    required this.selected,
-    required this.onTap,
-    required this.onOptions,
-  });
+  const WalletTile({super.key, required this.wallet, required this.selected, required this.onTap, required this.onOptions});
 
   final Wallet wallet;
   final bool selected;
@@ -29,11 +25,7 @@ class WalletTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final total = ref.watch(walletTotalProvider(wallet.id));
-    final subtitleStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
-      fontSize: 10.s,
-    );
+    final subtitleStyle = theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w600, fontSize: 10.s);
 
     return Card(
       color: selected ? theme.colorScheme.primaryContainer : null,
@@ -54,13 +46,7 @@ class WalletTile extends ConsumerWidget {
           loading: () => Text('…', maxLines: 1, style: subtitleStyle),
           error: (_, _) => Text('--', maxLines: 1, style: subtitleStyle),
           // 列表行太窄放不下图标提示，用 ~ 前缀表示这是部分链失败后的不完整合计。
-          data: (v) => AmountText(
-            v.value,
-            symbol: v.isPartial ? '~${ref.watch(currencySymbolProvider)}' : null,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: subtitleStyle,
-          ),
+          data: (v) => AmountText(v.value, symbol: v.isPartial ? '~${ref.watch(currencySymbolProvider)}' : null, maxLines: 1, overflow: TextOverflow.ellipsis, style: subtitleStyle),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,

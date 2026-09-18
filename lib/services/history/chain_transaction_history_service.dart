@@ -1,4 +1,5 @@
 import 'package:wallet_core/chains.dart';
+
 import '../../domain/transaction_record.dart';
 
 /// 一页历史记录 + 下一页的游标。
@@ -32,11 +33,5 @@ abstract interface class ChainTransactionHistoryService {
   /// 拉取 [address] 在 [chain] 上的一页交易历史。
   ///
   /// [walletId] 只用于回填到记录上；[cursor] 为 null 表示拉第一页。
-  Future<TransactionHistoryPage> fetch({
-    required Chain chain,
-    required String address,
-    required String walletId,
-    String? cursor,
-    int limit,
-  });
+  Future<TransactionHistoryPage> fetch({required Chain chain, required String address, required String walletId, String? cursor, int limit});
 }

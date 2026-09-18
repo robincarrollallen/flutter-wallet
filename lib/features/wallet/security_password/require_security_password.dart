@@ -12,8 +12,6 @@ import 'verify_security_password_page.dart';
 Future<bool> confirmSecurityPassword({required BuildContext context, required WidgetRef ref}) async {
   final hasPassword = await ref.read(securityPasswordServiceProvider).hasPassword();
   if (!context.mounted) return false;
-  final confirmed = await Navigator.of(context).push<bool>(
-    panelSlideRoute(hasPassword ? const VerifySecurityPasswordPage() : const SetSecurityPasswordPage()),
-  );
+  final confirmed = await Navigator.of(context).push<bool>(panelSlideRoute(hasPassword ? const VerifySecurityPasswordPage() : const SetSecurityPasswordPage()));
   return confirmed == true;
 }

@@ -40,10 +40,7 @@ void main() {
       expect(ReceiveLogic.filter(assets, 'usdc').length, usdcCount);
       expect(ReceiveLogic.filter(assets, 'usdt').single.chain.kind, ChainKind.tron);
       expect(ReceiveLogic.filter(assets, 'BITCOIN').single.symbol, 'BTC');
-      expect(
-        ReceiveLogic.filter(assets, 'sepolia').any((a) => a.chain.id == SupportedChains.ethereumSepolia.id),
-        isTrue,
-      );
+      expect(ReceiveLogic.filter(assets, 'sepolia').any((a) => a.chain.id == SupportedChains.ethereumSepolia.id), isTrue);
       expect(ReceiveLogic.filter(assets, ''), assets);
     });
   });

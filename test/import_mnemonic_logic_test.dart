@@ -81,10 +81,7 @@ void main() {
     });
 
     test('合法 EVM 私钥返回 null', () {
-      expect(
-        ImportMnemonicLogic.validate('0x0000000000000000000000000000000000000000000000000000000000000001'),
-        isNull,
-      );
+      expect(ImportMnemonicLogic.validate('0x0000000000000000000000000000000000000000000000000000000000000001'), isNull);
     });
 
     test('残缺/非法私钥提示 invalidPrivateKey', () {
@@ -99,10 +96,7 @@ void main() {
       expect(ImportMnemonicLogic.detectType('abandon about test'), SecretType.mnemonic);
     });
     test('64 位 hex → privateKey', () {
-      expect(
-        ImportMnemonicLogic.detectType('0x0000000000000000000000000000000000000000000000000000000000000001'),
-        SecretType.privateKey,
-      );
+      expect(ImportMnemonicLogic.detectType('0x0000000000000000000000000000000000000000000000000000000000000001'), SecretType.privateKey);
     });
     test('正在输入的单个助记词 → mnemonic', () {
       expect(ImportMnemonicLogic.detectType('aban'), SecretType.mnemonic);
@@ -114,10 +108,7 @@ void main() {
 
   group('suggestions 私钥屏蔽', () {
     test('输入私钥时不返回 BIP39 候选', () {
-      expect(
-        ImportMnemonicLogic.suggestions('0x0000000000000000000000000000000000000000000000000000000000000001'),
-        isEmpty,
-      );
+      expect(ImportMnemonicLogic.suggestions('0x0000000000000000000000000000000000000000000000000000000000000001'), isEmpty);
     });
   });
 }

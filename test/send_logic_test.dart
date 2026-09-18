@@ -41,13 +41,10 @@ final _transfers = <ChainKind, ChainTransferService>{
 
 List<ListedAsset> _assetsOf(Chain? chain) => SendLogic.assetsOf(chain, _catalog, _transfers);
 
-bool _supportsToken(ChainKind kind, [Map<ChainKind, ChainTransferService>? transfers]) =>
-    (transfers ?? _transfers)[kind]?.supportsToken ?? false;
+bool _supportsToken(ChainKind kind, [Map<ChainKind, ChainTransferService>? transfers]) => (transfers ?? _transfers)[kind]?.supportsToken ?? false;
 
 /// 打包目录里落在「已接入代币转账」的链上的代币数——只有它们会进可发送列表。
-final _sendableTokenCount = BundledTokenCatalog.all
-    .where((t) => _supportsToken(SupportedChains.byId(t.chainId).kind))
-    .length;
+final _sendableTokenCount = BundledTokenCatalog.all.where((t) => _supportsToken(SupportedChains.byId(t.chainId).kind)).length;
 
 void main() {
   group('SendLogic.assetsOf', () {
@@ -94,10 +91,7 @@ void main() {
     test('原生币能转、代币不能时拦截代币', () {
       final transfers = {ChainKind.evm: _Cap(ChainKind.evm, supportsToken: false)};
       const eth = ListedAsset(chain: SupportedChains.ethereumSepolia);
-      final usdc = ListedAsset(
-        chain: SupportedChains.ethereumSepolia,
-        token: _catalog.tokensOf(SupportedChains.ethereumSepolia.id).first,
-      );
+      final usdc = ListedAsset(chain: SupportedChains.ethereumSepolia, token: _catalog.tokensOf(SupportedChains.ethereumSepolia.id).first);
       expect(SendLogic.canTransfer(eth, transfers), isTrue);
       expect(SendLogic.canTransfer(usdc, transfers), isFalse);
     });
@@ -122,10 +116,7 @@ void main() {
       expect(sendable.map((a) => a.chain.id).toList(), ['solana-devnet', 'bsc-testnet', 'ethereum-sepolia']);
       expect(rest.length, assets.length - 3);
       // rest 保持链默认顺序。
-      expect(
-        rest.map((a) => a.chain.id).toList(),
-        assets.where((a) => !values.containsKey(a.chain.id)).map((a) => a.chain.id).toList(),
-      );
+      expect(rest.map((a) => a.chain.id).toList(), assets.where((a) => !values.containsKey(a.chain.id)).map((a) => a.chain.id).toList());
     });
 
     test('加载中（null）留在 sendable 尾部', () {
@@ -163,17 +154,11 @@ void main() {
     });
 
     test('Solana：合法 base58 地址', () {
-      expect(
-        SendLogic.validateAddress(SupportedChains.solanaDevnet, '4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T'),
-        isNull,
-      );
+      expect(SendLogic.validateAddress(SupportedChains.solanaDevnet, '4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T'), isNull);
     });
 
     test('Solana：EVM 地址被拒绝（错链粘贴）', () {
-      expect(
-        SendLogic.validateAddress(SupportedChains.solanaDevnet, '0x52908400098527886e0f7030069857d2e4169ee7'),
-        isNotNull,
-      );
+      expect(SendLogic.validateAddress(SupportedChains.solanaDevnet, '0x52908400098527886e0f7030069857d2e4169ee7'), isNotNull);
     });
 
     test('Tron：合法 T 开头 base58check 地址', () {
@@ -181,17 +166,11 @@ void main() {
     });
 
     test('Bitcoin testnet：合法 tb1 bech32 地址', () {
-      expect(
-        SendLogic.validateAddress(SupportedChains.bitcoinTestnet, 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'),
-        isNull,
-      );
+      expect(SendLogic.validateAddress(SupportedChains.bitcoinTestnet, 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'), isNull);
     });
 
     test('Bitcoin testnet：主网 bc1 地址被拒绝', () {
-      expect(
-        SendLogic.validateAddress(SupportedChains.bitcoinTestnet, 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'),
-        isNotNull,
-      );
+      expect(SendLogic.validateAddress(SupportedChains.bitcoinTestnet, 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'), isNotNull);
     });
 
     test('Sui 要满 32 字节，Aptos 允许短地址', () {

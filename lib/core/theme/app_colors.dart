@@ -16,36 +16,20 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color warning;
 
   /// 亮色主题取值。
-  static const AppColors light = AppColors(
-    success: Color(0xFF2E7D32),
-    onSuccess: Colors.white,
-    warning: Color(0xFFE65100),
-  );
+  static const AppColors light = AppColors(success: Color(0xFF2E7D32), onSuccess: Colors.white, warning: Color(0xFFE65100));
 
   /// 暗色主题取值（提亮，避免深背景上发暗刺眼）。
-  static const AppColors dark = AppColors(
-    success: Color(0xFF81C784),
-    onSuccess: Color(0xFF003910),
-    warning: Color(0xFFFFB74D),
-  );
+  static const AppColors dark = AppColors(success: Color(0xFF81C784), onSuccess: Color(0xFF003910), warning: Color(0xFFFFB74D));
 
   @override
   AppColors copyWith({Color? success, Color? onSuccess, Color? warning}) {
-    return AppColors(
-      success: success ?? this.success,
-      onSuccess: onSuccess ?? this.onSuccess,
-      warning: warning ?? this.warning,
-    );
+    return AppColors(success: success ?? this.success, onSuccess: onSuccess ?? this.onSuccess, warning: warning ?? this.warning);
   }
 
   @override
   AppColors lerp(ThemeExtension<AppColors>? other, double t) {
     if (other is! AppColors) return this;
-    return AppColors(
-      success: Color.lerp(success, other.success, t)!,
-      onSuccess: Color.lerp(onSuccess, other.onSuccess, t)!,
-      warning: Color.lerp(warning, other.warning, t)!,
-    );
+    return AppColors(success: Color.lerp(success, other.success, t)!, onSuccess: Color.lerp(onSuccess, other.onSuccess, t)!, warning: Color.lerp(warning, other.warning, t)!);
   }
 }
 

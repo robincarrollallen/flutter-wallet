@@ -1,5 +1,6 @@
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
+
 import '../../domain/transaction_record.dart';
 import 'chain_transaction_history_service.dart';
 
@@ -16,13 +17,7 @@ class BitcoinTransactionHistoryService implements ChainTransactionHistoryService
   bool get supportsHistory => true;
 
   @override
-  Future<TransactionHistoryPage> fetch({
-    required Chain chain,
-    required String address,
-    required String walletId,
-    String? cursor,
-    int limit = 25,
-  }) async {
+  Future<TransactionHistoryPage> fetch({required Chain chain, required String address, required String walletId, String? cursor, int limit = 25}) async {
     // mempool.space 固定每页 25 条，翻页靠「从这个 txid 往更早取」，给不了 limit。
     final uri = Uri.parse('${chain.endpoint}/address/$address/txs').replace(queryParameters: {'after_txid': ?cursor});
     final entries = await getJsonArray(uri);
@@ -31,12 +26,7 @@ class BitcoinTransactionHistoryService implements ChainTransactionHistoryService
 }
 
 /// 把 mempool.space 的交易数组解析成一页记录。纯函数，单测直接喂 fixture。
-TransactionHistoryPage parseMempoolPage({
-  required List<dynamic> entries,
-  required Chain chain,
-  required String address,
-  required String walletId,
-}) {
+TransactionHistoryPage parseMempoolPage({required List<dynamic> entries, required Chain chain, required String address, required String walletId}) {
   final records = <TransactionRecord>[];
   String? lastTxid;
   for (final entry in entries) {
@@ -53,12 +43,7 @@ TransactionHistoryPage parseMempoolPage({
 ///
 /// 净额 = 自己名下的输出总额 − 自己名下的输入总额。为正是收款，为负是付款，
 /// 找零因为同时出现在输入和输出里而自动抵消掉，不会被当成一笔转账。
-TransactionRecord? _parseTransaction(
-  Map<String, dynamic> entry, {
-  required Chain chain,
-  required String address,
-  required String walletId,
-}) {
+TransactionRecord? _parseTransaction(Map<String, dynamic> entry, {required Chain chain, required String address, required String walletId}) {
   final txid = entry['txid'] as String?;
   if (txid == null) return null;
 

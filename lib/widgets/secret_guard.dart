@@ -54,10 +54,7 @@ class _SecretGuardState extends State<SecretGuard> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return SensitiveContent(
-      sensitivity: ContentSensitivity.sensitive,
-      child: _obscured ? _mask(context) : widget.child,
-    );
+    return SensitiveContent(sensitivity: ContentSensitivity.sensitive, child: _obscured ? _mask(context) : widget.child);
   }
 
   Widget _mask(BuildContext context) {
@@ -69,10 +66,7 @@ class _SecretGuardState extends State<SecretGuard> with WidgetsBindingObserver {
         Positioned.fill(
           child: Container(
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8.s),
-            ),
+            decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8.s)),
             child: Icon(Icons.visibility_off_outlined, size: 24.s, color: theme.colorScheme.onSurfaceVariant),
           ),
         ),

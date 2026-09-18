@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../constants/currency_symbols.dart';
+
 import 'package:wallet_core/rpc.dart';
 
 /// 行情类型别名：coinGeckoId -> (当前计价币种下的单价, 图标 URL)。
@@ -33,13 +34,7 @@ class CoinGeckoApi {
     );
     try {
       final list = await getJsonArray(uri);
-      return {
-        for (final item in list.whereType<Map>())
-          item['id'] as String: (
-            price: (item['current_price'] as num?)?.toDouble() ?? 0,
-            logoUrl: item['image'] as String?,
-          ),
-      };
+      return {for (final item in list.whereType<Map>()) item['id'] as String: (price: (item['current_price'] as num?)?.toDouble() ?? 0, logoUrl: item['image'] as String?)};
     } catch (e) {
       // 上层只能从空 map 得知「失败了」，得不到原因（限流 429 / 证书 / 解析错误），
       // 这行是唯一的线索来源。
@@ -65,8 +60,7 @@ class CoinGeckoApi {
       return {
         for (final item in list.whereType<Map>())
           if (item['id'] is String && wanted.contains(item['id']))
-            if (item['image'] is Map && (item['image'] as Map)['large'] is String)
-              item['id'] as String: (item['image'] as Map)['large'] as String,
+            if (item['image'] is Map && (item['image'] as Map)['large'] is String) item['id'] as String: (item['image'] as Map)['large'] as String,
       };
     } catch (e) {
       debugPrint('⚠️ fetchChainIcons failed: $e');

@@ -15,13 +15,7 @@ import 'widgets/glass_navigation_bar.dart';
 class RootShell extends ConsumerWidget {
   const RootShell({super.key});
 
-  static const List<Widget> _pages = [
-    HomeScreen(),
-    MarketScreen(),
-    ExchangeScreen(),
-    ContractScreen(),
-    DiscoverScreen(),
-  ];
+  static const List<Widget> _pages = [HomeScreen(), MarketScreen(), ExchangeScreen(), ContractScreen(), DiscoverScreen()];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

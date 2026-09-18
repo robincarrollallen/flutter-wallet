@@ -9,12 +9,17 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
-# 行宽放宽到 120（默认 80）。
+# 行宽放宽到 200（默认 80）。
 # 本项目大量字段用行尾中文注释逐个说明，80 宽会把注释算进限制，
 # 导致声明从类型和名字中间断开（final Bip44Coins \n coin; // ...），可读性反而变差。
-# 120 是实测下第一个把这类断行降到 0 的宽度；再往上只增加重排、不再有收益。
+# 120 能把这类断行降到 0；再放宽到 200 是为了让嵌套 widget 的构造调用少拆几层。
+# 代价是 diff 的横向跨度变大——改一行里的几个字符，review 时要在一条长行上找差异。
+#
+# 改这个值必须全量重跑 `dart format lib test` 并一起提交：配置与代码不一致时
+# CI 的 `dart format --set-exit-if-changed` 会整仓报红，而且报的是「文件需要格式化」，
+# 不会告诉你根因是宽度配置刚被人改过。
 formatter:
-  page_width: 120
+  page_width: 200
 
 linter:
   # The lint rules applied to this project can be customized in the

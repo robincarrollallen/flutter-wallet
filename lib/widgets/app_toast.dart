@@ -14,12 +14,7 @@ class AppToast {
   /// 当前显示中的提示，用于连续调用时先移除旧的，避免堆叠。
   static OverlayEntry? _current;
 
-  static void show(
-    BuildContext context,
-    String message, {
-    ToastPosition position = ToastPosition.top,
-    Duration duration = const Duration(seconds: 2),
-  }) {
+  static void show(BuildContext context, String message, {ToastPosition position = ToastPosition.top, Duration duration = const Duration(seconds: 2)}) {
     // 用根 Overlay <rootOverlay>(局部 Overlay 里被上层弹窗盖住)
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
@@ -48,12 +43,7 @@ class AppToast {
 
 /// Toast 视图：负责进出场动画与定位，到时间后触发 [onDismissed]。
 class _ToastWidget extends StatefulWidget {
-  const _ToastWidget({
-    required this.message,
-    required this.position,
-    required this.duration,
-    required this.onDismissed,
-  });
+  const _ToastWidget({required this.message, required this.position, required this.duration, required this.onDismissed});
 
   final String message;
   final ToastPosition position;
@@ -65,16 +55,9 @@ class _ToastWidget extends StatefulWidget {
 }
 
 class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 240),
-  );
+  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 240));
 
-  late final Animation<double> _opacity = CurvedAnimation(
-    parent: _controller,
-    curve: Curves.easeOut,
-    reverseCurve: Curves.easeIn,
-  );
+  late final Animation<double> _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut, reverseCurve: Curves.easeIn);
 
   bool _dismissed = false;
 

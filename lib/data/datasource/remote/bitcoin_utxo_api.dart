@@ -1,5 +1,7 @@
 import 'package:wallet_core/chains.dart';
+
 import '../../../domain/btc_utxo.dart';
+
 import 'package:wallet_core/rpc.dart';
 
 /// 比特币 UTXO 集合的远程查询（Esplora / mempool.space 兼容）。
@@ -21,8 +23,7 @@ class BitcoinUtxoApi {
     return [for (final list in lists) ...list];
   }
 
-  Future<List<Utxo>> _utxosOf(Chain chain, String address) async =>
-      parseUtxos(await getJsonArray(Uri.parse('${chain.endpoint}/address/$address/utxo')), address);
+  Future<List<Utxo>> _utxosOf(Chain chain, String address) async => parseUtxos(await getJsonArray(Uri.parse('${chain.endpoint}/address/$address/utxo')), address);
 
   /// 解析 `GET /address/{addr}/utxo` 的数组响应。
   ///

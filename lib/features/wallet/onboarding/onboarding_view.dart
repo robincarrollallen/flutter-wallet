@@ -34,16 +34,9 @@ class OnboardingScreen extends ConsumerWidget {
             SizedBox(height: 16.s),
             Text(t.home.noWalletTitle, style: theme.textTheme.titleLarge),
             SizedBox(height: 8.s),
-            Text(
-              t.home.noWalletSubtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
+            Text(t.home.noWalletSubtitle, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             SizedBox(height: 32.s),
-            FilledButton.icon(
-              onPressed: () => _showCreateWalletSheet(context),
-              icon: const Icon(Icons.add),
-              label: Text(t.home.createWallet),
-            ),
+            FilledButton.icon(onPressed: () => _showCreateWalletSheet(context), icon: const Icon(Icons.add), label: Text(t.home.createWallet)),
           ],
         ),
       ),

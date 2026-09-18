@@ -39,32 +39,19 @@ final _allIds = SupportedChains.all.map((c) => c.coinGeckoPlatformId).whereType<
 ///
 /// [ids] 是「上次抓这份缓存时请求过的平台 id」，默认与当前版本一致（不缺链）；
 /// [legacy] 为 true 则连 ids 键都不写，模拟加这个字段之前的老格式缓存。
-Future<(ProviderContainer, _FakeApi, SharedPreferences)> _container({
-  Duration? age,
-  ChainIcons remote = _fresh,
-  List<String>? ids,
-  bool legacy = false,
-}) async {
+Future<(ProviderContainer, _FakeApi, SharedPreferences)> _container({Duration? age, ChainIcons remote = _fresh, List<String>? ids, bool legacy = false}) async {
   SharedPreferences.setMockInitialValues({
-    if (age != null)
-      PrefsKey.chainIcons.value: jsonEncode({
-        'at': DateTime.now().subtract(age).millisecondsSinceEpoch,
-        'data': _old,
-        if (!legacy) 'ids': ids ?? _allIds,
-      }),
+    if (age != null) PrefsKey.chainIcons.value: jsonEncode({'at': DateTime.now().subtract(age).millisecondsSinceEpoch, 'data': _old, if (!legacy) 'ids': ids ?? _allIds}),
   });
   final prefs = await SharedPreferences.getInstance();
   final api = _FakeApi(remote);
-  final container = ProviderContainer(
-    overrides: [sharedPrefsProvider.overrideWithValue(prefs), coinGeckoApiProvider.overrideWithValue(api)],
-  );
+  final container = ProviderContainer(overrides: [sharedPrefsProvider.overrideWithValue(prefs), coinGeckoApiProvider.overrideWithValue(api)]);
   addTearDown(container.dispose);
   return (container, api, prefs);
 }
 
 /// 读回落盘的那份 JSON。
-Map<String, dynamic> _persisted(SharedPreferences prefs) =>
-    jsonDecode(prefs.getString(PrefsKey.chainIcons.value)!) as Map<String, dynamic>;
+Map<String, dynamic> _persisted(SharedPreferences prefs) => jsonDecode(prefs.getString(PrefsKey.chainIcons.value)!) as Map<String, dynamic>;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -119,11 +106,7 @@ void main() {
 
       expect(c.read(chainIconsProvider).icons, _fresh);
       expect(_persisted(prefs)['data'], _fresh, reason: 'listenSelf 应已自动落盘');
-      expect(
-        DateTime.now().millisecondsSinceEpoch - (_persisted(prefs)['at'] as int),
-        lessThan(5000),
-        reason: '写入时刻应一并更新，否则下次启动又判过期',
-      );
+      expect(DateTime.now().millisecondsSinceEpoch - (_persisted(prefs)['at'] as int), lessThan(5000), reason: '写入时刻应一并更新，否则下次启动又判过期');
     });
 
     test('请求失败（空 map）：state 与落盘都保持旧值', () async {
@@ -153,9 +136,7 @@ void main() {
       SharedPreferences.setMockInitialValues({PrefsKey.chainIcons.value: 'not json'});
       final prefs = await SharedPreferences.getInstance();
       final api = _FakeApi(_fresh);
-      final c = ProviderContainer(
-        overrides: [sharedPrefsProvider.overrideWithValue(prefs), coinGeckoApiProvider.overrideWithValue(api)],
-      );
+      final c = ProviderContainer(overrides: [sharedPrefsProvider.overrideWithValue(prefs), coinGeckoApiProvider.overrideWithValue(api)]);
       addTearDown(c.dispose);
 
       expect(c.read(chainIconsProvider).icons, isEmpty);

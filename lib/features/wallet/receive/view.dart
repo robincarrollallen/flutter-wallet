@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/responsive/screen_adapter.dart';
 import '../../../providers/modules/asset/chain_icon_provider.dart';
+
 import 'package:wallet_core/chains.dart';
+
 import '../../../providers/modules/asset/token_catalog_provider.dart';
 import '../../../widgets/token_icon.dart';
 import '../../../core/navigation/panel_routes.dart';
@@ -44,21 +46,12 @@ class ReceiveSheet extends StatefulWidget {
 /// 这里重写遮罩，改为直接 `pop()` 关闭弹窗。返回键/返回手势不受影响，
 /// 仍在弹窗内逐级后退。
 class _BarrierClosesSheetRoute<T> extends ModalBottomSheetRoute<T> {
-  _BarrierClosesSheetRoute({
-    required super.builder,
-    required super.isScrollControlled,
-    super.capturedThemes,
-    super.useSafeArea,
-    super.backgroundColor,
-    super.shape,
-  });
+  _BarrierClosesSheetRoute({required super.builder, required super.isScrollControlled, super.capturedThemes, super.useSafeArea, super.backgroundColor, super.shape});
 
   @override
   Widget buildModalBarrier() {
     return AnimatedModalBarrier(
-      color: animation!.drive(
-        ColorTween(begin: barrierColor.withValues(alpha: 0), end: barrierColor).chain(CurveTween(curve: barrierCurve)),
-      ),
+      color: animation!.drive(ColorTween(begin: barrierColor.withValues(alpha: 0), end: barrierColor).chain(CurveTween(curve: barrierCurve))),
       semanticsLabel: barrierLabel,
       barrierSemanticsDismissible: semanticsDismissible,
       onDismiss: () => navigator?.pop(),
@@ -84,20 +77,14 @@ class _ReceiveSheetState extends State<ReceiveSheet> {
             child: Container(
               width: 36.s,
               height: 4.s,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2.s),
-              ),
+              decoration: BoxDecoration(color: theme.colorScheme.onSurface.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2.s)),
             ),
           ),
           // —— 弹窗内容区：嵌套 Navigator，子页在弹窗内滑动切换 —— //
           Expanded(
             child: NavigatorPopHandler(
               onPopWithResult: (_) => _nestedNavKey.currentState?.maybePop(),
-              child: Navigator(
-                key: _nestedNavKey,
-                onGenerateRoute: (_) => panelRootRoute<void>(const _ReceiveHomePage()),
-              ),
+              child: Navigator(key: _nestedNavKey, onGenerateRoute: (_) => panelRootRoute<void>(const _ReceiveHomePage())),
             ),
           ),
         ],
@@ -200,8 +187,7 @@ class _ReceiveHomePageState extends ConsumerState<_ReceiveHomePage> with SingleT
               controller: _tabController,
               children: [
                 _AssetList(chain: null, query: _query, markets: markets, chainIcons: chainIcons),
-                for (final c in ReceiveLogic.chains)
-                  _AssetList(chain: c, query: _query, markets: markets, chainIcons: chainIcons),
+                for (final c in ReceiveLogic.chains) _AssetList(chain: c, query: _query, markets: markets, chainIcons: chainIcons),
               ],
             ),
           ),
@@ -225,11 +211,7 @@ class _AssetList extends ConsumerWidget {
     final assets = ReceiveLogic.filter(ref.watch(visibleAssetsProvider(chain?.id)), query);
     if (assets.isEmpty) {
       return Center(
-        child: Text(
-          '未找到相关资产',
-          style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
-        ),
+        child: Text('未找到相关资产', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
       );
     }
     return ListView.builder(
@@ -240,11 +222,7 @@ class _AssetList extends ConsumerWidget {
         showChainName: chain == null,
         markets: markets,
         chainIcons: chainIcons,
-        onTap: (tokenLogoUrl, chainLogoUrl) => Navigator.of(context).push(
-          panelSlideRoute<void>(
-            ReceiveAddressPage(asset: assets[i], tokenLogoUrl: tokenLogoUrl, chainLogoUrl: chainLogoUrl),
-          ),
-        ),
+        onTap: (tokenLogoUrl, chainLogoUrl) => Navigator.of(context).push(panelSlideRoute<void>(ReceiveAddressPage(asset: assets[i], tokenLogoUrl: tokenLogoUrl, chainLogoUrl: chainLogoUrl))),
       ),
     );
   }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
+
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../widgets/panel/view.dart';
 import '../backup_method/logic.dart';
 

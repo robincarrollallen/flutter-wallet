@@ -1,14 +1,7 @@
 /// 【领域模型】一个未花费输出（UTXO）。金额单位是**聪**，不做小数换算——
 /// 换算是 repository 的职责，与 [AccountBalance] 保持同一约定。
 class Utxo {
-  const Utxo({
-    required this.txid,
-    required this.vout,
-    required this.value,
-    required this.confirmed,
-    required this.address,
-    this.blockHeight,
-  });
+  const Utxo({required this.txid, required this.vout, required this.value, required this.confirmed, required this.address, this.blockHeight});
 
   final String txid; // 产生这个输出的交易 id
   final int vout; // 输出在该交易里的序号；(txid, vout) 合起来才是唯一标识

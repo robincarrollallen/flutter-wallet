@@ -68,21 +68,13 @@ class _CurrencyScreenState extends ConsumerState<CurrencyScreen> {
           Expanded(
             child: codes.isEmpty
                 ? Center(
-                    child: Text(
-                      t.search.noResult,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
+                    child: Text(t.search.noResult, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                   )
                 : ListView.builder(
                     itemCount: codes.length,
                     itemBuilder: (context, index) {
                       final code = codes[index];
-                      return _CurrencyTile(
-                        code: code,
-                        name: CurrencyLogic.nameOf(t, code),
-                        selected: code == current,
-                        onTap: () => ref.read(currencyProvider.notifier).set(code),
-                      );
+                      return _CurrencyTile(code: code, name: CurrencyLogic.nameOf(t, code), selected: code == current, onTap: () => ref.read(currencyProvider.notifier).set(code));
                     },
                   ),
           ),

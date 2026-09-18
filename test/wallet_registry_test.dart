@@ -13,8 +13,7 @@ class _FakeStore extends FlutterSecureStoragePlatform with MockPlatformInterface
   /// true 时 delete 抛异常（模拟设备锁定 / 存储不可用）。
   bool throwOnDelete = false;
   @override
-  Future<void> write({required String key, required String value, required Map<String, String> options}) async =>
-      store[key] = value;
+  Future<void> write({required String key, required String value, required Map<String, String> options}) async => store[key] = value;
   @override
   Future<String?> read({required String key, required Map<String, String> options}) async => store[key];
   @override
@@ -42,9 +41,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     secureStore = _FakeStore();
     FlutterSecureStoragePlatform.instance = secureStore;
-    final c = ProviderContainer(
-      overrides: [sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance())],
-    );
+    final c = ProviderContainer(overrides: [sharedPrefsProvider.overrideWithValue(await SharedPreferences.getInstance())]);
     addTearDown(c.dispose);
     return c;
   }

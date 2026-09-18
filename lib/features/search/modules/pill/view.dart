@@ -24,10 +24,7 @@ class SearchPill extends StatelessWidget {
     return Container(
       height: 40.s,
       padding: EdgeInsets.symmetric(horizontal: 12.s),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(20.s),
-      ),
+      decoration: BoxDecoration(color: theme.colorScheme.surface.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20.s)),
       child: Row(
         children: [
           Icon(Icons.search, size: 20.s, color: theme.colorScheme.onSurfaceVariant),

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/responsive/screen_adapter.dart';
+
 import 'package:wallet_core/chains.dart';
+
 import '../../../../../providers/modules/wallet/wallet_provider.dart';
 import '../../../../../widgets/asset_icon.dart';
 import '../../../../../widgets/app_toast.dart';
@@ -43,10 +45,7 @@ class ReceiveAddressPage extends ConsumerWidget {
                 onPressed: () => Navigator.of(context).maybePop(),
               ),
               Expanded(
-                child: Text(
-                  '接收 ${asset.symbol}',
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
+                child: Text('接收 ${asset.symbol}', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               ),
               SizedBox(width: 48.s), // 平衡左侧返回按钮，让标题视觉居中。
             ],
@@ -54,30 +53,16 @@ class ReceiveAddressPage extends ConsumerWidget {
           Expanded(
             child: address == null
                 ? Center(
-                    child: Text(
-                      '当前钱包暂无 ${asset.chain.name} 地址',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
+                    child: Text('当前钱包暂无 ${asset.chain.name} 地址', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
                   )
                 : SingleChildScrollView(
                     padding: EdgeInsets.fromLTRB(24.s, 8.s, 24.s, 24.s),
                     child: Column(
                       children: [
                         // —— 资产标识：图标（右下角叠链徽标）+ 名称（含链名，防止转错网络） —— //
-                        AssetIcon(
-                          symbol: asset.symbol,
-                          tokenLogoUrl: tokenLogoUrl,
-                          chainSymbol: asset.chain.symbol,
-                          chainLogoUrl: chainLogoUrl,
-                          size: 48.s,
-                        ),
+                        AssetIcon(symbol: asset.symbol, tokenLogoUrl: tokenLogoUrl, chainSymbol: asset.chain.symbol, chainLogoUrl: chainLogoUrl, size: 48.s),
                         SizedBox(height: 8.s),
-                        Text(
-                          '${asset.name} · ${asset.chain.name}',
-                          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                        ),
+                        Text('${asset.name} · ${asset.chain.name}', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                         SizedBox(height: 20.s),
                         // —— 地址二维码：白底圆角卡片，深色模式下也可扫 —— //
                         Container(
@@ -97,17 +82,11 @@ class ReceiveAddressPage extends ConsumerWidget {
                           child: Container(
                             width: double.infinity,
                             padding: EdgeInsets.all(12.s),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12.s),
-                            ),
+                            decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12.s)),
                             child: Row(
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    address,
-                                    style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-                                  ),
+                                  child: Text(address, style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace')),
                                 ),
                                 SizedBox(width: 8.s),
                                 Icon(Icons.copy_rounded, size: 18.s, color: theme.colorScheme.primary),
@@ -120,9 +99,7 @@ class ReceiveAddressPage extends ConsumerWidget {
                         Text(
                           '仅支持接收 ${asset.chain.name} 网络上的 ${asset.symbol}，'
                           '向该地址转入其他网络资产可能无法找回。',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                           textAlign: TextAlign.center,
                         ),
                       ],
