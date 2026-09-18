@@ -163,6 +163,12 @@ cp /tmp/cg.bak lib/data/datasource/remote/coingecko_api.dart      # 务必还原
 ## 测试
 
 ```bash
-flutter analyze     # 基线 5 个 warning/info，0 error
-flutter test        # 84 个纯函数测试，不覆盖网络与缓存路径 —— 故本 skill 的手动验证不可省
+flutter analyze                          # 应为 0 issues
+flutter test                             # app 侧
+cd packages/wallet_core && flutter test   # 包侧 —— 两边都要跑，只跑根目录会漏掉安全核心
 ```
+
+三者**都应全绿**。别把「本来就有几个 warning」当基线：那会让新引入的问题混在存量里溜过去。
+这里也不写具体用例数——数字会腐烂，而过期的数字比没有数字更容易误导。
+
+纯函数测试不覆盖网络与缓存路径，**故本 skill 的手动验证不可省**。
