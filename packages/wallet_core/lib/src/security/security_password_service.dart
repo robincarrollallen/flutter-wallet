@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:flutter/foundation.dart';
 
 import '../storage/security_password_storage.dart';
 
@@ -42,8 +43,8 @@ class SecurityPasswordService {
   }
 
   /// 设置 / 重置安全码。
-  Future<void> setPassword(String password) =>
-      _storage.write(_encode(password, QuickCrypto.generateRandom(_saltLength)));
+  Future<void> setPassword(String password) async =>
+      _storage.write(await _encode(password, QuickCrypto.generateRandom(_saltLength)));
 
   /// 校验安全码是否正确。
   ///
@@ -76,16 +77,20 @@ class SecurityPasswordService {
       return false;
     }
     // 按记录里的迭代次数重算，而不是当前常量——这正是把它写进记录的意义。
-    return BytesUtils.bytesEqualConst(_derive(password, salt, iterations), expected);
+    final actual = await compute(deriveSecurityPasswordHashInBackground, (password, salt, iterations));
+    return BytesUtils.bytesEqualConst(actual, expected);
   }
 
   /// 把口令与 salt 编码成一条可落盘的记录。
-  String _encode(String password, List<int> salt) {
-    final hash = _derive(password, salt, _iterations);
+  Future<String> _encode(String password, List<int> salt) async {
+    final hash = await compute(deriveSecurityPasswordHashInBackground, (password, salt, _iterations));
     return [_version, '$_iterations', base64Encode(salt), base64Encode(hash)].join(_separator);
   }
 
   /// PBKDF2-HMAC-SHA256。与 BIP39 种子推导用的是同一套实现。
+  ///
+  /// **只能经 [deriveSecurityPasswordHashInBackground] 调用。** 20 万轮跑满约 1 秒
+  /// （见 [_iterations]），直接调就是在 UI 线程上冻结这么久，而且不会有任何报错提醒你。
   static List<int> _derive(String password, List<int> salt, int iterations) => QuickCrypto.pbkdf2DeriveKey(
     password: utf8.encode(password),
     salt: salt,
@@ -94,3 +99,8 @@ class SecurityPasswordService {
     dklen: _keyLength,
   );
 }
+
+/// compute() 顶层入口：在后台 isolate 跑 PBKDF2（20 万轮，手机约 1 秒）。
+/// 入参为 (口令, salt, 迭代次数)——迭代次数随记录走，不读常量，理由见 [SecurityPasswordService._iterations]。
+List<int> deriveSecurityPasswordHashInBackground((String, List<int>, int) args) =>
+    SecurityPasswordService._derive(args.$1, args.$2, args.$3);
