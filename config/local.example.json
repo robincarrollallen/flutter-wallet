@@ -1,7 +1,13 @@
 {
   "_comment": "本机构建配置。复制成 config/local.json 后填值：cp config/local.example.json config/local.json",
-  "_usage": "flutter run --dart-define-from-file=config/local.json",
+  "_usage": "flutter run --dart-define-from-file=config/local.json（build / CI 也要带，run 带了不代表 build 带了）",
   "_note": "config/local.json 不进 git。值在编译期内联进二进制，不会作为独立文件出现在安装包里——但随客户端分发的凭据终归是公开的，见 packages/wallet_core/SECURITY.md。",
+  "_keys": "下面每个键都对应一处 String.fromEnvironment。新增键时两边都要改，否则照模板配置的人不会知道它的存在。",
 
-  "ETHERSCAN_API_KEY": ""
+  "_ETHERSCAN_API_KEY": "EVM 链的远程交易历史（lib/config/app_config.dart）。留空是受支持的状态：EVM 链退回只显示本机发出的交易，其余链不受影响。",
+  "ETHERSCAN_API_KEY": "",
+
+  "_TOKEN_CATALOG_URL": "远程代币目录 JSON（lib/data/datasource/remote/token_catalog_api.dart）。留空 = 不发请求，用 BundledTokenCatalog 打包目录。配之前先读下一行。",
+  "_TOKEN_CATALOG_URL_WARNING": "只能填 https，且这个源必须与助记词同等可信：目录里的 decimals 直接参与转账金额换算（parseUnits），identifier 决定往哪个合约转。目录源被控 = 用户按 UI 显示的金额签出一笔完全不同的交易。当前解析层（Token.tryFromJson）只校验字段非空，不校验 decimals 范围、不与链上合约对账。",
+  "TOKEN_CATALOG_URL": ""
 }

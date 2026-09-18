@@ -122,3 +122,9 @@ app.*.symbols
 
 # 本机构建配置（API key 等），见 config/local.example.json
 config/local.json
+
+# dotenv 残留。配置早已迁到 --dart-define-from-file（见 lib/config/app_config.dart），
+# 没有任何代码再读 .env；这条规则防的是有人凭旧习惯新建一个再填进真 key。
+.env
+.env.*
+!.env.example

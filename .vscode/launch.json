@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // 默认用这个跑。裸 flutter run（IDE 右上角的运行按钮、F5 选错配置）不带
+      // --dart-define-from-file，ETHERSCAN_API_KEY 会是空串，表现为「EVM 链历史
+      // 只显示本机发出的交易」——而且不报错，见 lib/config/app_config.dart 的说明。
+      //
+      // 是 toolArgs 不是 args：前者传给 flutter run，后者传给 App 自己，写错位置一样静默失效。
+      //
+      // 首次使用需先 cp config/local.example.json config/local.json（该文件不进 git）。
+      // 改了 local.json 必须完全重启，热重载（r / R）不会更新编译期常量。
+      "name": "wallet (local config)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": ["--dart-define-from-file=config/local.json"]
+    },
+    {
+      // 不带任何本机配置的裸启动，用于复现「没配 key 的新同事第一次跑」是什么样。
+      "name": "wallet (no config)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "wallet (profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "profile",
+      "toolArgs": ["--dart-define-from-file=config/local.json"]
+    }
+  ]
+}
