@@ -29,9 +29,14 @@ class _Cap implements ChainTransferService {
 }
 
 /// 与 `walletServiceProvider` 当前接入的链一致，供列表过滤断言。
+///
+/// 这份固件要跟着装配处一起改：漏一条链，下面那些「哪些代币该进列表」的断言就会
+/// 按一个不存在的世界去算，仍然全绿却什么也没守住。
 final _transfers = <ChainKind, ChainTransferService>{
   ChainKind.evm: _Cap(ChainKind.evm),
   ChainKind.tron: _Cap(ChainKind.tron),
+  ChainKind.solana: _Cap(ChainKind.solana),
+  ChainKind.aptos: _Cap(ChainKind.aptos),
 };
 
 List<ListedAsset> _assetsOf(Chain? chain) => SendLogic.assetsOf(chain, _catalog, _transfers);
@@ -49,7 +54,7 @@ void main() {
     test('全部链原生币 + 已接入代币转账的链的代币', () {
       final all = _assetsOf(null);
       expect(all.length, SupportedChains.all.length + _sendableTokenCount);
-      // 尚未接入代币转账的链（Solana/Sui/Aptos），其代币不该出现在可发送列表里——
+      // 尚未接入代币转账的链（Sui），其代币不该出现在可发送列表里——
       // 让用户点进去才被拦下，比看不到更糟。
       expect(all.where((a) => a.token != null).every((a) => _supportsToken(a.chain.kind)), isTrue);
     });
@@ -61,9 +66,9 @@ void main() {
       expect(assets.last.symbol, 'USDC');
     });
 
-    test('非 EVM 链只返回原生币', () {
-      final assets = _assetsOf(SupportedChains.solanaDevnet);
-      expect(assets.single.symbol, 'SOL');
+    test('尚未接入代币转账的链只返回原生币', () {
+      final assets = _assetsOf(SupportedChains.suiTestnet);
+      expect(assets.single.symbol, 'SUI');
     });
 
     test('supportsToken 为 false 时该链代币不进列表', () {
@@ -80,8 +85,10 @@ void main() {
     });
 
     test('未注册的链拦截', () {
-      const sol = ListedAsset(chain: SupportedChains.solanaDevnet);
-      expect(SendLogic.canTransfer(sol, _transfers), isFalse);
+      // 用 Sui：它在 walletServiceProvider 的分派表里还没有实现，
+      // 所以连原生币都发不出去。换成已接入的链会让这条断言失去意义。
+      const sui = ListedAsset(chain: SupportedChains.suiTestnet);
+      expect(SendLogic.canTransfer(sui, _transfers), isFalse);
     });
 
     test('原生币能转、代币不能时拦截代币', () {

@@ -266,11 +266,13 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     return ref.watch(evmFeeProvider(_feeKey(asset, from))).quotes;
   }
 
-  /// 键里不带金额与代币：Aptos 的 gas 与转多少无关，且目前只支持原生币转账。
+  /// 键里不带金额：Aptos 的 gas 与转多少无关（见 `AptosTransactionService`）。
+  /// 代币要带上——代币与原生的 gas 上限差两个数量级，共用一份报价会差得离谱。
   AptosFeeKey _aptosFeeKey(ListedAsset asset, String from) => (
     chainId: asset.chain.id,
     from: from,
     to: widget.toAddress,
+    tokenIdentifier: asset.token?.identifier,
   );
 
   SolanaFeeKey _solanaFeeKey(ListedAsset asset, String from) => (

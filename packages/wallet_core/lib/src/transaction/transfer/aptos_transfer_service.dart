@@ -23,13 +23,13 @@ class AptosTransferService implements ChainTransferService {
   @override
   bool get supportsNative => true;
 
-  /// 代币（Coin / Fungible Asset）转账尚未实现。
+  /// 代币转账只覆盖 **Fungible Asset** 标准；旧的 Coin 标准由
+  /// `AptosTransactionService` 在解析 identifier 时明确报错。
   ///
-  /// 声明成 false 而不是在 [send] 里抛异常了事：发送列表的 `SendLogic.assetsOf`
-  /// 读的就是这个标志，它为 false 时 Aptos 的代币压根不会出现在可发送列表里——
-  /// 让用户选完、填完地址、到确认页才被告知发不出去，是更差的一种诚实。
+  /// 声明成 true 之后，Aptos 代币会出现在 `SendLogic.assetsOf` 的可发送列表里。
+  /// 目录里现有的那枚 USDC 正是 FA，所以这个标志与实际能力是对得上的。
   @override
-  bool get supportsToken => false;
+  bool get supportsToken => true;
 
   @override
   Future<TransactionStatus> queryStatus(Chain chain, String transactionHash, {int? validUntilBlock}) {
@@ -40,15 +40,23 @@ class AptosTransferService implements ChainTransferService {
 
   @override
   Future<TransferResult> send(TransferRequest request, Wallet wallet) async {
-    // 与 supportsToken 呼应的兜底：UI 已经把代币过滤掉了，但非 UI 调用方仍可能走到这里，
-    // 而「悄悄按原生币发出去」会把一笔本该失败的代币转账变成一笔真的 APT 转账。
-    if (request.token != null) {
-      throw UnsupportedError('${request.chain.name} 暂不支持代币转账');
-    }
-
+    final token = request.token;
     final privateKey = await _keyResolver.resolveSigningKeyBytes(wallet, request.chain); // 获取私钥明文
 
     try {
+      // 代币转账不接 deductFeeFromAmount：费用以 APT 支付、转出的是代币，
+      // 两本账不通，扣无可扣。代币的 MAX 就是代币余额本身（与其余三条链一致）。
+      if (token != null) {
+        return await _transactions.sendToken(
+          chain: request.chain,
+          token: token,
+          privateKey: privateKey,
+          fromAddress: request.from,
+          to: request.to,
+          amount: request.amount,
+          speed: request.speed,
+        );
+      }
       return await _transactions.sendNative(
         chain: request.chain,
         privateKey: privateKey,

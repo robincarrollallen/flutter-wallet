@@ -125,6 +125,43 @@ class AptosTransactionService {
   /// 会把 0.0103 APT 的费用说成 0.00003。
   static final BigInt _accountCreationGasCap = BigInt.from(16000);
 
+  /// 估算一笔 Aptos 代币转账的三档费用。
+  ///
+  /// 与 [estimateNativeFee] 同样**没有 `amount`**、同样**不走模拟**（理由见 [_gasCapFor]）。
+  ///
+  /// 但比原生少一档：代币只用 [_tokenTransferGasCap] 一个上限，不区分「收款方要不要
+  /// 建存储」。原生那边靠 [_accountExists] 分得出两档，代币这边分不出——FA 的开销
+  /// 差异取决于收款方有没有**这一种资产**的主存储，而余额端点对「没有存储」返回的是
+  /// 0 而不是 404（实测），从外面看不出区别。所以一律按「要建存储」估，宁可偏保守。
+  Future<AptosFeeEstimate> estimateTokenFee({
+    required Chain chain,
+    required Token token,
+    required String from,
+    required String to,
+  }) async {
+    _verifyTokenSupported(token, chain);
+    final provider = _providerFor(chain);
+    final context = await _loadContext(provider, _parseAddress(from, '发送方'));
+    // to 仍然解析一遍：地址不合法要在估费阶段就报出来，而不是等用户点了发送。
+    _parseAddress(to, '收款方');
+
+    return AptosFeeEstimate(
+      deprioritizedGasUnitPrice: context.deprioritizedGasUnitPrice,
+      gasUnitPrice: context.gasUnitPrice,
+      prioritizedGasUnitPrice: context.prioritizedGasUnitPrice,
+      gasUsed: _tokenTransferGasCap,
+      maxGasAmount: _tokenTransferGasCap,
+    );
+  }
+
+  /// 代币转账的 gas 上限。**testnet 实测两笔**（2026-09）：
+  /// 收款方没有该资产的主存储时 5715（要建存储），已有则只要 149。
+  ///
+  /// 取 9000——按**贵的那档**留约 1.6 倍余量，与原生的 [_accountCreationGasCap] 同一
+  /// 比例。刻意不按 149 那档估：两档差了近 40 倍，而从外面分不出收款方属于哪一档
+  /// （见 [estimateTokenFee]），按便宜的估会把一笔 0.0057 APT 的费用说成 0.00015。
+  static final BigInt _tokenTransferGasCap = BigInt.from(9000);
+
   /// 账户在链上存不存在。节点对未上链的账户返回 404，SDK 抛 RPCError。
   Future<bool> _accountExists(AptosProvider provider, AptosAddress address) async {
     try {
@@ -185,7 +222,7 @@ class AptosTransactionService {
     final gasUsed = await _simulateGasUsed(
       provider: provider,
       context: context,
-      recipient: recipient,
+      probePayload: _nativeTransferPayload(recipient, _probeAmount),
       gasUnitPrice: gasUnitPrice,
       publicKey: signer.publicKey,
     );
@@ -221,8 +258,7 @@ class AptosTransactionService {
     // 转给谁、转多少。别当成漏了一道检查。
     final transaction = _buildTransaction(
       context: context,
-      recipient: recipient,
-      value: value,
+      payload: _nativeTransferPayload(recipient, value),
       gasUnitPrice: gasUnitPrice,
       maxGasAmount: maxGasAmount,
     );
@@ -259,6 +295,126 @@ class AptosTransactionService {
     );
   }
 
+  /// 发送 Aptos 代币（Fungible Asset），返回 (交易哈希, 实际发送金额, 上链状态, null)。
+  ///
+  /// **没有 `deductFeeFromAmount`**，与 EVM / Solana / Tron 的代币路径一致：费用以 APT
+  /// 支付、转出的是代币，两本账不通，扣无可扣。代币的 MAX 就是代币余额本身。
+  Future<TransferResult> sendToken({
+    required Chain chain,
+    required Token token,
+    required List<int> privateKey,
+    required String fromAddress,
+    required String to,
+    required String amount,
+    FeeSpeed speed = FeeSpeed.defaultSpeed,
+  }) async {
+    // 1. 代币标准校验，放在一切之前——这一条挡住的是「拿别的链的代币来这里转」。
+    _verifyTokenSupported(token, chain);
+
+    final provider = _providerFor(chain);
+
+    // 2. 私钥 → 地址，与钱包地址核对（理由同 sendNative）。
+    final signer = AptosED25519PrivateKey.fromBytes(privateKey);
+    final sender = signer.publicKey.toAddress();
+    if (sender != _parseAddress(fromAddress, '发送方')) {
+      throw Exception('签名地址与钱包地址不一致');
+    }
+
+    // 3. 金额按**代币**精度换算（USDC 是 6 位，APT 是 8 位）。
+    //    拿 chain.decimals 去换会让一笔 1 USDC 变成 0.01 USDC。
+    final value = parseUnits(amount, token.decimals);
+    if (value <= BigInt.zero) throw Exception('转账金额必须大于 0');
+
+    final metadata = _parseAddress(token.identifier, '代币');
+    final recipient = _parseAddress(to, '收款方');
+
+    // 4. 上下文、代币余额、原生币余额——三项互不依赖，并发取。
+    final (context, tokenBalance, nativeBalance) = await (
+      _loadContext(provider, sender),
+      _balances.fetchTokenBalance(chain, token, sender.address),
+      _balances.fetchNativeBalance(chain, sender.address),
+    ).wait;
+
+    // 5. 代币余额校验。不足即报错，**绝不**静默改小后提交。
+    if (value > tokenBalance) {
+      throw Exception(
+        '${token.symbol} 余额不足：本次需 ${formatUnits(value, token.decimals)}，'
+        '可用 ${formatUnits(tokenBalance, token.decimals)}',
+      );
+    }
+
+    // 6. 模拟执行定 gas。探测金额用 1 个最小单位，理由同 sendNative。
+    final gasUnitPrice = context.priceFor(speed);
+    final gasUsed = await _simulateGasUsed(
+      provider: provider,
+      context: context,
+      probePayload: _fungibleAssetTransferPayload(metadata, recipient, _probeAmount),
+      gasUnitPrice: gasUnitPrice,
+      publicKey: signer.publicKey,
+    );
+    final maxGasAmount = _maxGasAmountFor(gasUsed);
+
+    // 7. 原生币够不够付费——与第 5 步分开的第二本账。代币再多也付不了 gas。
+    final fee = gasUnitPrice * maxGasAmount;
+    if (fee > nativeBalance) {
+      throw Exception(
+        '${chain.symbol} 不足以支付网络费：需约 ${formatUnits(fee, chain.decimals)} ${chain.symbol}，'
+        '可用 ${formatUnits(nativeBalance, chain.decimals)} ${chain.symbol}',
+      );
+    }
+
+    // 8. 本地构造 + 签名 + 提交，与 sendNative 同一套。
+    final transaction = _buildTransaction(
+      context: context,
+      payload: _fungibleAssetTransferPayload(metadata, recipient, value),
+      gasUnitPrice: gasUnitPrice,
+      maxGasAmount: maxGasAmount,
+    );
+    final signed = AptosSignedTransaction(
+      rawTransaction: transaction,
+      authenticator: AptosTransactionAuthenticatorEd25519(
+        publicKey: signer.publicKey,
+        signature: AptosEd25519Signature(signer.sign(transaction.signingSerialize()).signature),
+      ),
+    );
+
+    final pending = await provider.request(
+      AptosRequestSubmitTransaction(signedTransactionData: signed.toBcs()),
+    );
+    if (_normalizeHash(pending.hash) != _normalizeHash(signed.txHash())) {
+      throw Exception('节点返回的交易哈希与本地不一致');
+    }
+
+    return (
+      hash: pending.hash,
+      // 按代币精度格式化：这个字符串会原样进历史记录与结果页。
+      sentAmount: formatUnits(value, token.decimals),
+      status: TransactionStatus.pending,
+      validUntilBlock: null,
+    );
+  }
+
+  /// 这枚代币能不能在 Aptos 上转。不能就抛 [UnsupportedError]。
+  ///
+  /// 两道，缺一不可：
+  /// - 标准不是 [TokenStandard.aptosCoin]：拿别的链的代币来这里转，与 EVM / Solana /
+  ///   Tron 的同位检查一致。
+  /// - **identifier 含 `::`**：那是旧的 Coin 标准（`0x1::aptos_coin::AptosCoin` 这种
+  ///   类型结构），要走 `0x1::aptos_account::transfer_coins<T>`，与 Fungible Asset
+  ///   的入口函数完全不同。`TokenStandard` 只有一个 `aptosCoin` 盖住了两种形态，
+  ///   枚举分不出来，只能看 identifier 的形状。
+  ///
+  ///   本项目只实现了 FA：目录里没有任何 Coin 标准的代币可供验证，而一条发得出去
+  ///   却没人验过的转账路径，比一句「暂不支持」危险得多。
+  void _verifyTokenSupported(Token token, Chain chain) {
+    if (token.standard != TokenStandard.aptosCoin) {
+      throw UnsupportedError('${token.symbol} 不是 Aptos 代币，无法在 ${chain.name} 上转账');
+    }
+    if (token.identifier.contains('::')) {
+      throw UnsupportedError('${token.symbol} 是 Aptos Coin 标准代币，本项目目前只支持 Fungible Asset');
+    }
+  }
+
   /// 取一次「构造交易所需的链上上下文」：序列号、链 id、三档 gas 单价。
   ///
   /// 三个请求互不依赖，并发发出。序列号必须实查——它由账户当前状态决定，
@@ -291,17 +447,18 @@ class AptosTransactionService {
   ///
   /// 模拟失败（余额不足、收款方地址不合法、Move 层报错等）在这里就抛出来，
   /// 附上节点给的 `vm_status`：那是唯一能说清「为什么这笔发不出去」的信息。
+  /// [probePayload] 由调用方用 [_probeAmount] 建好传进来——这个方法不认识「转账」
+  /// 这件事，原生与代币都能用它。
   Future<BigInt> _simulateGasUsed({
     required AptosProvider provider,
     required _SenderContext context,
-    required AptosAddress recipient,
+    required AptosTransactionPayload probePayload,
     required BigInt gasUnitPrice,
     required AptosED25519PublicKey publicKey,
   }) async {
     final probe = _buildTransaction(
       context: context,
-      recipient: recipient,
-      value: _probeAmount,
+      payload: probePayload,
       gasUnitPrice: gasUnitPrice,
       maxGasAmount: _provisionalMaxGasAmount,
     );
@@ -328,30 +485,62 @@ class AptosTransactionService {
   /// ed25519 签名长度。模拟用的零签名要填满这个长度，SDK 会校验。
   static const int _ed25519SignatureLength = 64;
 
-  /// 组装一笔原生 APT 转账（未签名）。估费、模拟与发送共用，保证三者算的是同一笔。
+  /// 把一个 payload 包成未签名交易。估费、模拟与发送共用，保证三者算的是同一笔。
+  ///
+  /// 收 payload 而不是「收款方 + 金额」：原生与代币的入口函数不同（见
+  /// [_nativeTransferPayload] / [_fungibleAssetTransferPayload]），但外面这层
+  /// 序列号、gas、过期时刻、链 id 是一模一样的。
   AptosRawTransaction _buildTransaction({
     required _SenderContext context,
-    required AptosAddress recipient,
-    required BigInt value,
+    required AptosTransactionPayload payload,
     required BigInt gasUnitPrice,
     required BigInt maxGasAmount,
   }) {
     return AptosRawTransaction(
       sender: context.sender,
       sequenceNumber: context.sequenceNumber,
-      transactionPayload: AptosTransactionPayloadEntryFunction(
-        entryFunction: AptosTransactionEntryFunction(
-          moduleId: AptosModuleId(address: AptosAddress.one, name: _transferModule),
-          functionName: _transferFunction,
-          args: [recipient, MoveU64(value)],
-        ),
-      ),
+      transactionPayload: payload,
       maxGasAmount: maxGasAmount,
       gasUnitPrice: gasUnitPrice,
       expirationTimestampSecs: BigInt.from(
         DateTime.now().add(_expirationWindow).millisecondsSinceEpoch ~/ 1000,
       ),
       chainId: context.chainId,
+    );
+  }
+
+  /// 原生 APT 转账的 payload：`0x1::aptos_account::transfer(to, amount)`。
+  AptosTransactionPayload _nativeTransferPayload(AptosAddress recipient, BigInt value) {
+    return AptosTransactionPayloadEntryFunction(
+      entryFunction: AptosTransactionEntryFunction(
+        moduleId: AptosModuleId(address: AptosAddress.one, name: _transferModule),
+        functionName: _transferFunction,
+        args: [recipient, MoveU64(value)],
+      ),
+    );
+  }
+
+  /// Fungible Asset 转账的 payload：
+  /// `0x1::primary_fungible_store::transfer<0x1::fungible_asset::Metadata>(metadata, to, amount)`。
+  ///
+  /// 与原生那条的三点不同，每一点错了都会让交易在链上被拒：
+  /// - **要带类型参数**。`transfer` 的签名是 `<T: key>`，少了它 Move 层对不上。
+  /// - **实参是三个**，metadata 在最前面——它指明转的是哪一种资产。
+  /// - 走 `primary_fungible_store` 而不是 `fungible_asset`：前者会在收款方没有这个
+  ///   资产的主存储时顺带建一个，后者要求调用方自己把 store 对象找出来。
+  ///   「转给一个没持有过这个币的人」是最平常的操作，不该因此失败。
+  AptosTransactionPayload _fungibleAssetTransferPayload(
+    AptosAddress metadata,
+    AptosAddress recipient,
+    BigInt value,
+  ) {
+    return AptosTransactionPayloadEntryFunction(
+      entryFunction: AptosTransactionEntryFunction(
+        moduleId: AptosConstants.primaryFungibleStoreModule,
+        functionName: _transferFunction,
+        typeArgs: [AptosConstants.fungibleAssetMetadataTypeTag],
+        args: [metadata, recipient, MoveU64(value)],
+      ),
     );
   }
 
