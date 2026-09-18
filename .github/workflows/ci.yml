@@ -1,10 +1,13 @@
 name: CI
 
-# main 必须在列——只守 release 的话，改动要等到合并前夕才第一次被验证，
-# 而那时往往已经积了几十个提交，红了也难定位是哪一个带来的。
+# 验证发生在**合并之前**：PR targeting main / release 都会跑全套。
+#
+# push 上刻意不留 main——进 main 的代码必然已经以 PR 形式绿过一次，合并后再跑一遍
+# 是同一份代码的重复验证，只是多烧一次 runner。release 保留 push 触发：那是发布分支，
+# 可能收到 cherry-pick 或 hotfix 这类不经 PR 的直接推送，需要兜底。
 on:
   push:
-    branches: [main, release]
+    branches: [release]
   pull_request:
     branches: [main, release]
 
