@@ -1,0 +1,9 @@
+<component name="ProjectCodeStyleConfiguration">
+  <state>
+    <!--
+      强制使用项目级代码风格，而不是各人 IDE 里的全局设置。
+      不开这一项，Project.xml 会被忽略，行宽又退回每个人自己的 80。
+    -->
+    <option name="USE_PER_PROJECT_SETTINGS" value="true" />
+  </state>
+</component>

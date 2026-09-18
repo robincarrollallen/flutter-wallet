@@ -1,6 +1,13 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="main.dart" type="FlutterRunConfigurationType" factoryName="Flutter">
     <option name="filePath" value="$PROJECT_DIR$/lib/main.dart" />
+    <!--
+      与 .vscode/launch.json 的 toolArgs 等价。不带这个参数时 AppConfig 里的
+      String.fromEnvironment('ETHERSCAN_API_KEY') 会是空串，表现为 EVM 链历史
+      只显示本机发出的交易，且不报任何错。
+      首次使用需先 cp config/local.example.json config/local.json（该文件不进 git）。
+    -->
+    <option name="additionalArgs" value="--dart-define-from-file=config/local.json" />
     <method v="2" />
   </configuration>
 </component>

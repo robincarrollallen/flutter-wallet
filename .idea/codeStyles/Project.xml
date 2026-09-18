@@ -1,0 +1,19 @@
+<component name="ProjectCodeStyleConfiguration">
+  <code_scheme name="Project" version="173">
+    <!--
+      Dart 行宽钉成 200，与项目根 analysis_options.yaml 的 formatter.page_width
+      保持一致。
+
+      **为什么需要这份文件**：IntelliJ / Android Studio 的 Dart 插件用的是这里的
+      RIGHT_MARGIN，不保证会去读 analysis_options.yaml。它的默认值是 80——若不钉住，
+      AS 里保存时按 80 宽格式化，提交时 pre-commit hook 按 200 宽检查，人会被自己的
+      编辑器坑到被拦下。
+
+      **改 page_width 时这里要同步改**，两处不一致就是上面那个症状。
+      VSCode 侧不需要这份配置：Dart-Code 插件直接读 analysis_options.yaml。
+    -->
+    <codeStyleSettings language="Dart">
+      <option name="RIGHT_MARGIN" value="200" />
+    </codeStyleSettings>
+  </code_scheme>
+</component>
