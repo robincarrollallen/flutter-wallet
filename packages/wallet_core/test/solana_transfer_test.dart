@@ -33,6 +33,7 @@ class _FakeSolanaService with SolanaServiceProvider {
     this.statusFound = true,
     this.prioritizationFees = const [],
     this.blockHeight = 50,
+    this.genesisHash = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',
   }) : balance = balance ?? BigInt.from(1000000000), // 1 SOL
        recipientBalance = recipientBalance ?? _rentExempt;
 
@@ -55,6 +56,9 @@ class _FakeSolanaService with SolanaServiceProvider {
   /// 当前区块高度。默认 50，小于 blockhash 的 lastValidBlockHeight（100）= 交易尚未过期。
   final int blockHeight;
 
+  /// 节点自称的创世哈希。默认 Nile/devnet 钉死值，测换网时改成主网哈希。
+  final String genesisHash;
+
   final calls = <String>[];
 
   /// 广播时收到的 base64 交易，供断言签名确实发出去了。
@@ -72,6 +76,7 @@ class _FakeSolanaService with SolanaServiceProvider {
         'context': {'slot': 1},
         'value': {'blockhash': _blockhash.address, 'lastValidBlockHeight': 100},
       },
+      'getGenesisHash' => genesisHash,
       'getFeeForMessage' => {
         'context': {'slot': 1},
         'value': _fee.toInt(),
@@ -168,6 +173,21 @@ void main() {
 
       // 估费那次和签名那次是同一个 blockhash，多取一次就是一轮白费的往返。
       expect(node.calls.where((m) => m == 'getLatestBlockhash'), hasLength(1));
+    });
+
+    test('节点返回主网创世哈希时中止签名', () async {
+      final node = _FakeSolanaService(genesisHash: '5eykt4UsFv8P8NJdTREpY1vzq2piYYL4jUksMNPE5cyk');
+      await expectLater(
+        _service(node).sendNative(
+          chain: _chain,
+          privateKey: _privateKey,
+          fromAddress: _owner.address,
+          to: _recipient.address,
+          amount: '0.1',
+        ),
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('节点不在'))),
+      );
+      expect(node.broadcastPayload, isNull);
     });
 
     test('广播出去的是一笔签名有效、收款方与金额正确的转账', () async {

@@ -33,6 +33,7 @@ class _FakeTronService with TronServiceProvider {
     this.freeBandwidth = 600,
     this.stakedBandwidth = 0,
     this.recipientActivated = true,
+    this.genesisBlockId = '00000000000000000000000000000000000000000000000000000000cd8690dc',
   });
 
   final String balance;
@@ -49,6 +50,7 @@ class _FakeTronService with TronServiceProvider {
   final BigInt? tamperAmount;
   final bool broadcastOk;
   final bool receiptSuccess;
+  final String genesisBlockId;
 
   final calls = <String>[];
 
@@ -62,6 +64,7 @@ class _FakeTronService with TronServiceProvider {
 
     final response = switch (params.path) {
       'wallet/createtransaction' => _createTransaction(body),
+      'wallet/getblockbynum' => {'blockID': genesisBlockId},
       'wallet/broadcasthex' => _broadcast(body),
       'wallet/gettransactionbyid' => _receipt(),
       // —— 费用估算用到的三个接口 —— //
@@ -256,6 +259,14 @@ void main() {
       final node = _FakeTronService(tamperAmount: BigInt.from(9999999));
 
       await expectLater(_send(node), throwsA(isA<Exception>()));
+      expect(node.broadcastPayload, isNull);
+    });
+
+    test('节点返回主网创世身份时中止签名', () async {
+      final node = _FakeTronService(
+        genesisBlockId: '000000000000000000000000000000000000000000000000000000002b6653dc',
+      );
+      await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('节点不在'))));
       expect(node.broadcastPayload, isNull);
     });
 

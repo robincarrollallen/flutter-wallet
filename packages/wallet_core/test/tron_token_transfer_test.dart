@@ -34,6 +34,9 @@ class _FakeNode with TronServiceProvider {
     this.revert = false,
     this.tamperTo,
     this.tamperContract,
+    this.tamperCallValue,
+    this.tamperFeeLimit,
+    this.genesisBlockId = '00000000000000000000000000000000000000000000000000000000cd8690dc',
   });
 
   /// 模拟调用返回的能量消耗。
@@ -48,6 +51,9 @@ class _FakeNode with TronServiceProvider {
   /// 让节点在构造交易时把收款方 / 合约地址换掉，验证回解校验拦得住。
   final TronAddress? tamperTo;
   final TronAddress? tamperContract;
+  final BigInt? tamperCallValue;
+  final BigInt? tamperFeeLimit;
+  final String genesisBlockId;
 
   final calls = <String>[];
   String? broadcastPayload;
@@ -80,6 +86,7 @@ class _FakeNode with TronServiceProvider {
         'constant_result': [''],
       },
       'wallet/triggersmartcontract' => _buildTransaction(body),
+      'wallet/getblockbynum' => {'blockID': genesisBlockId},
       'wallet/broadcasthex' => _broadcast(body),
       'wallet/gettransactionbyid' => {
         'txID': 'a' * 64,
@@ -121,6 +128,7 @@ class _FakeNode with TronServiceProvider {
                   'owner_address': request['owner_address'],
                   'contract_address': tamperContract?.toAddress() ?? request['contract_address'],
                   'data': data,
+                  if (tamperCallValue != null) 'call_value': tamperCallValue.toString(),
                 },
                 'type_url': 'type.googleapis.com/protocol.TriggerSmartContract',
               },
@@ -131,7 +139,7 @@ class _FakeNode with TronServiceProvider {
           'ref_block_hash': '0011223344556677',
           'expiration': 1700000060000,
           'timestamp': 1700000000000,
-          'fee_limit': request['fee_limit'],
+          'fee_limit': tamperFeeLimit?.toInt() ?? request['fee_limit'],
         },
       },
     };
@@ -240,6 +248,26 @@ void main() {
     test('节点篡改合约地址时中止签名', () async {
       final node = _FakeNode(tamperContract: _attacker);
       await expectLater(_send(node), throwsA(isA<Exception>()));
+      expect(node.broadcastPayload, isNull);
+    });
+
+    test('节点在合约调用里塞入 callValue 时中止签名', () async {
+      final node = _FakeNode(tamperCallValue: BigInt.from(1000000));
+      await expectLater(_send(node), throwsA(isA<Exception>()));
+      expect(node.broadcastPayload, isNull);
+    });
+
+    test('节点抬高 feeLimit 时中止签名', () async {
+      final node = _FakeNode(tamperFeeLimit: BigInt.from(1) << 60);
+      await expectLater(_send(node), throwsA(isA<Exception>()));
+      expect(node.broadcastPayload, isNull);
+    });
+
+    test('节点返回主网创世身份时中止签名', () async {
+      final node = _FakeNode(
+        genesisBlockId: '000000000000000000000000000000000000000000000000000000002b6653dc',
+      );
+      await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('节点不在'))));
       expect(node.broadcastPayload, isNull);
     });
 

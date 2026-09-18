@@ -7,6 +7,7 @@ import '../../../../../core/responsive/screen_adapter.dart';
 import 'package:wallet_core/wallet_core.dart';
 import '../../widgets/panel/view.dart';
 import '../../../../../core/navigation/panel_routes.dart';
+import '../../../security_password/require_security_password.dart';
 import '../private_key_view/view.dart';
 
 /// 导出私钥：列出钱包支持的所有链，每条链一张卡片，点击进入对应链的导出流程。
@@ -34,9 +35,10 @@ class ExportPrivateKeyPage extends ConsumerWidget {
     );
   }
 
-  /// 导出某条链私钥：直接展示私钥页面。
-  // TODO: 安全码（设置 / 校验）功能暂时移除，后续补回后在此恢复校验逻辑。
-  void _onSelectChain(BuildContext context, WidgetRef ref, Chain chain) {
+  /// 导出某条链私钥：安全码通过后才进入明文页。
+  Future<void> _onSelectChain(BuildContext context, WidgetRef ref, Chain chain) async {
+    if (!await confirmSecurityPassword(context: context, ref: ref)) return;
+    if (!context.mounted) return;
     Navigator.of(context).push(panelSlideRoute(PrivateKeyViewPage(wallet: wallet, chain: chain)));
   }
 }

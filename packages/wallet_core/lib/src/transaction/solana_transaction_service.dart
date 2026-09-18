@@ -4,6 +4,7 @@ import 'package:on_chain/solana/solana.dart' hide TokenStandard;
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
+
 import '../model/models.dart';
 import 'transfer/transfer_result.dart';
 
@@ -181,9 +182,14 @@ class SolanaTransactionService {
 
     final recipient = SolAddress(to.trim());
 
-    // 3. 取一次 blockhash，估费与下面第 7 步的签名共用同一个。
+    // 3. 创世哈希（钉死集群）与 blockhash 并发。敌对节点若整台换成主网，创世哈希会对不上。
+    final (genesisHash, latest) = await (
+      provider.request(SolanaRequestGetGenesisHash()),
+      provider.request(const SolanaRequestGetLatestBlockhash()),
+    ).wait;
+    chain.ensureGenesisHash(genesisHash);
+
     //    发送方余额与估费并发发出——两者互不依赖，串行等于白等一轮。
-    final latest = await provider.request(const SolanaRequestGetLatestBlockhash());
     final (estimate, balance) = await (
       _estimateWith(
         provider: provider,
@@ -222,8 +228,8 @@ class SolanaTransactionService {
     //
     // **刻意没有 Tron 那套「回解校验」**：Tron 之所以要逐字段比对，是因为待签字节由
     // 节点的 `wallet/createtransaction` 给出，节点有机会把收款方或金额换掉。Solana 的
-    // 交易完全在本地构造，节点只提供一个 blockhash——它改不了这笔转账转给谁、转多少，
-    // 所以这里没有对应的信任缺口要堵。别当成漏了一道检查。
+    // 交易完全在本地构造，节点只提供 blockhash——它改不了这笔转账转给谁、转多少。
+    // 集群绑定靠上面的创世哈希比对，不靠再解一遍交易。
     //
     // blockhash 复用第 3 步取的那个，**不要**在这里再取一次：那是一轮白费的往返，
     // 而且会让 lastValidBlockHeight 与估费时的不一致。
@@ -497,13 +503,15 @@ class SolanaTransactionService {
 
     final recipient = SolAddress(to.trim());
 
-    // 3. blockhash / 两个 ATA 的状态 / 发送方 SOL 余额，三件事互不依赖，并发取。
+    // 3. 创世哈希 / blockhash / 两个 ATA 的状态 / 发送方 SOL 余额，互不依赖，并发取。
     //    blockhash 取一次，估费与第 7 步的签名共用（同 sendNative）。
-    final (latest, accounts, solBalance) = await (
+    final (genesisHash, latest, accounts, solBalance) = await (
+      provider.request(SolanaRequestGetGenesisHash()),
       provider.request(const SolanaRequestGetLatestBlockhash()),
       _resolveTokenAccounts(provider: provider, token: token, owner: owner, recipient: recipient),
       provider.request(SolanaRequestGetBalance(account: owner)),
     ).wait;
+    chain.ensureGenesisHash(genesisHash);
 
     // 4. 代币账户与代币余额校验。
     if (!accounts.sourceExists) {

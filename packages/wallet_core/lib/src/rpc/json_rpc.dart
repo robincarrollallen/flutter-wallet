@@ -11,24 +11,25 @@ typedef JsonRpcRequest = ({String method, List<Object?> params});
 
 /// 通用 JSON-RPC 调用：统一使用自增请求 id，并在错误时抛出 Exception。
 Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) async {
+  final endpoint = _redactedEndpoint(url);
   final requestId = ++_nextJsonRpcRequestId; // 自增请求 ID
   final decoded = await _post(url, {'jsonrpc': '2.0', 'id': requestId, 'method': method, 'params': params}, method);
 
   if (decoded is! Map<String, dynamic>) {
     // 如果响应体不是 JSON 对象则抛出异常
-    throw Exception('RPC invalid response [$method] $url: expected JSON object');
+    throw Exception('RPC invalid response [$method] $endpoint: expected JSON object');
   }
 
   final responseId = decoded['id']; // 获取响应 ID
   if (!_isMatchingRpcId(responseId, requestId)) {
     // 如果响应 ID 不匹配则抛出异常
-    throw Exception('RPC id mismatch [$method] $url: expected=$requestId, got=$responseId');
+    throw Exception('RPC id mismatch [$method] $endpoint: expected=$requestId, got=$responseId');
   }
 
   final Object? error = decoded['error']; // 获取错误信息
   if (error != null) {
     // 如果错误信息不为空则抛出异常
-    throw Exception('RPC error [$method] $url: ${_formatRpcError(error)}');
+    throw Exception('RPC error [$method] $endpoint: ${_formatRpcError(error)}');
   }
   return decoded['result']; // 返回结果
 }
@@ -37,6 +38,7 @@ Future<Object?> jsonRpcCall(String url, String method, List<Object?> params) asy
 Future<List<Object?>> jsonRpcBatch(String url, List<JsonRpcRequest> calls) async {
   if (calls.isEmpty) return const []; // 空批次不发请求，省掉一次无意义的往返
 
+  final endpoint = _redactedEndpoint(url);
   // 一次性分配连续 id，索引位置与 calls 对齐，便于回填时报出是哪一条出错。
   final ids = [for (var i = 0; i < calls.length; i++) ++_nextJsonRpcRequestId];
   final label = 'batch(${calls.map((c) => c.method).toSet().join(',')})'; // 错误文案里指明批次内容
@@ -46,40 +48,40 @@ Future<List<Object?>> jsonRpcBatch(String url, List<JsonRpcRequest> calls) async
   ], label);
 
   if (decoded is! List) {
-    throw Exception('RPC invalid response [$label] $url: expected JSON array');
+    throw Exception('RPC invalid response [$label] $endpoint: expected JSON array');
   }
   if (decoded.length != calls.length) {
-    throw Exception('RPC batch size mismatch [$label] $url: sent=${calls.length}, got=${decoded.length}');
+    throw Exception('RPC batch size mismatch [$label] $endpoint: sent=${calls.length}, got=${decoded.length}');
   }
 
   // 先按 id 建索引，再按请求顺序取——服务端乱序返回也能对上号。
   final byId = <String, Map<String, dynamic>>{};
   for (final item in decoded) {
     if (item is! Map<String, dynamic>) {
-      throw Exception('RPC invalid response [$label] $url: batch item is not a JSON object');
+      throw Exception('RPC invalid response [$label] $endpoint: batch item is not a JSON object');
     }
     byId['${item['id']}'] = item;
   }
 
   return [
     for (var i = 0; i < calls.length; i++)
-      _unwrapBatchItem(byId['${ids[i]}'], url: url, method: calls[i].method, requestId: ids[i]),
+      _unwrapBatchItem(byId['${ids[i]}'], endpoint: endpoint, method: calls[i].method, requestId: ids[i]),
   ];
 }
 
 /// 取出单条批量响应的 result；缺条目或带 error 一律抛出。
 Object? _unwrapBatchItem(
   Map<String, dynamic>? item, {
-  required String url,
+  required String endpoint,
   required String method,
   required int requestId,
 }) {
   if (item == null) {
-    throw Exception('RPC batch missing response [$method] $url: id=$requestId');
+    throw Exception('RPC batch missing response [$method] $endpoint: id=$requestId');
   }
   final Object? error = item['error'];
   if (error != null) {
-    throw Exception('RPC error [$method] $url: ${_formatRpcError(error)}');
+    throw Exception('RPC error [$method] $endpoint: ${_formatRpcError(error)}');
   }
   return item['result'];
 }
@@ -87,6 +89,7 @@ Object? _unwrapBatchItem(
 /// POST 一份 JSON-RPC 报文并解码响应体；[label] 只进错误文案。
 Future<Object?> _post(String url, Object payload, String label) async {
   final uri = Uri.parse(url); // 解析 URL
+  final endpoint = redactCredentials(uri).toString();
   final body = utf8.encode(jsonEncode(payload)); // 编码 JSON 请求体
   try {
     final request = await sharedHttpClient.postUrl(uri).timeout(kRemoteTimeout); // 创建 HTTP 请求
@@ -99,17 +102,23 @@ Future<Object?> _post(String url, Object payload, String label) async {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       // 如果响应状态码不在 200-299 范围内则抛出异常
       throw Exception(
-        'RPC HTTP error [$label] $url: status=${response.statusCode}, '
+        'RPC HTTP error [$label] $endpoint: status=${response.statusCode}, '
         'body=${previewBody(text)}',
       );
     }
     return jsonDecode(text); // 解析响应体
   } on TimeoutException {
-    throw Exception('RPC timeout [$label] $url after ${kRemoteTimeout.inSeconds}s'); // 超时异常
+    throw Exception('RPC timeout [$label] $endpoint after ${kRemoteTimeout.inSeconds}s'); // 超时异常
   } on FormatException catch (e) {
-    throw Exception('RPC invalid JSON [$label] $url: ${e.message}'); // 格式异常
+    throw Exception('RPC invalid JSON [$label] $endpoint: ${e.message}'); // 格式异常
+  } catch (error) {
+    if (error is Exception && error.toString().startsWith('RPC ')) rethrow;
+    throw Exception('RPC failed [$label] $endpoint: $error');
   }
 }
+
+/// 错误文案里只出现脱敏后的端点，查询串里的 key 不能跟着 429 流出去。
+String _redactedEndpoint(String url) => redactCredentials(Uri.parse(url)).toString();
 
 /// 检查响应 ID 是否匹配请求 ID
 bool _isMatchingRpcId(Object? responseId, int requestId) {

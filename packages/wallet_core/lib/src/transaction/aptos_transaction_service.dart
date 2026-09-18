@@ -2,6 +2,7 @@ import 'package:on_chain/aptos/aptos.dart';
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
+
 import '../model/models.dart';
 import 'transfer/transfer_result.dart';
 
@@ -73,17 +74,13 @@ class AptosTransactionService {
   /// 费用都随金额变（gasLimit、交易字节数），Aptos 不变——一笔转账消耗多少 gas 由
   /// 它做了什么决定，与转多少无关。加一个不参与计算的参数，只会让调用方以为它有用。
   /// **不走模拟执行**，理由见 [_gasCapFor]。
-  Future<AptosFeeEstimate> estimateNativeFee({
-    required Chain chain,
-    required String from,
-    required String to,
-  }) async {
+  Future<AptosFeeEstimate> estimateNativeFee({required Chain chain, required String from, required String to}) async {
     final provider = _providerFor(chain);
     final sender = _parseAddress(from, '发送方');
     final recipient = _parseAddress(to, '收款方');
 
     final (context, recipientExists) = await (
-      _loadContext(provider, sender),
+      _loadContext(provider, sender, chain),
       _accountExists(provider, recipient),
     ).wait;
 
@@ -141,7 +138,7 @@ class AptosTransactionService {
   }) async {
     _verifyTokenSupported(token, chain);
     final provider = _providerFor(chain);
-    final context = await _loadContext(provider, _parseAddress(from, '发送方'));
+    final context = await _loadContext(provider, _parseAddress(from, '发送方'), chain);
     // to 仍然解析一遍：地址不合法要在估费阶段就报出来，而不是等用户点了发送。
     _parseAddress(to, '收款方');
 
@@ -212,7 +209,7 @@ class AptosTransactionService {
 
     // 3. 序列号、链 id、三档 gas 单价、发送方余额——四项互不依赖，并发取。
     final (context, balance) = await (
-      _loadContext(provider, sender),
+      _loadContext(provider, sender, chain),
       _balances.fetchNativeBalance(chain, sender.address),
     ).wait;
 
@@ -252,10 +249,9 @@ class AptosTransactionService {
 
     // 6. 本地构造 + 签名 + 提交。
     //
-    // **刻意没有 Tron 那套「回解校验」**：Tron 之所以要逐字段比对，是因为待签字节由
-    // 节点的 `wallet/createtransaction` 给出，节点有机会把收款方或金额换掉。Aptos 的
-    // 交易完全在本地构造，节点只提供序列号、gas 行情与模拟结果——它改不了这笔转账
-    // 转给谁、转多少。别当成漏了一道检查。
+    // 节点只提供序列号、gas 行情、模拟结果与 **chainId**。前三项改不了收款方和金额，
+    // 但 chainId 会写进待签交易：必须与注册表钉死的测试网值比对，否则敌对节点
+    // 可以把主网 chainId=1 塞进来，让测试网 UI 签出主网有效交易。
     final transaction = _buildTransaction(
       context: context,
       payload: _nativeTransferPayload(recipient, value),
@@ -270,9 +266,7 @@ class AptosTransactionService {
       ),
     );
 
-    final pending = await provider.request(
-      AptosRequestSubmitTransaction(signedTransactionData: signed.toBcs()),
-    );
+    final pending = await provider.request(AptosRequestSubmitTransaction(signedTransactionData: signed.toBcs()));
 
     // 哈希由交易内容算出，本地算得出来。节点回的那个必须与之相等——不等意味着
     // 提交上去的不是我们签的这笔，后续所有状态查询都会查错对象。
@@ -330,7 +324,7 @@ class AptosTransactionService {
 
     // 4. 上下文、代币余额、原生币余额——三项互不依赖，并发取。
     final (context, tokenBalance, nativeBalance) = await (
-      _loadContext(provider, sender),
+      _loadContext(provider, sender, chain),
       _balances.fetchTokenBalance(chain, token, sender.address),
       _balances.fetchNativeBalance(chain, sender.address),
     ).wait;
@@ -378,9 +372,7 @@ class AptosTransactionService {
       ),
     );
 
-    final pending = await provider.request(
-      AptosRequestSubmitTransaction(signedTransactionData: signed.toBcs()),
-    );
+    final pending = await provider.request(AptosRequestSubmitTransaction(signedTransactionData: signed.toBcs()));
     if (_normalizeHash(pending.hash) != _normalizeHash(signed.txHash())) {
       throw Exception('节点返回的交易哈希与本地不一致');
     }
@@ -419,12 +411,14 @@ class AptosTransactionService {
   ///
   /// 三个请求互不依赖，并发发出。序列号必须实查——它由账户当前状态决定，
   /// 猜错了交易会被链上以 SEQUENCE_NUMBER_TOO_OLD/NEW 拒绝。
-  Future<_SenderContext> _loadContext(AptosProvider provider, AptosAddress sender) async {
+  Future<_SenderContext> _loadContext(AptosProvider provider, AptosAddress sender, Chain chain) async {
     final (account, ledger, gas) = await (
       provider.request(AptosRequestGetAccount(address: sender)),
       provider.request(AptosRequestGetLedgerInfo()),
       provider.request(AptosRequestEstimateGasPrice()),
     ).wait;
+
+    chain.ensureAptosChainId(ledger.chainId);
 
     final regular = BigInt.from(gas.gasEstimate);
     return _SenderContext(
@@ -470,9 +464,7 @@ class AptosTransactionService {
       ),
     );
 
-    final results = await provider.request(
-      AptosRequestSimulateTransaction(signedTransactionData: unsigned.toBcs()),
-    );
+    final results = await provider.request(AptosRequestSimulateTransaction(signedTransactionData: unsigned.toBcs()));
     if (results.isEmpty) throw Exception('模拟执行没有返回结果');
 
     final simulated = results.first;
@@ -502,9 +494,7 @@ class AptosTransactionService {
       transactionPayload: payload,
       maxGasAmount: maxGasAmount,
       gasUnitPrice: gasUnitPrice,
-      expirationTimestampSecs: BigInt.from(
-        DateTime.now().add(_expirationWindow).millisecondsSinceEpoch ~/ 1000,
-      ),
+      expirationTimestampSecs: BigInt.from(DateTime.now().add(_expirationWindow).millisecondsSinceEpoch ~/ 1000),
       chainId: context.chainId,
     );
   }
@@ -529,11 +519,7 @@ class AptosTransactionService {
   /// - 走 `primary_fungible_store` 而不是 `fungible_asset`：前者会在收款方没有这个
   ///   资产的主存储时顺带建一个，后者要求调用方自己把 store 对象找出来。
   ///   「转给一个没持有过这个币的人」是最平常的操作，不该因此失败。
-  AptosTransactionPayload _fungibleAssetTransferPayload(
-    AptosAddress metadata,
-    AptosAddress recipient,
-    BigInt value,
-  ) {
+  AptosTransactionPayload _fungibleAssetTransferPayload(AptosAddress metadata, AptosAddress recipient, BigInt value) {
     return AptosTransactionPayloadEntryFunction(
       entryFunction: AptosTransactionEntryFunction(
         moduleId: AptosConstants.primaryFungibleStoreModule,
@@ -633,5 +619,4 @@ class _SenderContext {
     FeeSpeed.normal => gasUnitPrice,
     FeeSpeed.fast => prioritizedGasUnitPrice,
   };
-
 }

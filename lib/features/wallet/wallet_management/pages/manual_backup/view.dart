@@ -10,6 +10,7 @@ import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../providers/core/service_provider.dart';
 import '../../widgets/panel/view.dart';
 import '../../../../../core/navigation/panel_routes.dart';
+import '../../../security_password/require_security_password.dart';
 import '../verify_mnemonic/view.dart';
 
 /// 备份步骤二（手动备份）：默认隐藏助记词，点击展示后抄写，再「下一步」校验。
@@ -22,7 +23,7 @@ class ManualBackupPage extends ConsumerStatefulWidget {
   ConsumerState<ManualBackupPage> createState() => _ManualBackupPageState();
 }
 
-class _ManualBackupPageState extends ConsumerState<ManualBackupPage> {
+class _ManualBackupPageState extends ConsumerState<ManualBackupPage> with WidgetsBindingObserver {
   /// 已展示的助记词，仅在用户点击「展示」后按需读取，离开页面即清空。
   String? _mnemonic;
   bool _loading = false;
@@ -32,11 +33,25 @@ class _ManualBackupPageState extends ConsumerState<ManualBackupPage> {
   Timer? _hideTimer;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _hideTimer?.cancel();
     // 主动断开对助记词明文的引用，缩短其在内存中的存活时间。
     _mnemonic = null;
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed && _mnemonic != null) {
+      setState(() => _mnemonic = null);
+    }
   }
 
   /// 到时自动收起明文，把它留在屏幕上的时间变成一个确定的上界。
@@ -47,9 +62,11 @@ class _ManualBackupPageState extends ConsumerState<ManualBackupPage> {
     });
   }
 
-  /// 点击展示：从安全存储一次性读取助记词到本地状态（不进 Provider 缓存）。
+  /// 点击展示：安全码通过后才从安全存储读取助记词到本地状态（不进 Provider 缓存）。
   Future<void> _reveal() async {
     if (_loading) return;
+    if (!await confirmSecurityPassword(context: context, ref: ref)) return;
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _failed = false;

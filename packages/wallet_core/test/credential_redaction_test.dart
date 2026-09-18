@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet_core/rpc.dart';
 
@@ -42,5 +45,26 @@ void main() {
 
     expect(exception.toString(), isNot(contains('SECRET123')));
     expect(exception.toString(), contains('429'));
+  });
+
+  test('JSON-RPC 错误路径同样脱敏', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(server.close);
+    server.listen((request) async {
+      await utf8.decodeStream(request);
+      request.response
+        ..statusCode = 429
+        ..write('rate limited')
+        ..close();
+    });
+
+    final url = 'http://${server.address.host}:${server.port}/rpc?apikey=SECRET123';
+    try {
+      await jsonRpcCall(url, 'eth_blockNumber', const []);
+      fail('应当抛出');
+    } catch (error) {
+      expect(error.toString(), isNot(contains('SECRET123')));
+      expect(error.toString(), contains('apikey=REDACTED'));
+    }
   });
 }

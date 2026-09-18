@@ -29,6 +29,27 @@ void main() {
       }
     });
 
+    test('evmChainId 钉死为各测试网官方值', () {
+      // 这是 EIP-155 防跨链重放的全部依据。只断言「非空」拦不住把 Sepolia 写成 1。
+      const expected = {
+        'ethereum-sepolia': 11155111,
+        'polygon-amoy': 80002,
+        'bsc-testnet': 97,
+        'base-sepolia': 84532,
+        'arbitrum-sepolia': 421614,
+        'plasma-testnet': 9746,
+      };
+      for (final chain in SupportedChains.all.where((c) => c.kind == ChainKind.evm)) {
+        expect(chain.evmChainId, expected[chain.id], reason: chain.name);
+      }
+    });
+
+    test('Aptos / Solana / Tron 的签名域钉死在测试网', () {
+      expect(SupportedChains.aptosTestnet.aptosChainId, 2);
+      expect(SupportedChains.solanaDevnet.genesisHash, 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG');
+      expect(SupportedChains.tronNile.genesisHash, 'cd8690dc');
+    });
+
     test('id 唯一', () {
       final ids = SupportedChains.all.map((c) => c.id).toList();
       // byId 用 firstWhere，id 重复不会报错，只会静默取到第一条。

@@ -70,9 +70,9 @@ class WalletCommitService {
         throw const WalletCommitException(WalletCommitFailure.secretWriteFailed);
       }
 
-      _registry.add(wallet);
+      await _registry.add(wallet);
       // 严格排在入列表之后：保证选中 id 永远能在列表里找到对应项。
-      _registry.select(wallet.id);
+      await _registry.select(wallet.id);
     } on WalletCommitException {
       await _rollback(wallet: wallet, previousSelectedId: previousSelectedId);
       rethrow;
@@ -81,7 +81,8 @@ class WalletCommitService {
       throw const WalletCommitException(WalletCommitFailure.persistFailed);
     }
 
-    // 元数据已全部生效，撤下标记——从此这份敏感数据不再具备被对账删除的资格。
+    // 元数据已经 await 落盘，这才撤下标记。若在 add/select 完成前就清标记，
+    // 崩溃会留下「Keychain 有密钥、列表没有、也没有 pending」的孤儿，对账认不出。
     // 这一步失败不改变提交结果（用户视角就是成功了），遗留标记会在下次对账时被
     // 识别为陈旧并单独清掉，不会牵连密钥。
     try {
@@ -97,7 +98,7 @@ class WalletCommitService {
   Future<void> _rollback({required Wallet wallet, required String? previousSelectedId}) async {
     try {
       if (_registry.currentWalletId == wallet.id) {
-        _registry.select(previousSelectedId);
+        await _registry.select(previousSelectedId);
       }
 
       if (_registry.contains(wallet.id)) {

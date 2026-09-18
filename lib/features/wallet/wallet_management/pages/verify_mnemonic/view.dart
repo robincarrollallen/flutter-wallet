@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../widgets/secret_guard.dart';
 import '../../../../../core/responsive/screen_adapter.dart';
 import '../../../../../widgets/app_toast.dart';
 import '../../../../../providers/modules/wallet/wallet_provider.dart';
+
 import 'package:wallet_core/wallet_core.dart';
+
 import '../../widgets/panel/view.dart';
 
 /// 备份步骤二之校验：把助记词打乱后让用户按原顺序依次点击，
@@ -68,51 +71,53 @@ class _VerifyMnemonicPageState extends ConsumerState<VerifyMnemonicPage> {
     return PanelPage(
       title: '校验助记词',
       showBack: true,
-      child: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.all(16.s),
-              children: [
-                Text(
-                  '请按抄写的顺序依次点击下方助记词，验证你已正确备份。',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-                SizedBox(height: 16.s),
-                _AnswerArea(
-                  picked: [for (final i in _picked) _pool[i]],
-                  total: _words.length,
-                  hasError: hasError,
-                  onUndo: _picked.isEmpty ? null : _undo,
-                ),
-                if (hasError) ...[
-                  SizedBox(height: 12.s),
+      child: SecretGuard(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.all(16.s),
+                children: [
                   Text(
-                    '顺序不正确，请点击右上角撤销后重新选择。',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                    '请按抄写的顺序依次点击下方助记词，验证你已正确备份。',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
+                  SizedBox(height: 16.s),
+                  _AnswerArea(
+                    picked: [for (final i in _picked) _pool[i]],
+                    total: _words.length,
+                    hasError: hasError,
+                    onUndo: _picked.isEmpty ? null : _undo,
+                  ),
+                  if (hasError) ...[
+                    SizedBox(height: 12.s),
+                    Text(
+                      '顺序不正确，请点击右上角撤销后重新选择。',
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                    ),
+                  ],
+                  SizedBox(height: 24.s),
+                  _WordPool(pool: _pool, pickedIndexes: _picked.toSet(), onPick: _pick),
                 ],
-                SizedBox(height: 24.s),
-                _WordPool(pool: _pool, pickedIndexes: _picked.toSet(), onPick: _pick),
-              ],
+              ),
             ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16.s, 8.s, 16.s, 12.s),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.s)),
-                  // 全部选完且顺序正确才可点击。
-                  onPressed: (_completed && _correct) ? _onConfirm : null,
-                  child: const Text('完成'),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16.s, 8.s, 16.s, 12.s),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.s)),
+                    // 全部选完且顺序正确才可点击。
+                    onPressed: (_completed && _correct) ? _onConfirm : null,
+                    child: const Text('完成'),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

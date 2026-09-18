@@ -72,6 +72,12 @@ mixin PersistentNotifier<T> on Notifier<T> {
   bool get persistedValueCorrupted => _corrupted;
   bool _corrupted = false;
 
+  /// 最近一次自动落盘。跨存储提交必须等它完成，不能把「内存已改」当成「盘上已有」。
+  Future<void> _writeFuture = Future.value();
+
+  /// 等到最近一次 [setString] 结束。
+  Future<void> flushed() => _writeFuture;
+
   /// 在 build() 里调用：用存储值全量恢复，并挂上「state 变化自动写回」的监听。
   /// 返回恢复后的初始 state；[initial] 同时充当缺失字段的默认值。
   T restore(T initial) {
@@ -93,9 +99,9 @@ mixin PersistentNotifier<T> on Notifier<T> {
       }
     }
 
-    /// 监听 state 变化，自动落盘
+    /// 监听 state 变化，自动落盘。Future 交给 [flushed]，调用方可以等到写完。
     listenSelf((_, next) {
-      _prefs.setString(persistKey.value, jsonEncode(toJson(next)));
+      _writeFuture = _prefs.setString(persistKey.value, jsonEncode(toJson(next))).then((_) {});
     });
     return s;
   }

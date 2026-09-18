@@ -92,6 +92,22 @@ void main() {
       );
     });
 
+    test('节点返回主网 chainId 时中止签名', () async {
+      final node = _FakeAptosService(ledgerChainId: 1);
+      await expectLater(
+        serviceWith(node).sendToken(
+          chain: chain,
+          token: token,
+          privateKey: privateKey,
+          fromAddress: sender.address,
+          to: recipient.address,
+          amount: '1.5',
+        ),
+        throwsA(predicate((error) => error.toString().contains('chainId=1'))),
+      );
+      expect(node.submittedTransaction, isNull);
+    });
+
     test('金额按代币精度换算，不是链的精度', () async {
       final node = _FakeAptosService();
       final result = await serviceWith(node).sendToken(
@@ -366,9 +382,10 @@ class _FixedBalances extends ChainBalanceApi {
 /// 与 `aptos_transfer_test.dart` 里那份同形。刻意各留一份而不是抽公共文件：
 /// 两边预设的响应会各自随被测路径演化，共用一份只会让其中一边被迫迁就另一边。
 class _FakeAptosService with AptosServiceProvider {
-  _FakeAptosService({this.simulationSucceeds = true});
+  _FakeAptosService({this.simulationSucceeds = true, this.ledgerChainId = 2});
 
   final bool simulationSucceeds;
+  final int ledgerChainId;
 
   final List<String> calls = [];
   List<int>? submittedTransaction;
@@ -408,8 +425,8 @@ class _FakeAptosService with AptosServiceProvider {
 
   AptosServiceResponse _ok(String body) => ServiceSuccessRespose(statusCode: 200, response: body);
 
-  static const Map<String, dynamic> _ledgerInfo = {
-    'chain_id': 2,
+  Map<String, dynamic> get _ledgerInfo => {
+    'chain_id': ledgerChainId,
     'epoch': '1',
     'ledger_version': '100',
     'oldest_ledger_version': '0',

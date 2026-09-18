@@ -3,6 +3,7 @@ import 'package:on_chain/tron/tron.dart';
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
+
 import '../model/models.dart';
 import 'transfer/transfer_result.dart';
 import '../internal/erc20_abi.dart';
@@ -199,6 +200,8 @@ class TronTransactionService {
       throw Exception('签名地址与钱包地址不一致');
     }
 
+    await _assertExpectedNetwork(chain, provider);
+
     // 2. 金额换算成 sun（TRX decimals = 6，不是 18）。
     // 非 final：MAX 全额转出时会在第 3 步被扣减。
     var value = parseUnits(amount, chain.decimals);
@@ -287,6 +290,8 @@ class TronTransactionService {
       throw Exception('签名地址与钱包地址不一致');
     }
 
+    await _assertExpectedNetwork(chain, provider);
+
     final value = parseUnits(amount, token.decimals);
     if (value <= BigInt.zero) throw Exception('转账金额必须大于 0');
     final recipient = TronAddress(to.trim());
@@ -311,6 +316,7 @@ class TronTransactionService {
       );
     }
 
+    final feeLimit = fee.energyFeeSun > BigInt.zero ? fee.energyFeeSun : BigInt.one;
     final unsigned = await provider.request(
       TronRequestTriggerSmartContract(
         ownerAddress: owner,
@@ -318,7 +324,7 @@ class TronTransactionService {
         functionSelector: 'transfer(address,uint256)',
         parameter: _transferParameter(recipient, value),
         // 上限按估算出的能量折算，够付就行；留 buffer 已在 energyNeeded 里做过。
-        feeLimit: fee.energyFeeSun > BigInt.zero ? fee.energyFeeSun : BigInt.one,
+        feeLimit: feeLimit,
       ),
     );
 
@@ -326,7 +332,14 @@ class TronTransactionService {
     if (transaction == null || !unsigned.result.result) {
       throw Exception('构造 ${token.symbol} 转账交易失败：${unsigned.result.message ?? '节点未说明原因'}');
     }
-    _verifyTokenCall(transaction.rawData, owner: owner, contract: contract, to: recipient, amount: value);
+    _verifyTokenCall(
+      transaction.rawData,
+      owner: owner,
+      contract: contract,
+      to: recipient,
+      amount: value,
+      feeLimit: feeLimit,
+    );
 
     final signature = signer.sign(transaction.rawData.toBuffer());
     final signed = Transaction(rawData: transaction.rawData, signature: [signature]);
@@ -351,12 +364,15 @@ class TronTransactionService {
   ///
   /// 与 [_verifyMatches] 同一用意，只是要多比 calldata：合约调用的收款方与金额
   /// 都藏在 ABI 编码的 data 里，不比对就等于让节点决定这笔代币转给谁。
+  /// `callValue` / `callTokenValue` / `tokenId` 必须为零或空：这是纯 TRC-20 transfer，
+  /// 节点塞进附带转账就会把 TRX 或 TRC-10 一并签进去。
   void _verifyTokenCall(
     TransactionRaw raw, {
     required TronAddress owner,
     required TronAddress contract,
     required TronAddress to,
     required BigInt amount,
+    required BigInt feeLimit,
   }) {
     final contracts = raw.contract;
     if (contracts.length != 1) {
@@ -369,11 +385,38 @@ class TronTransactionService {
     if (call.ownerAddress != owner || call.contractAddress != contract) {
       throw Exception('节点返回的合约调用与本次转账不一致，已中止签名');
     }
+    if ((call.callValue ?? BigInt.zero) != BigInt.zero ||
+        (call.callTokenValue ?? BigInt.zero) != BigInt.zero ||
+        call.tokenId != null) {
+      throw Exception('节点返回的合约调用附带了额外转账，已中止签名');
+    }
+    if (raw.feeLimit != null && raw.feeLimit! > feeLimit) {
+      throw Exception('节点返回的 feeLimit 高于本地上限，已中止签名');
+    }
     final expected = 'a9059cbb${_transferParameter(to, amount)}';
     final actual = BytesUtils.toHexString(call.data ?? const []);
     if (actual.toLowerCase() != expected.toLowerCase()) {
       throw Exception('节点返回的 calldata 与本次转账不一致，已中止签名');
     }
+  }
+
+  /// 创世块 ID 末 4 字节必须等于注册表钉死的 Nile chainId，否则拒签。
+  Future<void> _assertExpectedNetwork(Chain chain, TronProvider provider) async {
+    final genesis = await provider.request(TronRequestGetBlockByNum(num: 0));
+    final blockId = genesis['blockID'];
+    if (blockId is! String) {
+      throw Exception('无法读取创世块 ID，已中止签名');
+    }
+    chain.ensureGenesisHash(_tronGenesisIdentity(blockId));
+  }
+
+  /// Tron 的网络 ID 是创世块 ID 的末 4 字节（8 个十六进制字符）。
+  static String _tronGenesisIdentity(String blockId) {
+    final hex = (blockId.startsWith('0x') || blockId.startsWith('0X')) ? blockId.substring(2) : blockId;
+    if (hex.length < 8) {
+      throw Exception('创世块 ID 异常，已中止签名');
+    }
+    return hex.substring(hex.length - 8).toLowerCase();
   }
 
   /// 校验节点返回的交易与本地意图完全一致，不一致即抛。

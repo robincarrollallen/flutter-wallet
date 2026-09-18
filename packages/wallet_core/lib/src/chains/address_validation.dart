@@ -24,8 +24,9 @@ class AddressValidation {
       ChainKind.solana => _decodes(() => SolAddrDecoder().decodeAddr(addr)),
       ChainKind.tron => _decodes(() => TrxAddrDecoder().decodeAddr(addr)),
       ChainKind.bitcoin => _isValidBitcoinTestnet(addr),
-      // Sui / Aptos：32 字节十六进制，允许省略前导零。
-      ChainKind.sui || ChainKind.aptos => RegExp(r'^0x[0-9a-fA-F]{1,64}$').hasMatch(addr),
+      // 与签名层同一套解码器：宽松正则会放过签名时才会拒绝的截断地址。
+      ChainKind.sui => _decodes(() => SuiAddrDecoder().decodeAddr(addr)),
+      ChainKind.aptos => _decodes(() => AptosAddrDecoder().decodeAddr(addr)),
     };
     return valid ? null : '地址格式不正确，请检查是否为 ${chain.name} 地址';
   }

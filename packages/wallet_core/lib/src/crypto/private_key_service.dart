@@ -67,8 +67,9 @@ class PrivateKeyService {
         final bytes = Base58Decoder.decode(s);
         return bytes.length == 64 ? bytes.sublist(0, 32) : bytes;
       }(),
-      // 记录是位置式的，$2 即 32 字节私钥（$1 是曲线方案标志，签名时由调用方另判）。
-      PrivateKeyKind.suiBech32 => _decodeSui(s).$2,
+      // 目前没有 Sui 签名路径。secp256k1（flag 0x01）的字节若在这里丢掉方案标志，
+      // 将来默认按 ed25519 签就会对一个用户并不拥有的地址生效。未支持的曲线先拒绝。
+      PrivateKeyKind.suiBech32 => _decodeSuiSigningBytes(s),
       PrivateKeyKind.unknown => throw ArgumentError('无法识别的私钥格式，无法用于签名'),
     };
   }
@@ -148,6 +149,15 @@ class PrivateKeyService {
 
     final chain = SupportedChains.all.firstWhere((c) => c.kind == ChainKind.sui);
     return DerivedWallet(addresses: {chain.id: addr}, primaryPrivateKey: s);
+  }
+
+  /// 签名只用 ed25519（flag 0x00）。其它方案在有对应签名器之前一律拒绝。
+  static List<int> _decodeSuiSigningBytes(String s) {
+    final (flag, key) = _decodeSui(s);
+    if (flag != 0x00) {
+      throw ArgumentError('暂不支持的 Sui 私钥方案标志: $flag');
+    }
+    return key;
   }
 
   /// 解析 Sui `suiprivkey1...`：返回 (方案标志, 32 字节私钥)。

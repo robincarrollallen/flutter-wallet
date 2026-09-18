@@ -131,6 +131,33 @@ void main() {
     // 而"全绿"看起来毫无异常——这条断言是那个失效模式的唯一哨兵。
     expect(_dartFilesIn(packageTest).where((f) => f.path.endsWith('_test.dart')), isNotEmpty);
   });
+
+  test('app 不得绕过 PrivateKeyResolver 读密钥明文', () {
+    // 安全存储的 readMnemonic / readPrivateKey 是包内实现细节。app 只能走解析器，
+    // 否则「谁能拿到明文」这个问题在代码里就没有唯一答案。
+    final offenders = <String>[];
+    for (final file in _dartFilesIn(appLib)) {
+      for (final line in file.readAsLinesSync()) {
+        final trimmed = line.trim();
+        if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('///')) continue;
+        if (trimmed.contains('readMnemonic(') || trimmed.contains('readPrivateKey(')) {
+          offenders.add('${file.path}：$trimmed');
+        }
+      }
+    }
+    expect(offenders, isEmpty, reason: '绕过了私钥唯一出口：\n${offenders.join('\n')}');
+  });
+
+  test('导出私钥与备份助记词必须经过安全码', () {
+    for (final path in [
+      'lib/features/wallet/wallet_management/pages/export_private_key/view.dart',
+      'lib/features/wallet/wallet_management/pages/manual_backup/view.dart',
+    ]) {
+      final source = File(path).readAsStringSync();
+      expect(source, contains('confirmSecurityPassword'), reason: path);
+      expect(source, isNot(contains('TODO: 安全码')), reason: path);
+    }
+  });
 }
 
 /// 文件里的 import / export 指令行。

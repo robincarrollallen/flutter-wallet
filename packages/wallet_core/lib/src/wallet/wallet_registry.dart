@@ -23,8 +23,9 @@ abstract interface class WalletRegistry {
   /// 「确实没有」，任何以它为依据的删除动作都必须停手。
   bool get walletListTrusted;
 
-  /// 钱包入列表。
-  void add(Wallet wallet);
+  /// 钱包入列表。返回的 Future 在元数据落盘完成之后才结束——
+  /// [WalletCommitService] 必须等它，才能撤下 pending 标记。
+  Future<void> add(Wallet wallet);
 
   /// 移出列表；实现方需一并清除该钱包的敏感数据。
   ///
@@ -34,5 +35,6 @@ abstract interface class WalletRegistry {
   Future<void> remove(String walletId);
 
   /// 设置选中项，传 null 表示不选中任何钱包。
-  void select(String? walletId);
+  /// 同样等到选中 id 落盘完成，理由同 [add]。
+  Future<void> select(String? walletId);
 }

@@ -1,3 +1,4 @@
+import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/wallet_core.dart';
@@ -68,6 +69,11 @@ void main() {
       final sui = SupportedChains.all.firstWhere((c) => c.kind == ChainKind.sui);
       expect(w.primaryAddress, suiAddr);
       expect(w.addresses[sui.id], suiAddr);
+    });
+    test('secp256k1 Sui 私钥不能解成签名字节', () {
+      // 派生地址仍然按 flag 走对应曲线；签名路径在有 Sui 签名器之前必须拒绝。
+      final encoded = Bech32Encoder.encode('suiprivkey', [0x01, ...List<int>.filled(32, 0x22)]);
+      expect(() => PrivateKeyService.decodeToBytes(encoded), throwsArgumentError);
     });
   });
 

@@ -21,6 +21,8 @@ class Chain {
     required this.decimals,
     this.btcScriptType = BtcScriptType.p2wpkh,
     this.evmChainId,
+    this.aptosChainId,
+    this.genesisHash,
     this.nativeBalanceRpcMethod,
     this.coinGeckoPlatformId,
     this.explorerTxUrlTemplate,
@@ -61,6 +63,13 @@ class Chain {
   /// EVM 链的 chainId<数字>(EIP-155 签名必需, 非 EVM 链为空)
   final int? evmChainId;
 
+  /// Aptos 签名域。测试网为 2，主网为 1。节点 ledger.chainId 必须等于此值才签名。
+  final int? aptosChainId;
+
+  /// 网络身份钉。Solana 是创世哈希；Tron 是创世块 ID 的末 4 字节（不含 `0x`）。
+  /// 签名前与节点声明比对，防止测试网 UI 签出主网交易。
+  final String? genesisHash;
+
   /// 原生币余额 RPC 方法（非 JSON-RPC 链为空）
   final RpcMethod? nativeBalanceRpcMethod;
 
@@ -78,6 +87,28 @@ class Chain {
 
   /// 这笔交易在区块浏览器上的地址；没配模板的链返回 null（调用方据此隐藏入口）。
   String? explorerTxUrl(String transactionHash) => explorerTxUrlTemplate?.replaceAll('{hash}', transactionHash);
+
+  /// 节点声明的网络身份必须与注册表钉死的值一致，否则拒签。
+  void ensureGenesisHash(String actual) {
+    final expected = genesisHash;
+    if (expected == null) {
+      throw StateError('$name 未配置 genesisHash，无法校验网络身份');
+    }
+    if (actual.toLowerCase() != expected.toLowerCase()) {
+      throw Exception('节点不在 $name 上，已中止签名');
+    }
+  }
+
+  /// Aptos ledger.chainId 必须等于注册表钉死的值，否则拒签。
+  void ensureAptosChainId(int actual) {
+    final expected = aptosChainId;
+    if (expected == null) {
+      throw StateError('$name 未配置 aptosChainId，无法校验签名域');
+    }
+    if (actual != expected) {
+      throw Exception('节点 chainId=$actual，与 $name 期望的 $expected 不一致，已中止签名');
+    }
+  }
 
   /// 该链的派生方案：地址派生只认它，链的其余配置（endpoint / 价格 id 等）都与派生无关。
   DerivationScheme get derivation =>
@@ -222,6 +253,7 @@ class SupportedChains {
     decimals: 9,
     nativeBalanceRpcMethod: RpcMethod.solGetBalance,
     coinGeckoPlatformId: 'solana',
+    genesisHash: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',
     explorerTxUrlTemplate: 'https://explorer.solana.com/tx/{hash}?cluster=devnet',
   );
 
@@ -244,6 +276,8 @@ class SupportedChains {
     coinGeckoId: 'tron',
     decimals: 6,
     coinGeckoPlatformId: 'tron',
+    // Nile 的 eth_chainId / 创世块 ID 末 4 字节。主网是 2b6653dc。
+    genesisHash: 'cd8690dc',
     explorerTxUrlTemplate: 'https://nile.tronscan.org/#/transaction/{hash}',
   );
 
@@ -275,6 +309,7 @@ class SupportedChains {
     coinGeckoId: 'aptos',
     decimals: 8,
     coinGeckoPlatformId: 'aptos',
+    aptosChainId: 2,
     explorerTxUrlTemplate: 'https://explorer.aptoslabs.com/txn/{hash}?network=testnet',
   );
 

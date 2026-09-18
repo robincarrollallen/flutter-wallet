@@ -73,7 +73,7 @@ void main() {
       expect(sent.rawTransaction.sequenceNumber, BigInt.from(5), reason: '必须用实查的序列号');
       expect(sent.rawTransaction.gasUnitPrice, BigInt.from(regularGasPrice));
       expect(sent.rawTransaction.maxGasAmount, maxGasAmount);
-      expect(sent.rawTransaction.chainId, 2, reason: 'chainId 取自 ledger info');
+      expect(sent.rawTransaction.chainId, 2, reason: 'chainId 必须等于注册表钉死的测试网值');
 
       // 走的是 aptos_account::transfer 而不是 coin::transfer——后者对未上链的
       // 收款方会直接失败。
@@ -81,6 +81,21 @@ void main() {
       expect(payload.entryFunction.moduleId.address, AptosAddress.one);
       expect(payload.entryFunction.moduleId.name, 'aptos_account');
       expect(payload.entryFunction.functionName, 'transfer');
+    });
+
+    test('节点返回主网 chainId 时中止签名', () async {
+      final node = _FakeAptosService(ledgerChainId: 1);
+      await expectLater(
+        serviceWith(node).sendNative(
+          chain: chain,
+          privateKey: privateKey,
+          fromAddress: sender.address,
+          to: recipient.address,
+          amount: '0.5',
+        ),
+        throwsA(predicate((error) => error.toString().contains('chainId=1'))),
+      );
+      expect(node.submittedTransaction, isNull);
     });
 
     test('序列号只查一次', () async {
@@ -371,6 +386,7 @@ class _FakeAptosService with AptosServiceProvider {
     this.deprioritizedGasPrice = 90,
     this.recipientAccountExists = true,
     this.submitHash,
+    this.ledgerChainId = 2,
   });
 
   final bool simulationSucceeds;
@@ -384,6 +400,9 @@ class _FakeAptosService with AptosServiceProvider {
 
   /// 让节点回一个与本地算出的不同的哈希，用于测那条一致性校验。null 表示回真哈希。
   final String? submitHash;
+
+  /// 节点自称的 chainId。默认测试网 2；测换网时改成主网 1。
+  final int ledgerChainId;
 
   /// 发送方地址，用来把「查发送方序列号」和「查收款方存不存在」两次 /accounts 分开。
   static final String _senderAddress =
@@ -448,8 +467,8 @@ class _FakeAptosService with AptosServiceProvider {
 
   AptosServiceResponse _ok(String body) => ServiceSuccessRespose(statusCode: 200, response: body);
 
-  static const Map<String, dynamic> _ledgerInfo = {
-    'chain_id': 2,
+  Map<String, dynamic> get _ledgerInfo => {
+    'chain_id': ledgerChainId,
     'epoch': '1',
     'ledger_version': '100',
     'oldest_ledger_version': '0',

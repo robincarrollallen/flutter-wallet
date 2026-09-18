@@ -94,4 +94,13 @@ void main() {
     }
     expect(AddressValidation.validate(btc, 'tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsy'), isNotNull); // 校验和错误
   });
+
+  test('Sui / Aptos 地址校验与解码器同一口径', () {
+    final aptos = SupportedChains.aptosTestnet;
+    final sui = SupportedChains.suiTestnet;
+    expect(AddressValidation.validate(aptos, '0x1'), isNull);
+    expect(AddressValidation.validate(sui, '0x${'ab' * 32}'), isNull);
+    expect(AddressValidation.validate(sui, '0x2'), isNotNull);
+    expect(AddressValidation.validate(aptos, 'not-an-address'), isNotNull);
+  });
 }

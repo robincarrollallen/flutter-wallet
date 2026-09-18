@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/responsive/screen_adapter.dart';
+import '../../core/navigation/panel_routes.dart';
 import '../../i18n/translations.g.dart';
 import '../../providers/modules/market/currency_provider.dart';
+import '../../providers/core/service_provider.dart';
 import '../../router/routes.dart';
+import '../wallet/security_password/set_security_password_page.dart';
 
 /// 设置面板：从屏幕顶部下滑进入的全屏毛玻璃覆盖层。
 ///
@@ -63,7 +66,21 @@ class SettingsPanel extends StatelessWidget {
                         onTap: () => context.push(AppRoute.settingsCurrency),
                       ),
                     ),
-                    _SettingsTile(icon: Icons.shield_outlined, title: t.settings.security),
+                    Consumer(
+                      builder: (context, ref, _) => _SettingsTile(
+                        icon: Icons.shield_outlined,
+                        title: t.settings.security,
+                        onTap: () async {
+                          final hasPassword = await ref.read(securityPasswordServiceProvider).hasPassword();
+                          if (!context.mounted) return;
+                          if (hasPassword) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('安全码已设置')));
+                            return;
+                          }
+                          Navigator.of(context).push(panelSlideRoute(const SetSecurityPasswordPage()));
+                        },
+                      ),
+                    ),
                     _SettingsTile(icon: Icons.info_outline, title: t.settings.about),
                     // 调试入口：查看当前主题所有颜色及对应变量。
                     _SettingsTile(

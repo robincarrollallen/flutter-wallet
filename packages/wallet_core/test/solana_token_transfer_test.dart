@@ -58,6 +58,7 @@ class _FakeSolanaService with SolanaServiceProvider {
     BigInt? tokenBalance,
     this.sourceExists = true,
     this.destinationExists = true,
+    this.genesisHash = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',
   }) : solBalance = solBalance ?? BigInt.from(1000000000), // 1 SOL
        tokenBalance = tokenBalance ?? BigInt.from(100000000); // 100 USDC（6 位精度）
 
@@ -72,6 +73,8 @@ class _FakeSolanaService with SolanaServiceProvider {
 
   /// 收款方 ATA 是否存在。false = 本次要顺带创建。
   final bool destinationExists;
+
+  final String genesisHash;
 
   /// 优先费样本恒为空：本文件只管代币路径的账户与精度，三档分位的算法
   /// 已由 `solana_transfer_test.dart` 的「优先费三档」覆盖，不重复一遍。
@@ -96,6 +99,7 @@ class _FakeSolanaService with SolanaServiceProvider {
         'context': {'slot': 1},
         'value': {'blockhash': _blockhash.address, 'lastValidBlockHeight': 100},
       },
+      'getGenesisHash' => genesisHash,
       'getFeeForMessage' => {
         'context': {'slot': 1},
         'value': _fee.toInt(),
@@ -417,6 +421,15 @@ void main() {
       await _send(node);
 
       expect(node.calls.where((m) => m == 'getLatestBlockhash'), hasLength(1));
+    });
+
+    test('节点返回主网创世哈希时中止签名', () async {
+      final node = _FakeSolanaService(genesisHash: '5eykt4UsFv8P8NJdTREpY1vzq2piYYL4jUksMNPE5cyk');
+      await expectLater(
+        _send(node),
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('节点不在'))),
+      );
+      expect(node.broadcastPayload, isNull);
     });
   });
 }

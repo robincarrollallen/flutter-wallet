@@ -49,8 +49,9 @@ class WalletListPage extends ConsumerWidget {
                 return WalletTile(
                   wallet: wallet,
                   selected: selected,
-                  onTap: () {
-                    ref.read(currentWalletIdProvider.notifier).select(wallet.id);
+                  onTap: () async {
+                    await ref.read(currentWalletIdProvider.notifier).select(wallet.id);
+                    if (!context.mounted) return;
                     Navigator.of(context, rootNavigator: true).pop();
                   },
                   // 卡片内「选项」按钮进入钱包详情。

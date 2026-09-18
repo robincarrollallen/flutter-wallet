@@ -194,8 +194,10 @@ void main() {
       );
     });
 
-    test('Sui/Aptos：32 字节十六进制', () {
-      expect(SendLogic.validateAddress(SupportedChains.suiTestnet, '0x2'), isNull);
+    test('Sui 要满 32 字节，Aptos 允许短地址', () {
+      expect(SendLogic.validateAddress(SupportedChains.suiTestnet, '0x${'ab' * 32}'), isNull);
+      expect(SendLogic.validateAddress(SupportedChains.suiTestnet, '0x2'), isNotNull);
+      expect(SendLogic.validateAddress(SupportedChains.aptosTestnet, '0x1'), isNull);
       expect(SendLogic.validateAddress(SupportedChains.aptosTestnet, '0x'), isNotNull);
     });
   });

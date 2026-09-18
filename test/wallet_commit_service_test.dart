@@ -45,7 +45,7 @@ class _FakeWalletRegistry implements WalletRegistry {
   Set<String> get knownWalletIds => wallets.map((w) => w.id).toSet();
 
   @override
-  void add(Wallet wallet) {
+  Future<void> add(Wallet wallet) async {
     if (throwOnAdd) throw Exception('prefs write failed');
     wallets.add(wallet);
   }
@@ -57,7 +57,7 @@ class _FakeWalletRegistry implements WalletRegistry {
   }
 
   @override
-  void select(String? walletId) {
+  Future<void> select(String? walletId) async {
     if (throwOnFirstSelect) {
       throwOnFirstSelect = false;
       throw Exception('prefs write failed');
@@ -69,7 +69,7 @@ class _FakeWalletRegistry implements WalletRegistry {
 /// 元数据落盘失败：模拟钱包入列表这一步抛异常。（仅端到端组用）
 class _ThrowingWalletListNotifier extends WalletListNotifier {
   @override
-  void add(Wallet wallet) => throw Exception('prefs write failed');
+  Future<void> add(Wallet wallet) async => throw Exception('prefs write failed');
 }
 
 Wallet _wallet(String id) => Wallet(id: id, name: 'W-$id', addresses: const {'evm': '0xabc'});

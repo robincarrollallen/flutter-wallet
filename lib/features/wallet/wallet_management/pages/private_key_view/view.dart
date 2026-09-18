@@ -25,7 +25,7 @@ class PrivateKeyViewPage extends ConsumerStatefulWidget {
   ConsumerState<PrivateKeyViewPage> createState() => _PrivateKeyViewPageState();
 }
 
-class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> {
+class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> with WidgetsBindingObserver {
   /// 已展示的私钥明文，仅在用户点击「展示」后按需读取，离开页面即清空。
   String? _privateKey;
   bool _loading = false;
@@ -35,11 +35,25 @@ class _PrivateKeyViewPageState extends ConsumerState<PrivateKeyViewPage> {
   Timer? _hideTimer;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _hideTimer?.cancel();
     // 主动断开对私钥明文的引用，缩短其在内存中的存活时间。
     _privateKey = null;
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed && _privateKey != null) {
+      setState(() => _privateKey = null);
+    }
   }
 
   /// 到时自动收起明文。
@@ -212,10 +226,12 @@ class _RevealedContent extends StatelessWidget {
       children: [
         // 二维码（白底方框，边长 _qrBoxSize）。
         Center(
-          child: Container(
-            padding: EdgeInsets.all(12.s),
-            color: Colors.white,
-            child: QrImageView(data: privateKey, version: QrVersions.auto, size: 200.s),
+          child: SecretGuard(
+            child: Container(
+              padding: EdgeInsets.all(12.s),
+              color: Colors.white,
+              child: QrImageView(data: privateKey, version: QrVersions.auto, size: 200.s),
+            ),
           ),
         ),
         SizedBox(height: 24.s),
