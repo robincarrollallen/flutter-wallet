@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+#
+# 第二层防线：提交前拦截格式问题。
+#
+# 编辑器的 formatOnSave（见 .vscode/settings.json）覆盖不到的场景由它兜底：
+# 用别的编辑器、命令行 patch、cherry-pick、AI 工具直接写文件、以及关掉了
+# formatOnSave 的人。
+#
+# **校验的是已 stage 的内容，不是工作区。** 这两者经常不同：暂存了一部分改动、
+# 工作区还留着另一半，是很常见的状态。若照搬 CI 的 `dart format lib test`
+# 去扫整个工作区，一个无关的未格式化文件就会拦下你本次提交——这种误报会把人
+# 逼去用 --no-verify，等于废掉这道防线。所以这里逐个取 stage 区的 blob 校验，
+# 只对「这次真要提交的东西」负责。
+#
+# 只做检查不改文件：偷偷重写已 stage 的内容，会让提交出来的东西和你 review 过的
+# 不是同一份。报错并给出修复命令，由人决定。
+#
+# 安装（每个 clone 各做一次，.git/hooks 不随 git 分发）：
+#   git config core.hooksPath tool/hooks
+#
+# 临时跳过：git commit --no-verify（CI 照样会拦，只是把问题推后）
+
+set -euo pipefail
+
+# 只看本次提交新增/修改的 Dart 文件（D 删除的不必校验）。
+# 路径限定与 CI 的检查范围一致：lib/ 和 test/。
+# 不用 mapfile / readarray：那是 bash 4+ 的东西，macOS 自带的仍是 bash 3.2。
+staged=$(git diff --cached --name-only --diff-filter=ACM -- 'lib' 'test' | grep '\.dart$' || true)
+
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+offenders=""
+while IFS= read -r path; do
+  [ -z "$path" ] && continue
+  # `git show :path` 取的是 stage 区的内容，而非工作区的文件。
+  # dart format 仍会读项目根的 analysis_options.yaml（formatter.page_width），
+  # --stdin-name 只是让它知道这段代码「算作」哪个路径。
+  if ! git show ":$path" | dart format --output=show --stdin-name="$path" 2>/dev/null \
+      | diff -q - <(git show ":$path") >/dev/null 2>&1; then
+    offenders="$offenders$path
+"
+  fi
+done <<EOF
+$staged
+EOF
+
+if [ -n "$offenders" ]; then
+  echo "✗ 以下已暂存的文件未通过格式检查，CI 会因此报红：" >&2
+  printf '%s' "$offenders" | sed 's/^/    /' >&2
+  echo >&2
+  echo "修复：dart format $(printf '%s' "$offenders" | tr '\n' ' ')&& git add -u" >&2
+  echo "或整仓：dart format lib test && git add -u" >&2
+  exit 1
+fi

@@ -1,0 +1,26 @@
+{
+  // 第一层防线：保存即格式化。
+  //
+  // 格式检查在 CI 里是一票否决（dart format --set-exit-if-changed），而人是记不住
+  // 「提交前跑一次」的——这次整仓不合规就是这么攒出来的。让它在写代码的那一刻自动
+  // 发生，比在流程末端拦截要省事得多。
+  //
+  // Dart 插件读的是项目根的 analysis_options.yaml（formatter.page_width），
+  // 与 CI 用的是同一份配置，不会出现「编辑器排好了 CI 还是红」的情况。
+  "editor.formatOnSave": true,
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit"
+    }
+  },
+
+  // 生成物与构建产物不进搜索结果，避免在 lib/i18n/*.g.dart 里改到不该改的地方
+  // （那些文件由 dart run slang 生成，CI 有一步专门校验它们与 locale json 同步）。
+  "search.exclude": {
+    "**/.dart_tool": true,
+    "**/build": true,
+    "**/*.g.dart": true
+  }
+}
