@@ -64,18 +64,33 @@ class SuiTransactionService {
   /// 于是连「这笔要花多少」都问不出来。所以实际用的是它与账户余额的较小者。
   static final BigInt _provisionalGasBudgetCap = BigInt.from(1000000000);
 
-  /// dry run 实测净费用之上留的余量：`净费用 × 3 ÷ 2 + 1000000`（0.001 SUI）。
+  /// 预算按**毛支出**（computation + storage）算，**不是**按净费用（毛支出 − 存储返还）。
   ///
-  /// 必须留：dry run 跑的是当前状态，真正执行时链上状态已经变了（收款方可能刚被
-  /// 别人建好、存储返还也会随之不同），用量会有出入。**两头的代价不对等**——
-  /// 预算少了交易直接 InsufficientGas 失败且 gas 照扣，多了只是多冻一会儿、
-  /// 执行完就退回。
+  /// 这一点是 2026-09-19 在 testnet 上实测踩出来的。拿一个有 3 个 coin 对象的账户
+  /// 做代币转账，dry run 给出：computation 1000000、storage 3632800、
+  /// **rebate 4905648**——退的比花的多，净费用是 **−272848**。按净费用算预算会得到
+  /// 夹零后的 1000000，而实测：
   ///
-  /// 加法项不能省：净费用可能因为存储返还而接近 0，只乘 1.5 倍等于没留余量。
-  static BigInt _gasBudgetFor(BigInt netGasFee) => netGasFee * BigInt.from(3) ~/ BigInt.two + BigInt.from(1000000);
+  /// ```
+  /// 预算 1000000 → failure InsufficientGas
+  /// 预算 4632800 → success          // 正好是 computation + storage
+  /// ```
+  ///
+  /// 也就是说链上要求的额度跟着**毛支出**走，存储返还是执行完才退回来的，
+  /// 不能拿它先把预算冲抵掉。合并的对象越多返还越大、净费用越低甚至为负，
+  /// 按净费用算就越不够——**碎片越多越容易炸**，而那恰恰是代币转账的常见场景。
+  ///
+  /// 余量取 `毛支出 × 3 ÷ 2 + 1000000`：dry run 跑的是当前状态，真正执行时链上
+  /// 状态已经变了，用量会有出入。**两头的代价不对等**——预算少了交易直接
+  /// InsufficientGas 失败且 gas 照扣，多了只是多冻一会儿、执行完就退回。
+  static BigInt _gasBudgetFor(BigInt grossGasCost) => grossGasCost * BigInt.from(3) ~/ BigInt.two + BigInt.from(1000000);
 
-  /// Sui 协议要求的最低预算。低于它交易在校验阶段就被拒。
-  static final BigInt _minimumGasBudget = BigInt.from(2000);
+  /// Sui 协议要求的最低预算：**1000000**。
+  ///
+  /// 低于它节点在校验入参时就拒掉，连执行都进不去（实测报
+  /// `-32602 Gas budget: 2000 is lower than min: 1000000`）。
+  /// 这里原先写的 2000 小了 500 倍，是凭印象填的。
+  static final BigInt _minimumGasBudget = BigInt.from(1000000);
 
   /// dry run 的探测金额，固定 1 MIST。
   ///
@@ -465,7 +480,12 @@ class SuiTransactionService {
     // **代币**不需要这个空档：转出的是代币 object，SUI 只出 gas，预算吃满 SUI 余额
     // 也不会跟转出额抢。别把两条「统一」成一种写法——统一成代币那种，原生就退回上面那个 bug。
     final budgetCeiling = tokenCoins.isEmpty ? balance - _probeValue : balance;
-    if (budgetCeiling <= BigInt.zero) throw Exception('余额不足以支付网络费用');
+    // 低于协议最低预算就直接说「余额不足」。不这么拦的话，[_clampBudget] 会把预算
+    // 抬到最低值、于是超过余额，dry run 必然失败，用户看到的会是一句
+    // 「网络费用估算失败」——那听起来像网络出了问题，而实际原因是钱不够。
+    if (budgetCeiling < _minimumGasBudget) {
+      throw Exception('余额不足以支付网络费用：至少需要 ${formatUnits(_minimumGasBudget, 9)} SUI');
+    }
     final provisionalBudget = _clampBudget(budgetCeiling < _provisionalGasBudgetCap ? budgetCeiling : _provisionalGasBudgetCap);
 
     final probe = _buildTransfer(sender: sender, recipient: recipient, value: _probeValue, gasPayment: coins, gasPrice: gasPrice, gasBudget: provisionalBudget, tokenCoins: tokenCoins);
@@ -481,12 +501,23 @@ class SuiTransactionService {
     }
 
     final gasUsed = dryRun.effects.gasUsed;
-    // 存储返还可能大于支出（销毁的旧对象退的押金比新对象收的多），净额因此可能为负。
-    // 夹到 0 而不是让负数流下去：下游要拿它算预算和「还能转多少」，
-    // 一个负的费用会让这两处都算出比实际更宽松的数。
-    final netGasFee = _clampToZero(gasUsed.computationCost + gasUsed.storageCost - gasUsed.storageRebate);
 
-    return SuiFeeEstimate(referenceGasPrice: gasPrice, netGasFee: netGasFee, gasBudget: _clampBudget(_gasBudgetFor(netGasFee)));
+    // 两个数，用途不同，**不能互相替代**：
+    //
+    // - 毛支出：链上按它要求预算（存储返还是执行完才退的，冲抵不了预算），
+    //   所以 [_gasBudgetFor] 只吃这个数。
+    // - 净费用：用户实际承担的，确认页显示的就是它。
+    //
+    // 早先两处都用净费用，在碎片多、返还大于支出的账户上会算出不够的预算而
+    // InsufficientGas——详见 [_gasBudgetFor] 的实测记录。
+    final grossGasCost = gasUsed.computationCost + gasUsed.storageCost;
+
+    // 存储返还可能大于支出（销毁的旧对象退的押金比新对象收的多），净额因此可能为负。
+    // 夹到 0 而不是让负数流下去：下游要拿它算「还能转多少」，
+    // 一个负的费用会让那里算出比实际更宽松的数。
+    final netGasFee = _clampToZero(grossGasCost - gasUsed.storageRebate);
+
+    return SuiFeeEstimate(referenceGasPrice: gasPrice, netGasFee: netGasFee, gasBudget: _clampBudget(_gasBudgetFor(grossGasCost)));
   }
 
   /// 取发送方名下的 SUI coin 对象。

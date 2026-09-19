@@ -22,9 +22,13 @@ void main() {
   final sender = account.toAddress();
   final recipient = SuiEd25519Account(SuiED25519PrivateKey.fromBytes(List<int>.filled(32, 9))).toAddress();
 
-  // 假节点的 dry run 结果：净费用 = 1000000 + 1976000 - 978120，预算 = 净费用 × 3 ÷ 2 + 1000000。
-  final netGasFee = BigInt.from(1997880);
-  final gasBudget = netGasFee * BigInt.from(3) ~/ BigInt.two + BigInt.from(1000000);
+  // 假节点的 dry run 结果。净费用与毛支出是两个数，用途不同，见 sui_transfer_test 的说明。
+  final computationCost = BigInt.from(1000000);
+  final storageCost = BigInt.from(1976000);
+  final storageRebate = BigInt.from(978120);
+  final netGasFee = computationCost + storageCost - storageRebate;
+  final grossGasCost = computationCost + storageCost;
+  final gasBudget = grossGasCost * BigInt.from(3) ~/ BigInt.two + BigInt.from(1000000);
 
   SuiTransactionService serviceWith(_FakeSuiService node) => SuiTransactionService(provider: SuiProvider(node));
 
@@ -126,7 +130,9 @@ void main() {
 
     test('SUI 不足以支付 gas 时报错', () async {
       // 代币再多也付不了手续费——gas 是另一本账。
-      final node = _FakeSuiService(coinBalances: [BigInt.from(2000)]);
+      // 1.5M 够过协议最低预算（1M）、估得出费用，但盖不住算出来的预算 5464000。
+      // 若填得比最低预算还低，会先被「余额不足以支付网络费用」拦下，测不到这条。
+      final node = _FakeSuiService(coinBalances: [BigInt.from(1500000)]);
       await expectLater(
         serviceWith(node).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0.5'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('${chain.symbol} 不足以支付网络费'))),

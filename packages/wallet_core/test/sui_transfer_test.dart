@@ -22,10 +22,17 @@ void main() {
   final sender = account.toAddress();
   final recipient = SuiEd25519Account(SuiED25519PrivateKey.fromBytes(List<int>.filled(32, 9))).toAddress();
 
-  // 假节点给的 dry run 结果：净费用 = 1000000 + 1976000 - 978120。
-  final netGasFee = BigInt.from(1997880);
-  // 服务据此算出的预算 = 净费用 × 3 ÷ 2 + 1000000。
-  final gasBudget = netGasFee * BigInt.from(3) ~/ BigInt.two + BigInt.from(1000000);
+  // 假节点给的 dry run 结果，拆开写是因为**两个数各有各的用途**：
+  final computationCost = BigInt.from(1000000);
+  final storageCost = BigInt.from(1976000);
+  final storageRebate = BigInt.from(978120);
+  // 净费用 = 用户实际承担的，确认页显示它。
+  final netGasFee = computationCost + storageCost - storageRebate;
+  // 毛支出 = 链上按它要求预算（存储返还是执行完才退的，冲抵不了预算）。
+  final grossGasCost = computationCost + storageCost;
+  // 预算 = 毛支出 × 3 ÷ 2 + 1000000。**不是**按净费用算——按净费用算会在
+  // 返还大于支出的账户上给出不够的预算而 InsufficientGas（testnet 实测）。
+  final gasBudget = grossGasCost * BigInt.from(3) ~/ BigInt.two + BigInt.from(1000000);
   final referenceGasPrice = BigInt.from(1000);
 
   /// 发送方余额：1 SUI（decimals = 9），拆成两个 coin 对象，顺带覆盖多对象付款。
@@ -241,6 +248,30 @@ void main() {
       );
     });
 
+    test('返还大于支出时，预算仍按毛支出算，够覆盖链上要求', () async {
+      // 这组数字是 2026-09-19 在 testnet 上实测来的：一个有 3 个 coin 对象的账户做
+      // 代币转账，合并销毁对象退回的押金比花掉的还多，净费用是 **负的**。
+      //
+      // 旧实现按净费用算预算，夹零后得到 1000000——实测那笔 InsufficientGas 直接失败，
+      // 而 4632800（= 毛支出）能成功。所以预算必须跟着毛支出走。
+      final node = _FakeSuiService(storageCost: BigInt.from(3632800), storageRebate: BigInt.from(4905648));
+      final estimate = await serviceWith(node).estimateNativeFee(chain: chain, from: sender.address, to: recipient.address);
+
+      final gross = BigInt.from(1000000) + BigInt.from(3632800);
+      expect(estimate.netGasFee, BigInt.zero, reason: '净费用为负，夹到 0');
+      expect(estimate.gasBudget, greaterThanOrEqualTo(gross), reason: '预算必须盖住毛支出 $gross——按净费用算会得到 1000000，链上会判 InsufficientGas');
+    });
+
+    test('余额低于协议最低预算时说「余额不足」，而不是「估算失败」', () async {
+      // 协议最低预算是 1000000（实测：低于它节点在校验入参时就拒）。
+      // 余额不够时必须说清是钱不够，说成「网络费用估算失败」会让用户以为是网络问题。
+      final node = _FakeSuiService(coinBalances: [BigInt.from(999999)]);
+      await expectLater(
+        serviceWith(node).estimateNativeFee(chain: chain, from: sender.address, to: recipient.address),
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('余额不足以支付网络费用'))),
+      );
+    });
+
     test('存储返还大于支出时净费用夹到 0，不让负数流下去', () async {
       final node = _FakeSuiService(storageRebate: BigInt.from(99999999));
       final estimate = await serviceWith(node).estimateNativeFee(chain: chain, from: sender.address, to: recipient.address);
@@ -314,12 +345,14 @@ class _FakeSuiService with SuiServiceProvider {
     this.chainIdentifier = '4c78adac',
     List<BigInt>? coinBalances,
     BigInt? storageRebate,
+    BigInt? storageCost,
     this.responseDigest,
     this.receiptStatus = 'success',
     this.receiptFound = true,
     this.dryRunStatus = 'success',
   }) : coinBalances = coinBalances ?? [BigInt.from(600000000), BigInt.from(400000000)],
-       storageRebate = storageRebate ?? BigInt.from(978120);
+       storageRebate = storageRebate ?? BigInt.from(978120),
+       storageCost = storageCost ?? BigInt.from(1976000);
 
   /// 节点自称的链身份。默认 testnet 钉死值，测换网时改成主网的 35834a8a。
   final String chainIdentifier;
@@ -329,6 +362,10 @@ class _FakeSuiService with SuiServiceProvider {
 
   /// dry run 回的存储返还。调大可让净费用变成负数，用于测夹零。
   final BigInt storageRebate;
+
+  /// dry run 回的存储支出。与 [storageRebate] 分开可调，用来构造
+  /// 「返还大于支出、净费用为负」这种碎片账户上的真实场景。
+  final BigInt storageCost;
 
   /// 让节点回一个与本地算出的不同的 digest，用于测那条一致性校验。null 表示回真 digest。
   final String? responseDigest;
@@ -390,7 +427,7 @@ class _FakeSuiService with SuiServiceProvider {
       'input': _inputBlock(),
       // 失败时把 storageCost 减半，模拟真实节点「执行中断、只算到一半」的响应：
       // 实现若不看 status 就用这份数，费用会少算一半（testnet 上实际发生过）。
-      'effects': _effects(status: dryRunStatus, storageCost: dryRunStatus == 'success' ? '1976000' : '988000'),
+      'effects': _effects(status: dryRunStatus, storageCost: dryRunStatus == 'success' ? storageCost.toString() : '988000'),
     };
   }
 
@@ -420,7 +457,7 @@ class _FakeSuiService with SuiServiceProvider {
       'owner': {'AddressOwner': '0x${'0'.padLeft(64, '0')}'},
       'reference': _objectRef(),
     },
-    'gasUsed': {'computationCost': '1000000', 'storageCost': '1976000', 'storageRebate': storageRebate.toString(), 'nonRefundableStorageFee': '0'},
+    'gasUsed': {'computationCost': '1000000', 'storageCost': storageCost, 'storageRebate': storageRebate.toString(), 'nonRefundableStorageFee': '0'},
     'status': {'status': status, 'error': null},
     'transactionDigest': Base58Encoder.encode(List<int>.filled(32, 3)),
     'created': null,
