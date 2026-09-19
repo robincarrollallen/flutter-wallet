@@ -21,10 +21,7 @@ final _token = BundledTokenCatalog.all.firstWhere((t) => t.chainId == _chain.id 
 final _mint = SolAddress(_token.identifier);
 
 final _sourceAta = AssociatedTokenAccountProgramUtils.associatedTokenAccount(mint: _mint, owner: _owner).address;
-final _destinationAta = AssociatedTokenAccountProgramUtils.associatedTokenAccount(
-  mint: _mint,
-  owner: _recipient,
-).address;
+final _destinationAta = AssociatedTokenAccountProgramUtils.associatedTokenAccount(mint: _mint, owner: _recipient).address;
 
 /// 每签名费。
 final _fee = BigInt.from(5000);
@@ -53,14 +50,9 @@ String _tokenAccountData(BigInt amount) {
 /// 与 `solana_transfer_test.dart` 里那个同构，但多了 `getAccountInfo` 的按地址分流——
 /// 两个 ATA 的存在与否是本文件几乎每条用例的分歧点。
 class _FakeSolanaService with SolanaServiceProvider {
-  _FakeSolanaService({
-    BigInt? solBalance,
-    BigInt? tokenBalance,
-    this.sourceExists = true,
-    this.destinationExists = true,
-    this.genesisHash = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG',
-  }) : solBalance = solBalance ?? BigInt.from(1000000000), // 1 SOL
-       tokenBalance = tokenBalance ?? BigInt.from(100000000); // 100 USDC（6 位精度）
+  _FakeSolanaService({BigInt? solBalance, BigInt? tokenBalance, this.sourceExists = true, this.destinationExists = true, this.genesisHash = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG'})
+    : solBalance = solBalance ?? BigInt.from(1000000000), // 1 SOL
+      tokenBalance = tokenBalance ?? BigInt.from(100000000); // 100 USDC（6 位精度）
 
   /// 发送方的 SOL 余额（lamport），用来付网络费与 ATA 租金。
   final BigInt solBalance;
@@ -120,10 +112,7 @@ class _FakeSolanaService with SolanaServiceProvider {
       _ => throw StateError('未预设的 RPC 方法: $method'),
     };
 
-    return ServiceSuccessRespose(
-      statusCode: 200,
-      response: jsonEncode({'jsonrpc': '2.0', 'id': body['id'], 'result': result}),
-    );
+    return ServiceSuccessRespose(statusCode: 200, response: jsonEncode({'jsonrpc': '2.0', 'id': body['id'], 'result': result}));
   }
 
   int _recordRentExemption(List<dynamic> requestParams) {
@@ -157,15 +146,12 @@ class _FakeSolanaService with SolanaServiceProvider {
 
 SolanaTransactionService _service(_FakeSolanaService node) => SolanaTransactionService(provider: SolanaProvider(node));
 
-SolanaTransaction _decodeBroadcast(String base64Transaction) =>
-    SolanaTransaction.deserialize(StringUtils.encode(base64Transaction, encoding: StringEncoding.base64));
+SolanaTransaction _decodeBroadcast(String base64Transaction) => SolanaTransaction.deserialize(StringUtils.encode(base64Transaction, encoding: StringEncoding.base64));
 
 /// 广播出去的交易里那条 transferChecked 指令的金额与精度。
 ({BigInt amount, int decimals, SolAddress source, SolAddress destination}) _transferCheckedOf(String base64Tx) {
   final message = _decodeBroadcast(base64Tx).message;
-  final instruction = message.compiledInstructions.firstWhere(
-    (candidate) => message.accountKeys[candidate.programIdIndex] == SPLTokenProgramConst.tokenProgramId,
-  );
+  final instruction = message.compiledInstructions.firstWhere((candidate) => message.accountKeys[candidate.programIdIndex] == SPLTokenProgramConst.tokenProgramId);
   final layout = SPLTokenProgramLayout.fromBytes(instruction.data) as SPLTokenTransferCheckedLayout;
   return (
     amount: layout.amount,
@@ -179,10 +165,7 @@ SolanaTransaction _decodeBroadcast(String base64Transaction) =>
 /// 交易里是否带了「创建收款方 ATA」那条指令。
 bool _createsAta(String base64Transaction) {
   final message = _decodeBroadcast(base64Transaction).message;
-  return message.compiledInstructions.any(
-    (candidate) =>
-        message.accountKeys[candidate.programIdIndex] == AssociatedTokenAccountProgramConst.associatedTokenProgramId,
-  );
+  return message.compiledInstructions.any((candidate) => message.accountKeys[candidate.programIdIndex] == AssociatedTokenAccountProgramConst.associatedTokenProgramId);
 }
 
 /// 交易里声明的计算单元上限。
@@ -196,14 +179,8 @@ int _computeUnitLimitOf(String base64Transaction) {
   throw StateError('交易里没有 SetComputeUnitLimit 指令');
 }
 
-Future<TransferResult> _send(_FakeSolanaService node, {String amount = '1.5'}) => _service(node).sendToken(
-  chain: _chain,
-  token: _token,
-  privateKey: _privateKey,
-  fromAddress: _owner.address,
-  to: _recipient.address,
-  amount: amount,
-);
+Future<TransferResult> _send(_FakeSolanaService node, {String amount = '1.5'}) =>
+    _service(node).sendToken(chain: _chain, token: _token, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: amount);
 
 void main() {
   group('SolanaTransactionService.sendToken', () {
@@ -288,14 +265,9 @@ void main() {
         await _send(node);
 
         final message = _decodeBroadcast(node.broadcastPayload!).message;
-        final programs = [
-          for (final instruction in message.compiledInstructions) message.accountKeys[instruction.programIdIndex],
-        ];
+        final programs = [for (final instruction in message.compiledInstructions) message.accountKeys[instruction.programIdIndex]];
         // 顺序反了的话，转账会写进一个还不存在的账户，整笔失败。
-        expect(
-          programs.indexOf(AssociatedTokenAccountProgramConst.associatedTokenProgramId),
-          lessThan(programs.indexOf(SPLTokenProgramConst.tokenProgramId)),
-        );
+        expect(programs.indexOf(AssociatedTokenAccountProgramConst.associatedTokenProgramId), lessThan(programs.indexOf(SPLTokenProgramConst.tokenProgramId)));
       });
 
       test('计算单元上限抬到含建账户的那一档', () async {
@@ -310,9 +282,7 @@ void main() {
       test('估费把那笔租金算进总花费，但不算进网络费', () async {
         final node = _FakeSolanaService(destinationExists: false);
 
-        final estimate = await _service(
-          node,
-        ).estimateTokenFee(chain: _chain, token: _token, from: _owner.address, to: _recipient.address, amount: '1.5');
+        final estimate = await _service(node).estimateTokenFee(chain: _chain, token: _token, from: _owner.address, to: _recipient.address, amount: '1.5');
 
         expect(estimate.createsTokenAccount, isTrue);
         expect(estimate.ataRentLamports, _ataRent);
@@ -327,20 +297,14 @@ void main() {
         // 余额 1 USDC，要转 1.5。
         final node = _FakeSolanaService(tokenBalance: BigInt.from(1000000));
 
-        await expectLater(
-          _send(node, amount: '1.5'),
-          throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('余额不足'))),
-        );
+        await expectLater(_send(node, amount: '1.5'), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('余额不足'))));
         expect(node.calls, isNot(contains('sendTransaction')));
       });
 
       test('发送方没有该代币账户时报错', () async {
         final node = _FakeSolanaService(sourceExists: false);
 
-        await expectLater(
-          _send(node),
-          throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('还没有'))),
-        );
+        await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('还没有'))));
         expect(node.calls, isNot(contains('sendTransaction')));
       });
 
@@ -348,10 +312,7 @@ void main() {
         // SOL 只够付签名费，付不起建 ATA 的租金。
         final node = _FakeSolanaService(destinationExists: false, solBalance: _fee + BigInt.one);
 
-        await expectLater(
-          _send(node),
-          throwsA(isA<Exception>().having((e) => e.toString(), 'message', allOf(contains('不足以支付网络费'), contains('租金')))),
-        );
+        await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', allOf(contains('不足以支付网络费'), contains('租金')))));
         expect(node.calls, isNot(contains('sendTransaction')));
       });
 
@@ -366,10 +327,7 @@ void main() {
       test('金额为 0 时报错', () async {
         final node = _FakeSolanaService();
 
-        await expectLater(
-          _send(node, amount: '0'),
-          throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('必须大于 0'))),
-        );
+        await expectLater(_send(node, amount: '0'), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('必须大于 0'))));
       });
 
       test('非 SPL 标准的代币被拒绝', () async {
@@ -386,14 +344,7 @@ void main() {
         );
 
         await expectLater(
-          _service(node).sendToken(
-            chain: _chain,
-            token: wrongStandard,
-            privateKey: _privateKey,
-            fromAddress: _owner.address,
-            to: _recipient.address,
-            amount: '1',
-          ),
+          _service(node).sendToken(chain: _chain, token: wrongStandard, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '1'),
           throwsA(isA<UnsupportedError>()),
         );
       });
@@ -425,10 +376,7 @@ void main() {
 
     test('节点返回主网创世哈希时中止签名', () async {
       final node = _FakeSolanaService(genesisHash: '5eykt4UsFv8P8NJdTREpY1vzq2piYYL4jUksMNPE5cyk');
-      await expectLater(
-        _send(node),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('节点不在'))),
-      );
+      await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('节点不在'))));
       expect(node.broadcastPayload, isNull);
     });
   });

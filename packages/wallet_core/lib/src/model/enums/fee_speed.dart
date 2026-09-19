@@ -12,13 +12,7 @@ enum FeeSpeed {
   normal('普通', '推荐档位，按近期区块中位小费出价', rewardPercentile: 50, baseFeeHeadroom: 2.0, legacyMultiplier: 1.0),
   fast('快速', '小费高于近九成交易，优先被打包', rewardPercentile: 90, baseFeeHeadroom: 3.0, legacyMultiplier: 1.25);
 
-  const FeeSpeed(
-    this.label,
-    this.description, {
-    required this.rewardPercentile,
-    required this.baseFeeHeadroom,
-    required this.legacyMultiplier,
-  });
+  const FeeSpeed(this.label, this.description, {required this.rewardPercentile, required this.baseFeeHeadroom, required this.legacyMultiplier});
 
   final String label;
   final String description;

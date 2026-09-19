@@ -1,4 +1,5 @@
 import 'package:wallet_core/chains.dart';
+
 import '../model/models.dart';
 import '../transaction/transfer/chain_transfer_service.dart';
 
@@ -16,11 +17,7 @@ class WalletService {
   ///
   /// [validUntilBlock] 原样来自那条历史记录，用于判定「交易已过期、永远不会上链」，
   /// 只有给得出这个数的链（目前是 Solana）才会用到。
-  Future<TransactionStatus> queryTransactionStatus(
-    String chainId,
-    String transactionHash, {
-    int? validUntilBlock,
-  }) async {
+  Future<TransactionStatus> queryTransactionStatus(String chainId, String transactionHash, {int? validUntilBlock}) async {
     final chain = SupportedChains.all.where((candidate) => candidate.id == chainId).firstOrNull; // 根据链ID查找链实例
     final service = chain == null ? null : transferServices[chain.kind]; // 根据链类型查找转账实现方法(walletServiceProvider 注入)
     // 链未知或该链类型没有转账实现时返回 [TransactionStatus.pending]
@@ -61,15 +58,7 @@ class WalletService {
     }
 
     return service.send(
-      TransferRequest(
-        chain: chain,
-        token: token,
-        from: request.from,
-        to: request.to,
-        amount: request.amount,
-        deductFeeFromAmount: request.deductFeeFromAmount,
-        speed: request.speed,
-      ),
+      TransferRequest(chain: chain, token: token, from: request.from, to: request.to, amount: request.amount, deductFeeFromAmount: request.deductFeeFromAmount, speed: request.speed),
       wallet,
     );
   }

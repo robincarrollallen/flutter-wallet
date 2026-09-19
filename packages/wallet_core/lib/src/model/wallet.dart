@@ -51,15 +51,7 @@ class Wallet {
   List<Chain> get chainsWithAddress => SupportedChains.all.where((c) => addressFor(c) != null).toList();
 
   Wallet copyWith({String? name, String? icon, Set<BackupMethod>? backupMethods}) {
-    return Wallet(
-      id: id,
-      name: name ?? this.name,
-      source: source,
-      addresses: addresses,
-      createdAt: createdAt,
-      icon: icon ?? this.icon,
-      backupMethods: backupMethods ?? this.backupMethods,
-    );
+    return Wallet(id: id, name: name ?? this.name, source: source, addresses: addresses, createdAt: createdAt, icon: icon ?? this.icon, backupMethods: backupMethods ?? this.backupMethods);
   }
 
   /// 序列化为可持久化的 JSON（仅非敏感元数据）。

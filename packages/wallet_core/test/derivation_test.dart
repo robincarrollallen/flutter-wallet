@@ -9,14 +9,8 @@ const vector = 'abandon abandon abandon abandon abandon abandon abandon abandon 
 void main() {
   test('BIP84/BIP86 主网首地址匹配官方 test vector', () {
     final seed = Bip39SeedGenerator(Mnemonic.fromString(vector)).generate();
-    expect(
-      Bip84.fromSeed(seed, Bip84Coins.bitcoin).deriveDefaultPath.publicKey.toAddress,
-      'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu',
-    );
-    expect(
-      Bip86.fromSeed(seed, Bip86Coins.bitcoin).deriveDefaultPath.publicKey.toAddress,
-      'bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr',
-    );
+    expect(Bip84.fromSeed(seed, Bip84Coins.bitcoin).deriveDefaultPath.publicKey.toAddress, 'bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu');
+    expect(Bip86.fromSeed(seed, Bip86Coins.bitcoin).deriveDefaultPath.publicKey.toAddress, 'bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr');
   });
 
   test('钱包派生的 BTC 测试网地址为 tb1q（P2WPKH）', () {

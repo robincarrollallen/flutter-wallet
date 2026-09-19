@@ -1,4 +1,5 @@
 import 'package:wallet_core/chains.dart';
+
 import '../../model/models.dart';
 import 'transfer_result.dart';
 
@@ -6,15 +7,7 @@ export 'transfer_result.dart';
 
 /// 一次转账的链无关入参。[token] 为 null 表示转原生币。
 class TransferRequest {
-  const TransferRequest({
-    required this.chain,
-    required this.from,
-    required this.to,
-    required this.amount,
-    this.token,
-    this.deductFeeFromAmount = false,
-    this.speed = FeeSpeed.defaultSpeed,
-  });
+  const TransferRequest({required this.chain, required this.from, required this.to, required this.amount, this.token, this.deductFeeFromAmount = false, this.speed = FeeSpeed.defaultSpeed});
 
   /// 链类型
   final Chain chain;

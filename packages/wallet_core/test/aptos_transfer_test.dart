@@ -30,21 +30,12 @@ void main() {
   /// 一份够用的发送方余额：1 APT（decimals = 8）。
   final oneApt = BigInt.from(100000000);
 
-  AptosTransactionService serviceWith(_FakeAptosService node, {BigInt? balance}) => AptosTransactionService(
-    provider: AptosProvider(node),
-    balances: _FixedBalances(balance ?? oneApt),
-  );
+  AptosTransactionService serviceWith(_FakeAptosService node, {BigInt? balance}) => AptosTransactionService(provider: AptosProvider(node), balances: _FixedBalances(balance ?? oneApt));
 
   group('sendNative', () {
     test('构造、签名并提交一笔转账，返回 pending', () async {
       final node = _FakeAptosService();
-      final result = await serviceWith(node).sendNative(
-        chain: chain,
-        privateKey: privateKey,
-        fromAddress: sender.address,
-        to: recipient.address,
-        amount: '0.5',
-      );
+      final result = await serviceWith(node).sendNative(chain: chain, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0.5');
 
       expect(result.status, TransactionStatus.pending, reason: '提交只代表节点收下了，不代表已上链');
       expect(result.sentAmount, '0.5');
@@ -57,13 +48,7 @@ void main() {
 
       // 签名必须真的验得过，不是「有 64 个字节」就算数。
       final authenticator = sent.authenticator as AptosTransactionAuthenticatorEd25519;
-      expect(
-        authenticator.publicKey.verify(
-          message: sent.rawTransaction.signingSerialize(),
-          signature: authenticator.signature.signature,
-        ),
-        isTrue,
-      );
+      expect(authenticator.publicKey.verify(message: sent.rawTransaction.signingSerialize(), signature: authenticator.signature.signature), isTrue);
       expect(authenticator.publicKey.toAddress(), sender);
 
       // 收款方与金额从 entry function 的实参里解出来核对。
@@ -86,13 +71,7 @@ void main() {
     test('节点返回主网 chainId 时中止签名', () async {
       final node = _FakeAptosService(ledgerChainId: 1);
       await expectLater(
-        serviceWith(node).sendNative(
-          chain: chain,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '0.5',
-        ),
+        serviceWith(node).sendNative(chain: chain, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0.5'),
         throwsA(predicate((error) => error.toString().contains('chainId=1'))),
       );
       expect(node.submittedTransaction, isNull);
@@ -100,27 +79,14 @@ void main() {
 
     test('序列号只查一次', () async {
       final node = _FakeAptosService();
-      await serviceWith(node).sendNative(
-        chain: chain,
-        privateKey: privateKey,
-        fromAddress: sender.address,
-        to: recipient.address,
-        amount: '0.5',
-      );
+      await serviceWith(node).sendNative(chain: chain, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0.5');
 
       expect(node.calls.where((path) => path.startsWith('/accounts/')).length, 1);
     });
 
     test('模拟只跑一次，且用的是本档单价', () async {
       final node = _FakeAptosService();
-      await serviceWith(node).sendNative(
-        chain: chain,
-        privateKey: privateKey,
-        fromAddress: sender.address,
-        to: recipient.address,
-        amount: '0.5',
-        speed: FeeSpeed.fast,
-      );
+      await serviceWith(node).sendNative(chain: chain, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0.5', speed: FeeSpeed.fast);
 
       expect(node.calls.where((path) => path == '/transactions/simulate').length, 1);
       final simulated = AptosSignedTransaction.deserialize(node.simulatedTransaction!);
@@ -156,26 +122,14 @@ void main() {
       final upperCase = '0x${sender.address.substring(2).toUpperCase()}';
       expect(upperCase, isNot(sender.address));
 
-      final result = await serviceWith(node).sendNative(
-        chain: chain,
-        privateKey: privateKey,
-        fromAddress: upperCase,
-        to: recipient.address,
-        amount: '0.5',
-      );
+      final result = await serviceWith(node).sendNative(chain: chain, privateKey: privateKey, fromAddress: upperCase, to: recipient.address, amount: '0.5');
       expect(result.status, TransactionStatus.pending);
     });
 
     test('余额不足时报错，而不是静默改小金额', () async {
       final node = _FakeAptosService();
       await expectLater(
-        serviceWith(node, balance: BigInt.from(1000)).sendNative(
-          chain: chain,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '0.5',
-        ),
+        serviceWith(node, balance: BigInt.from(1000)).sendNative(chain: chain, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0.5'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('余额不足'))),
       );
       expect(node.calls, isNot(contains('/transactions')));
@@ -200,14 +154,7 @@ void main() {
     test('扣完费不为正时报错', () async {
       final node = _FakeAptosService();
       await expectLater(
-        serviceWith(node, balance: normalFee).sendNative(
-          chain: chain,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '0.00125',
-          deductFeeFromAmount: true,
-        ),
+        serviceWith(node, balance: normalFee).sendNative(chain: chain, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0.00125', deductFeeFromAmount: true),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('余额不足以支付网络费用'))),
       );
       expect(node.calls, isNot(contains('/transactions')));
@@ -216,13 +163,7 @@ void main() {
     test('模拟判定会失败时不提交，并带上 vm_status', () async {
       final node = _FakeAptosService(simulationSucceeds: false);
       await expectLater(
-        serviceWith(node).sendNative(
-          chain: chain,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '0.5',
-        ),
+        serviceWith(node).sendNative(chain: chain, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0.5'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('INSUFFICIENT_BALANCE'))),
       );
       expect(node.calls, isNot(contains('/transactions')));
@@ -231,13 +172,7 @@ void main() {
     test('节点返回的哈希与本地算的不一致时报错', () async {
       final node = _FakeAptosService(submitHash: '0xdeadbeef');
       await expectLater(
-        serviceWith(node).sendNative(
-          chain: chain,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '0.5',
-        ),
+        serviceWith(node).sendNative(chain: chain, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0.5'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('交易哈希与本地不一致'))),
       );
     });
@@ -245,13 +180,7 @@ void main() {
     test('金额为 0 时拒发', () async {
       final node = _FakeAptosService();
       await expectLater(
-        serviceWith(node).sendNative(
-          chain: chain,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '0',
-        ),
+        serviceWith(node).sendNative(chain: chain, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('必须大于 0'))),
       );
       expect(node.calls, isEmpty, reason: '连链上数据都不必取');
@@ -261,11 +190,7 @@ void main() {
   group('estimateNativeFee', () {
     test('三档单价直接取自节点，费用按静态 gas 上限算', () async {
       final node = _FakeAptosService();
-      final estimate = await serviceWith(node).estimateNativeFee(
-        chain: chain,
-        from: sender.address,
-        to: recipient.address,
-      );
+      final estimate = await serviceWith(node).estimateNativeFee(chain: chain, from: sender.address, to: recipient.address);
 
       // 收款方账户已存在（假节点的 /accounts/ 一律回 200），走低的那档上限。
       // 300 来自 testnet 实测的 62 gas 加余量，不是拍的。
@@ -283,22 +208,14 @@ void main() {
 
     test('收款方账户不存在时取更高的那档上限', () async {
       final node = _FakeAptosService(recipientAccountExists: false);
-      final estimate = await serviceWith(node).estimateNativeFee(
-        chain: chain,
-        from: sender.address,
-        to: recipient.address,
-      );
+      final estimate = await serviceWith(node).estimateNativeFee(chain: chain, from: sender.address, to: recipient.address);
       // 建号实测 10336 gas，比纯转账的 62 高两个数量级——估低了会让 MAX 付不起预扣。
       expect(estimate.maxGasAmount, BigInt.from(16000));
     });
 
     test('节点缺「缓慢」档时回落到推荐单价，而不是自行打折', () async {
       final node = _FakeAptosService(deprioritizedGasPrice: null);
-      final estimate = await serviceWith(node).estimateNativeFee(
-        chain: chain,
-        from: sender.address,
-        to: recipient.address,
-      );
+      final estimate = await serviceWith(node).estimateNativeFee(chain: chain, from: sender.address, to: recipient.address);
       expect(estimate.priceFor(FeeSpeed.slow), BigInt.from(regularGasPrice));
     });
 
@@ -405,8 +322,7 @@ class _FakeAptosService with AptosServiceProvider {
   final int ledgerChainId;
 
   /// 发送方地址，用来把「查发送方序列号」和「查收款方存不存在」两次 /accounts 分开。
-  static final String _senderAddress =
-      AptosED25519PrivateKey.fromBytes(List<int>.filled(32, 7)).publicKey.toAddress().address.substring(2);
+  static final String _senderAddress = AptosED25519PrivateKey.fromBytes(List<int>.filled(32, 7)).publicKey.toAddress().address.substring(2);
 
   final List<String> calls = [];
   List<int>? submittedTransaction;
@@ -430,24 +346,14 @@ class _FakeAptosService with AptosServiceProvider {
       return _ok(jsonEncode(_pendingTransaction(hash)));
     }
     if (path == '/estimate_gas_price') {
-      return _ok(
-        jsonEncode({
-          'deprioritized_gas_estimate': deprioritizedGasPrice,
-          'gas_estimate': 100,
-          'prioritized_gas_estimate': 150,
-        }),
-      );
+      return _ok(jsonEncode({'deprioritized_gas_estimate': deprioritizedGasPrice, 'gas_estimate': 100, 'prioritized_gas_estimate': 150}));
     }
     if (path == '/') {
       return _ok(jsonEncode(_ledgerInfo));
     }
     if (path.startsWith('/accounts/')) {
       if (!recipientAccountExists && !path.contains(_senderAddress)) {
-        return ServiceProviderUtils.findError(
-          object: jsonEncode({'message': 'account not found', 'error_code': 'account_not_found'}),
-          statusCode: 404,
-          allowStatusCode: params.errorStatusCodes,
-        );
+        return ServiceProviderUtils.findError(object: jsonEncode({'message': 'account not found', 'error_code': 'account_not_found'}), statusCode: 404, allowStatusCode: params.errorStatusCodes);
       }
       return _ok(jsonEncode({'sequence_number': '5', 'authentication_key': '0x${'0' * 64}'}));
     }
@@ -479,12 +385,7 @@ class _FakeAptosService with AptosServiceProvider {
     'git_hash': null,
   };
 
-  static const Map<String, dynamic> _payload = {
-    'type': 'entry_function_payload',
-    'function': '0x1::aptos_account::transfer',
-    'type_arguments': <String>[],
-    'arguments': <String>[],
-  };
+  static const Map<String, dynamic> _payload = {'type': 'entry_function_payload', 'function': '0x1::aptos_account::transfer', 'type_arguments': <String>[], 'arguments': <String>[]};
 
   Map<String, dynamic> _pendingTransaction(String hash) => {
     'type': 'pending_transaction',

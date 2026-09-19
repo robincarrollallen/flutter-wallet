@@ -1,4 +1,5 @@
 import 'package:wallet_core/chains.dart';
+
 import '../../model/models.dart';
 import '../aptos_transaction_service.dart';
 import 'chain_transfer_service.dart';
@@ -47,15 +48,7 @@ class AptosTransferService implements ChainTransferService {
       // 代币转账不接 deductFeeFromAmount：费用以 APT 支付、转出的是代币，
       // 两本账不通，扣无可扣。代币的 MAX 就是代币余额本身（与其余三条链一致）。
       if (token != null) {
-        return await _transactions.sendToken(
-          chain: request.chain,
-          token: token,
-          privateKey: privateKey,
-          fromAddress: request.from,
-          to: request.to,
-          amount: request.amount,
-          speed: request.speed,
-        );
+        return await _transactions.sendToken(chain: request.chain, token: token, privateKey: privateKey, fromAddress: request.from, to: request.to, amount: request.amount, speed: request.speed);
       }
       return await _transactions.sendNative(
         chain: request.chain,

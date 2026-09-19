@@ -16,27 +16,11 @@ Future<HttpServer> _serve(void Function(HttpRequest) handler) async {
   return server;
 }
 
-Chain _aptosAt(HttpServer s) => Chain(
-  id: 'aptos-test',
-  name: 'Aptos',
-  symbol: 'APT',
-  kind: ChainKind.aptos,
-  coin: Bip44Coins.aptos,
-  endpoint: 'http://${s.address.host}:${s.port}',
-  coinGeckoId: 'aptos',
-  decimals: 8,
-);
+Chain _aptosAt(HttpServer s) =>
+    Chain(id: 'aptos-test', name: 'Aptos', symbol: 'APT', kind: ChainKind.aptos, coin: Bip44Coins.aptos, endpoint: 'http://${s.address.host}:${s.port}', coinGeckoId: 'aptos', decimals: 8);
 
-Chain _tronAt(HttpServer s) => Chain(
-  id: 'tron-test',
-  name: 'Tron',
-  symbol: 'TRX',
-  kind: ChainKind.tron,
-  coin: Bip44Coins.tron,
-  endpoint: 'http://${s.address.host}:${s.port}',
-  coinGeckoId: 'tron',
-  decimals: 6,
-);
+Chain _tronAt(HttpServer s) =>
+    Chain(id: 'tron-test', name: 'Tron', symbol: 'TRX', kind: ChainKind.tron, coin: Bip44Coins.tron, endpoint: 'http://${s.address.host}:${s.port}', coinGeckoId: 'tron', decimals: 6);
 
 Chain _evmAt(HttpServer s) => Chain(
   id: 'evm-test',
@@ -140,10 +124,7 @@ void main() {
           ..close(),
       );
 
-      expect(
-        () => api.fetchNativeBalance(_aptosAt(s), '0x1'),
-        throwsA(isA<HttpStatusException>().having((e) => e.statusCode, 'statusCode', 429)),
-      );
+      expect(() => api.fetchNativeBalance(_aptosAt(s), '0x1'), throwsA(isA<HttpStatusException>().having((e) => e.statusCode, 'statusCode', 429)));
     });
 
     test('正常返回标量余额', () async {
@@ -176,10 +157,7 @@ void main() {
           ..close(),
       );
 
-      expect(
-        () => api.fetchNativeBalance(_tronAt(s), 'T1'),
-        throwsA(isA<HttpStatusException>().having((e) => e.statusCode, 'statusCode', 500)),
-      );
+      expect(() => api.fetchNativeBalance(_tronAt(s), 'T1'), throwsA(isA<HttpStatusException>().having((e) => e.statusCode, 'statusCode', 500)));
     });
 
     test('正常返回 balance', () async {
@@ -204,8 +182,7 @@ void main() {
           ..headers.contentType = ContentType.json
           ..write(
             jsonEncode([
-              for (var i = 0; i < received.length; i++)
-                {'id': (received[i] as Map)['id'], 'result': _uint256((i + 1) * 1000000)},
+              for (var i = 0; i < received.length; i++) {'id': (received[i] as Map)['id'], 'result': _uint256((i + 1) * 1000000)},
             ]),
           )
           ..close();
@@ -289,11 +266,7 @@ void main() {
         ),
       );
 
-      expect(
-        await api.fetchTokenBalance(_solanaAt(s), _token('mint1', TokenStandard.spl), 'SoL1'),
-        BigInt.from(1000000),
-        reason: 'ATA 之外还能手动开账户，只取第一个会漏报持仓',
-      );
+      expect(await api.fetchTokenBalance(_solanaAt(s), _token('mint1', TokenStandard.spl), 'SoL1'), BigInt.from(1000000), reason: 'ATA 之外还能手动开账户，只取第一个会漏报持仓');
     });
 
     test('没有代币账户（value 为空）= 真实的 0', () async {
@@ -339,10 +312,7 @@ void main() {
           ..close(),
       );
 
-      expect(
-        () => api.fetchTokenBalance(_solanaAt(s), _token('mint1', TokenStandard.spl), 'SoL1'),
-        throwsA(isA<Exception>()),
-      );
+      expect(() => api.fetchTokenBalance(_solanaAt(s), _token('mint1', TokenStandard.spl), 'SoL1'), throwsA(isA<Exception>()));
     });
   });
 
@@ -365,10 +335,7 @@ void main() {
       });
 
       final coinType = '0xabc::usdc::USDC';
-      expect(
-        await api.fetchTokenBalance(_suiAt(s), _token(coinType, TokenStandard.suiCoin), '0x1'),
-        BigInt.from(4500000),
-      );
+      expect(await api.fetchTokenBalance(_suiAt(s), _token(coinType, TokenStandard.suiCoin), '0x1'), BigInt.from(4500000));
       // 与原生币是同一个方法，区别只在第二个参数。
       expect((sent.first as Map)['method'], 'suix_getBalance');
       expect(((sent.first as Map)['params'] as List)[1], coinType);
@@ -410,10 +377,7 @@ void main() {
     test('响应缺 totalBalance 字段时按 0，不抛', () async {
       final s = await _serve(_rpcBatch((_) => const <String, Object?>{}));
 
-      expect(
-        await api.fetchTokenBalance(_suiAt(s), _token('0xabc::usdc::USDC', TokenStandard.suiCoin), '0x1'),
-        BigInt.zero,
-      );
+      expect(await api.fetchTokenBalance(_suiAt(s), _token('0xabc::usdc::USDC', TokenStandard.suiCoin), '0x1'), BigInt.zero);
     });
   });
 
@@ -429,10 +393,7 @@ void main() {
 
       const fa = '0x69091fbab5f7d635ee7ac5098cf0c1efbe31d68fec0f2cd565e8d168daf52832';
       const coin = '0xabc::usdc::USDC';
-      final balances = await api.fetchTokenBalances(_aptosAt(s), [
-        _token(fa, TokenStandard.aptosCoin),
-        _token(coin, TokenStandard.aptosCoin),
-      ], '0x1');
+      final balances = await api.fetchTokenBalances(_aptosAt(s), [_token(fa, TokenStandard.aptosCoin), _token(coin, TokenStandard.aptosCoin)], '0x1');
 
       expect(balances, {fa: BigInt.from(250000), coin: BigInt.from(250000)});
       expect(paths, ['/v1/accounts/0x1/balance/$fa', '/v1/accounts/0x1/balance/$coin']);
@@ -446,10 +407,7 @@ void main() {
           ..close(),
       );
 
-      expect(
-        await api.fetchTokenBalance(_aptosAt(s), _token('0xabc::usdc::USDC', TokenStandard.aptosCoin), '0x1'),
-        BigInt.zero,
-      );
+      expect(await api.fetchTokenBalance(_aptosAt(s), _token('0xabc::usdc::USDC', TokenStandard.aptosCoin), '0x1'), BigInt.zero);
     });
 
     test('429 限流必须上抛', () async {
@@ -460,10 +418,7 @@ void main() {
           ..close(),
       );
 
-      expect(
-        () => api.fetchTokenBalance(_aptosAt(s), _token('0xabc::usdc::USDC', TokenStandard.aptosCoin), '0x1'),
-        throwsA(isA<HttpStatusException>().having((e) => e.statusCode, 'statusCode', 429)),
-      );
+      expect(() => api.fetchTokenBalance(_aptosAt(s), _token('0xabc::usdc::USDC', TokenStandard.aptosCoin), '0x1'), throwsA(isA<HttpStatusException>().having((e) => e.statusCode, 'statusCode', 429)));
     });
   });
 
@@ -485,10 +440,7 @@ void main() {
           ..close();
       });
 
-      expect(
-        await api.fetchTokenBalance(_tronAt(s), _token('TContract', TokenStandard.trc20), tronOwner),
-        BigInt.from(7500000),
-      );
+      expect(await api.fetchTokenBalance(_tronAt(s), _token('TContract', TokenStandard.trc20), tronOwner), BigInt.from(7500000));
       expect(sent['function_selector'], 'balanceOf(address)');
       expect(sent['visible'], true);
       expect(sent['parameter'], hasLength(64));
@@ -503,10 +455,7 @@ void main() {
           ..close(),
       );
 
-      expect(
-        () => api.fetchTokenBalance(_tronAt(s), _token('TContract', TokenStandard.trc20), tronOwner),
-        throwsA(isA<Exception>()),
-      );
+      expect(() => api.fetchTokenBalance(_tronAt(s), _token('TContract', TokenStandard.trc20), tronOwner), throwsA(isA<Exception>()));
     });
 
     test('constant_result 为空时抛出', () async {
@@ -516,10 +465,7 @@ void main() {
           ..close(),
       );
 
-      expect(
-        () => api.fetchTokenBalance(_tronAt(s), _token('TContract', TokenStandard.trc20), tronOwner),
-        throwsA(isA<Exception>()),
-      );
+      expect(() => api.fetchTokenBalance(_tronAt(s), _token('TContract', TokenStandard.trc20), tronOwner), throwsA(isA<Exception>()));
     });
   });
 
@@ -540,11 +486,7 @@ void main() {
     test('内置目录里每个代币的标准都与所属链匹配', () {
       for (final token in BundledTokenCatalog.all) {
         final chain = SupportedChains.byId(token.chainId);
-        expect(
-          ChainBalanceApi.supportsTokenBalance(chain, token.standard),
-          isTrue,
-          reason: '${chain.name} 的 ${token.symbol} 标准写成了 ${token.standard.name}',
-        );
+        expect(ChainBalanceApi.supportsTokenBalance(chain, token.standard), isTrue, reason: '${chain.name} 的 ${token.symbol} 标准写成了 ${token.standard.name}');
       }
     });
   });

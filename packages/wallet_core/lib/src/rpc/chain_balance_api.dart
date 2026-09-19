@@ -4,6 +4,7 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
+
 import '../internal/erc20_abi.dart';
 import '../internal/evm_hex.dart';
 
@@ -70,11 +71,7 @@ class ChainBalanceApi {
 
     final mismatched = tokens.where((t) => !supportsTokenBalance(chain, t.standard)).firstOrNull;
     if (mismatched != null) {
-      throw ArgumentError.value(
-        mismatched.standard.name,
-        'tokens',
-        '${mismatched.symbol} 的标准与 ${chain.name} 不匹配（该链应为 ${tokenStandardOf(chain.kind)?.name ?? '无代币'}）',
-      );
+      throw ArgumentError.value(mismatched.standard.name, 'tokens', '${mismatched.symbol} 的标准与 ${chain.name} 不匹配（该链应为 ${tokenStandardOf(chain.kind)?.name ?? '无代币'}）');
     }
 
     // 穷尽 switch：将来新增代币标准会在这里直接编译报错，比运行时才发现好。
@@ -176,9 +173,7 @@ class ChainBalanceApi {
   /// [Future.wait] 默认不 eagerError，但会在全部完成后重抛第一个错误——正合口径：
   /// 一条失败即整链失败，不会出现「部分代币静默为 0」。
   Future<Map<String, BigInt>> _aptosCoinBalances(Chain chain, List<Token> tokens, String address) async {
-    final balances = await Future.wait([
-      for (final token in tokens) _aptosAssetBalance(chain, address, token.identifier),
-    ]);
+    final balances = await Future.wait([for (final token in tokens) _aptosAssetBalance(chain, address, token.identifier)]);
 
     return {for (var i = 0; i < tokens.length; i++) tokens[i].identifier: balances[i]};
   }
@@ -191,9 +186,7 @@ class ChainBalanceApi {
   Future<Map<String, BigInt>> _trc20Balances(Chain chain, List<Token> tokens, String address) async {
     // T 开头的 base58 地址先解成 20 字节，再补成 32 字节的 ABI 参数。
     final parameter = encodeAddressArgument(TrxAddrDecoder().decodeAddr(address));
-    final balances = await Future.wait([
-      for (final token in tokens) _trc20Balance(chain, token.identifier, address, parameter),
-    ]);
+    final balances = await Future.wait([for (final token in tokens) _trc20Balance(chain, token.identifier, address, parameter)]);
 
     return {for (var i = 0; i < tokens.length; i++) tokens[i].identifier: balances[i]};
   }

@@ -99,10 +99,7 @@ class _FakeSolanaService with SolanaServiceProvider {
       _ => throw StateError('未预设的 RPC 方法: $method'),
     };
 
-    return ServiceSuccessRespose(
-      statusCode: 200,
-      response: jsonEncode({'jsonrpc': '2.0', 'id': body['id'], 'result': result}),
-    );
+    return ServiceSuccessRespose(statusCode: 200, response: jsonEncode({'jsonrpc': '2.0', 'id': body['id'], 'result': result}));
   }
 
   String _broadcast(List<dynamic> requestParams) {
@@ -120,9 +117,7 @@ SolanaTransactionService _service(_FakeSolanaService node) => SolanaTransactionS
 ({SolAddress recipient, BigInt lamports}) _transferOf(String base64Transaction) {
   final transaction = SolanaTransaction.deserialize(StringUtils.encode(base64Transaction, encoding: StringEncoding.base64));
   final message = transaction.message;
-  final instruction = message.compiledInstructions.firstWhere(
-    (candidate) => message.accountKeys[candidate.programIdIndex] == SystemProgramConst.programId,
-  );
+  final instruction = message.compiledInstructions.firstWhere((candidate) => message.accountKeys[candidate.programIdIndex] == SystemProgramConst.programId);
   final layout = SystemProgramLayout.fromBytes(instruction.data) as SystemTransferLayout;
   return (recipient: message.accountKeys[instruction.accounts[1]], lamports: layout.lamports);
 }
@@ -144,13 +139,7 @@ void main() {
     test('广播成功后返回签名与 pending，不等上链', () async {
       final node = _FakeSolanaService();
 
-      final result = await _service(node).sendNative(
-        chain: _chain,
-        privateKey: _privateKey,
-        fromAddress: _owner.address,
-        to: _recipient.address,
-        amount: '0.1',
-      );
+      final result = await _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.1');
 
       expect(result.hash, 'signature-abc');
       expect(result.sentAmount, '0.1');
@@ -163,13 +152,7 @@ void main() {
     test('一次发送只取一次 blockhash：估费与签名共用', () async {
       final node = _FakeSolanaService();
 
-      await _service(node).sendNative(
-        chain: _chain,
-        privateKey: _privateKey,
-        fromAddress: _owner.address,
-        to: _recipient.address,
-        amount: '0.1',
-      );
+      await _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.1');
 
       // 估费那次和签名那次是同一个 blockhash，多取一次就是一轮白费的往返。
       expect(node.calls.where((m) => m == 'getLatestBlockhash'), hasLength(1));
@@ -178,13 +161,7 @@ void main() {
     test('节点返回主网创世哈希时中止签名', () async {
       final node = _FakeSolanaService(genesisHash: '5eykt4UsFv8P8NJdTREpY1vzq2piYYL4jUksMNPE5cyk');
       await expectLater(
-        _service(node).sendNative(
-          chain: _chain,
-          privateKey: _privateKey,
-          fromAddress: _owner.address,
-          to: _recipient.address,
-          amount: '0.1',
-        ),
+        _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.1'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('节点不在'))),
       );
       expect(node.broadcastPayload, isNull);
@@ -193,17 +170,9 @@ void main() {
     test('广播出去的是一笔签名有效、收款方与金额正确的转账', () async {
       final node = _FakeSolanaService();
 
-      await _service(node).sendNative(
-        chain: _chain,
-        privateKey: _privateKey,
-        fromAddress: _owner.address,
-        to: _recipient.address,
-        amount: '0.1',
-      );
+      await _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.1');
 
-      final sent = SolanaTransaction.deserialize(
-        StringUtils.encode(node.broadcastPayload!, encoding: StringEncoding.base64),
-      );
+      final sent = SolanaTransaction.deserialize(StringUtils.encode(node.broadcastPayload!, encoding: StringEncoding.base64));
       // areSignaturesReady 不只看「有没有填」，它会逐个 verify 签名本身。
       expect(sent.areSignaturesReady(), isTrue);
 
@@ -233,13 +202,7 @@ void main() {
       final node = _FakeSolanaService(balance: BigInt.from(1000000)); // 0.001 SOL
 
       await expectLater(
-        _service(node).sendNative(
-          chain: _chain,
-          privateKey: _privateKey,
-          fromAddress: _owner.address,
-          to: _recipient.address,
-          amount: '0.1',
-        ),
+        _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.1'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('余额不足'))),
       );
       expect(node.calls, isNot(contains('sendTransaction')));
@@ -268,13 +231,7 @@ void main() {
       final node = _FakeSolanaService(recipientBalance: BigInt.zero);
 
       await expectLater(
-        _service(node).sendNative(
-          chain: _chain,
-          privateKey: _privateKey,
-          fromAddress: _owner.address,
-          to: _recipient.address,
-          amount: '0.0001',
-        ),
+        _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.0001'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('租金豁免线'))),
       );
       expect(node.calls, isNot(contains('sendTransaction')));
@@ -284,13 +241,7 @@ void main() {
       // 同样是 0.0001 SOL，但收款方已有余额——不该被上一条规则误伤。
       final node = _FakeSolanaService(recipientBalance: _rentExempt);
 
-      final result = await _service(node).sendNative(
-        chain: _chain,
-        privateKey: _privateKey,
-        fromAddress: _owner.address,
-        to: _recipient.address,
-        amount: '0.0001',
-      );
+      final result = await _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.0001');
 
       expect(result.status, TransactionStatus.pending);
     });
@@ -300,13 +251,7 @@ void main() {
       final node = _FakeSolanaService(balance: BigInt.from(1000000000));
 
       await expectLater(
-        _service(node).sendNative(
-          chain: _chain,
-          privateKey: _privateKey,
-          fromAddress: _owner.address,
-          to: _recipient.address,
-          amount: '0.999994',
-        ),
+        _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.999994'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('转出后余额将低于租金豁免线'))),
       );
       expect(node.calls, isNot(contains('sendTransaction')));
@@ -314,27 +259,20 @@ void main() {
   });
 
   group('SolanaTransactionService.waitForReceipt', () {
-    Future<TransactionStatus> statusOf(_FakeSolanaService node) =>
-        _service(node).waitForReceipt(_chain, 'signature-abc');
+    Future<TransactionStatus> statusOf(_FakeSolanaService node) => _service(node).waitForReceipt(_chain, 'signature-abc');
 
     test('finalized 视为已确认', () async {
-      final node = _FakeSolanaService(
-        signatureStatus: const {'confirmationStatus': 'finalized', 'slot': 1, 'err': null},
-      );
+      final node = _FakeSolanaService(signatureStatus: const {'confirmationStatus': 'finalized', 'slot': 1, 'err': null});
       expect(await statusOf(node), TransactionStatus.confirmed);
     });
 
     test('confirmed 视为已确认', () async {
-      final node = _FakeSolanaService(
-        signatureStatus: const {'confirmationStatus': 'confirmed', 'slot': 1, 'err': null},
-      );
+      final node = _FakeSolanaService(signatureStatus: const {'confirmationStatus': 'confirmed', 'slot': 1, 'err': null});
       expect(await statusOf(node), TransactionStatus.confirmed);
     });
 
     test('processed 仍算 pending——可能因分叉被回滚', () async {
-      final node = _FakeSolanaService(
-        signatureStatus: const {'confirmationStatus': 'processed', 'slot': 1, 'err': null},
-      );
+      final node = _FakeSolanaService(signatureStatus: const {'confirmationStatus': 'processed', 'slot': 1, 'err': null});
       expect(await statusOf(node), TransactionStatus.pending);
     });
 
@@ -363,8 +301,7 @@ void main() {
     /// 1000 → 0.6 → 1；5000 → 3.0 → 3。
     test('各档按近期区块优先费的分位数出价', () async {
       final node = _FakeSolanaService(prioritizationFees: samples);
-      final estimate = await _service(node)
-          .estimateNativeFee(chain: _chain, from: _owner.address, to: _recipient.address, amount: '0.1');
+      final estimate = await _service(node).estimateNativeFee(chain: _chain, from: _owner.address, to: _recipient.address, amount: '0.1');
 
       expect(estimate.baseFeeLamports, _fee);
       expect(estimate.quoteFor(FeeSpeed.slow).priorityFee, BigInt.zero);
@@ -378,8 +315,7 @@ void main() {
 
     test('链不拥堵（无样本）时三档同价，都不付优先费', () async {
       final node = _FakeSolanaService();
-      final estimate = await _service(node)
-          .estimateNativeFee(chain: _chain, from: _owner.address, to: _recipient.address, amount: '0.1');
+      final estimate = await _service(node).estimateNativeFee(chain: _chain, from: _owner.address, to: _recipient.address, amount: '0.1');
 
       for (final speed in FeeSpeed.values) {
         expect(estimate.quoteFor(speed).expectedFee, _fee, reason: '$speed 不该凭空多出优先费');
@@ -389,14 +325,7 @@ void main() {
     test('选中的档位会原样写进交易的 SetComputeUnitPrice', () async {
       final node = _FakeSolanaService(prioritizationFees: samples);
 
-      await _service(node).sendNative(
-        chain: _chain,
-        privateKey: _privateKey,
-        fromAddress: _owner.address,
-        to: _recipient.address,
-        amount: '0.1',
-        speed: FeeSpeed.fast,
-      );
+      await _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.1', speed: FeeSpeed.fast);
 
       // 估费与实扣必须是同一个数：估的是 90 分位，发出去的也得是 90 分位。
       expect(_computeUnitPriceOf(node.broadcastPayload!), BigInt.from(5000));
@@ -406,15 +335,8 @@ void main() {
       final balance = BigInt.from(1000000000);
       final node = _FakeSolanaService(balance: balance, prioritizationFees: samples);
 
-      final result = await _service(node).sendNative(
-        chain: _chain,
-        privateKey: _privateKey,
-        fromAddress: _owner.address,
-        to: _recipient.address,
-        amount: '1',
-        speed: FeeSpeed.fast,
-        deductFeeFromAmount: true,
-      );
+      final result = await _service(node)
+          .sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '1', speed: FeeSpeed.fast, deductFeeFromAmount: true);
 
       // 快速档要多扣 3 lamport 的优先费，不能只扣签名费。
       expect(_transferOf(node.broadcastPayload!).lamports, balance - _fee - BigInt.from(3));
@@ -425,13 +347,7 @@ void main() {
   group('交易过期（blockhash 失效）', () {
     test('广播结果带回失效高度', () async {
       final node = _FakeSolanaService();
-      final result = await _service(node).sendNative(
-        chain: _chain,
-        privateKey: _privateKey,
-        fromAddress: _owner.address,
-        to: _recipient.address,
-        amount: '0.1',
-      );
+      final result = await _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: _owner.address, to: _recipient.address, amount: '0.1');
 
       // 没有它，回填时就分不清「还在等」和「已经死透」。
       expect(result.validUntilBlock, 100);

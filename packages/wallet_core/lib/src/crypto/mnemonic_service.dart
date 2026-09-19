@@ -29,9 +29,7 @@ class MnemonicService {
     }
 
     // 映射成 chainId -> address（多条链可能共用同一派生方案, 所以对外用 chainId 索引）
-    final addresses = <String, String>{
-      for (final chain in SupportedChains.all) chain.id: addressByScheme[chain.derivation]!,
-    };
+    final addresses = <String, String>{for (final chain in SupportedChains.all) chain.id: addressByScheme[chain.derivation]!};
 
     return DerivedWallet(addresses: addresses);
   }
@@ -49,8 +47,7 @@ class MnemonicService {
   /// 返回的是**可写副本**，调用方用完应 [wipeKey] 清零。两个原因缺一不可：
   /// blockchain_utils 各曲线的 `.raw` 实现不一致——secp256k1 返回新数组，
   /// 而 ed25519 直接把内部列表交出来，就地清零会把密钥对象本身弄坏。
-  static List<int> derivePrivateKeyBytes(String mnemonic, Chain chain) =>
-      Uint8List.fromList(_derive(_seedFromMnemonic(mnemonic), chain.derivation).privateKey.raw);
+  static List<int> derivePrivateKeyBytes(String mnemonic, Chain chain) => Uint8List.fromList(_derive(_seedFromMnemonic(mnemonic), chain.derivation).privateKey.raw);
 
   /// 助记词 → 某链私钥<按 [Chain.kind] 分别编码>(EVM 的 0x hex 可直接用于交易签名): 签名与导出场景共用
   /// - EVM / Tron：`0x` + secp256k1 十六进制；
@@ -119,10 +116,8 @@ DerivedWallet deriveWalletInBackground(String mnemonic) => MnemonicService.deriv
 
 /// 由助记词派生某条链的私钥<签名/导出共用>（compute 顶层入口）
 /// 入参为 (助记词, chainId)：不把 [Chain] 整份塞进 isolate，到对端再 [SupportedChains.byId] 还原。
-String derivePrivateKeyInBackground((String, String) args) =>
-    MnemonicService.derivePrivateKey(args.$1, SupportedChains.byId(args.$2));
+String derivePrivateKeyInBackground((String, String) args) => MnemonicService.derivePrivateKey(args.$1, SupportedChains.byId(args.$2));
 
 /// 由助记词派生某条链的**原始 32 字节**私钥<仅签名用>（compute 顶层入口）
 /// 入参同上：(助记词, chainId)。
-List<int> derivePrivateKeyBytesInBackground((String, String) args) =>
-    MnemonicService.derivePrivateKeyBytes(args.$1, SupportedChains.byId(args.$2));
+List<int> derivePrivateKeyBytesInBackground((String, String) args) => MnemonicService.derivePrivateKeyBytes(args.$1, SupportedChains.byId(args.$2));

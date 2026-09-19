@@ -32,11 +32,7 @@ class SolanaHttpService with SolanaServiceProvider {
     // 2xx 之外交给 SDK 统一构造错误响应（剥 HTML 错误页、解析 JSON 错误体），
     // 最终由 SolanaProvider 抛成带状态码的 RPCError，比在这里自己拼文案准确。
     if (statusCode < 200 || statusCode >= 300) {
-      return ServiceProviderUtils.findError(
-        object: body,
-        statusCode: statusCode,
-        allowStatusCode: params.errorStatusCodes,
-      );
+      return ServiceProviderUtils.findError(object: body, statusCode: statusCode, allowStatusCode: params.errorStatusCodes);
     }
     // 原样交回 body 字符串，由 params.responseEncoding 决定怎么解码——
     // 在这里提前 jsonDecode 会跟 SDK 的编码约定打架。

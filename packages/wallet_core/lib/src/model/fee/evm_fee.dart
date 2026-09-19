@@ -3,18 +3,9 @@ import 'fee_quote.dart';
 
 /// 某个档位下的 EVM 费率（每 gas 单价），EIP-1559 与 legacy 二选一。
 class EvmFeeRate {
-  const EvmFeeRate.eip1559({
-    required BigInt this.baseFee,
-    required BigInt this.maxFeePerGas,
-    required BigInt this.maxPriorityFeePerGas,
-  }) : eip1559 = true,
-       gasPrice = null;
+  const EvmFeeRate.eip1559({required BigInt this.baseFee, required BigInt this.maxFeePerGas, required BigInt this.maxPriorityFeePerGas}) : eip1559 = true, gasPrice = null;
 
-  const EvmFeeRate.legacy(BigInt this.gasPrice)
-    : eip1559 = false,
-      baseFee = null,
-      maxFeePerGas = null,
-      maxPriorityFeePerGas = null;
+  const EvmFeeRate.legacy(BigInt this.gasPrice) : eip1559 = false, baseFee = null, maxFeePerGas = null, maxPriorityFeePerGas = null;
 
   final bool eip1559;
 
@@ -53,11 +44,7 @@ class EvmFeeQuote implements FeeQuote {
 /// 会落盘（见 `EvmGasBasisNotifier`），所以带上 [fetchedAt]——
 /// baseFee 每 12 秒一变，读出来必须能判断新旧，不能当新鲜数据直接用。
 class EvmGasBasis {
-  const EvmGasBasis.eip1559({
-    required BigInt this.baseFee,
-    required Map<int, BigInt> this.tipByPercentile,
-    required this.fetchedAt,
-  }) : gasPrice = null;
+  const EvmGasBasis.eip1559({required BigInt this.baseFee, required Map<int, BigInt> this.tipByPercentile, required this.fetchedAt}) : gasPrice = null;
 
   const EvmGasBasis.legacy(BigInt this.gasPrice, {required this.fetchedAt}) : baseFee = null, tipByPercentile = null;
 
@@ -84,8 +71,7 @@ class EvmGasBasis {
   Map<String, dynamic> toJson() => {
     if (baseFee != null) 'baseFee': baseFee!.toString(),
     if (gasPrice != null) 'gasPrice': gasPrice!.toString(),
-    if (tipByPercentile != null)
-      'tips': {for (final entry in tipByPercentile!.entries) '${entry.key}': entry.value.toString()},
+    if (tipByPercentile != null) 'tips': {for (final entry in tipByPercentile!.entries) '${entry.key}': entry.value.toString()},
     'at': fetchedAt.millisecondsSinceEpoch,
   };
 

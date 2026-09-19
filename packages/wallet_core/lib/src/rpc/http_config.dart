@@ -31,17 +31,11 @@ Uri redactCredentials(Uri uri) {
   if (!uri.queryParameters.keys.any((k) => _credentialQueryParams.contains(k.toLowerCase()))) {
     return uri;
   }
-  return uri.replace(
-    queryParameters: {
-      for (final entry in uri.queryParameters.entries)
-        entry.key: _credentialQueryParams.contains(entry.key.toLowerCase()) ? 'REDACTED' : entry.value,
-    },
-  );
+  return uri.replace(queryParameters: {for (final entry in uri.queryParameters.entries) entry.key: _credentialQueryParams.contains(entry.key.toLowerCase()) ? 'REDACTED' : entry.value});
 }
 
 /// 截断过长的响应体，仅用于错误信息展示。
-String previewBody(String body) =>
-    body.length <= _maxErrorBodyPreviewChars ? body : '${body.substring(0, _maxErrorBodyPreviewChars)}...';
+String previewBody(String body) => body.length <= _maxErrorBodyPreviewChars ? body : '${body.substring(0, _maxErrorBodyPreviewChars)}...';
 
 /// 非 2xx 响应。
 ///

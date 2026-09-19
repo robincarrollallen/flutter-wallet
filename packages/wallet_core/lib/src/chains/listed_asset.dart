@@ -35,7 +35,5 @@ class ListedAsset {
   static String nativeKey(Chain chain) => '${chain.id}::native';
 
   /// 从 [catalog] 展开：每条链原生币 + 该链代币。[chain] 为空表示全部链。
-  static List<ListedAsset> fromCatalog(TokenCatalog catalog, {Chain? chain}) => [
-    for (final (c, tk) in catalog.assetsOf(chain)) ListedAsset(chain: c, token: tk),
-  ];
+  static List<ListedAsset> fromCatalog(TokenCatalog catalog, {Chain? chain}) => [for (final (c, tk) in catalog.assetsOf(chain)) ListedAsset(chain: c, token: tk)];
 }

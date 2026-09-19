@@ -24,19 +24,7 @@ extension TokenRpcMethodX on TokenRpcMethod {
 }
 
 /// EVM JSON-RPC 方法（用于交易发送与估费流程）。
-enum EvmRpcMethod {
-  getTransactionCount,
-  getBalance,
-  sendRawTransaction,
-  getBlockByNumber,
-  maxPriorityFeePerGas,
-  feeHistory,
-  gasPrice,
-  estimateGas,
-  getCode,
-  getTransactionReceipt,
-  call,
-}
+enum EvmRpcMethod { getTransactionCount, getBalance, sendRawTransaction, getBlockByNumber, maxPriorityFeePerGas, feeHistory, gasPrice, estimateGas, getCode, getTransactionReceipt, call }
 
 /// EvmRpcMethod 的链上方法名映射。
 extension EvmRpcMethodX on EvmRpcMethod {

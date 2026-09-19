@@ -67,9 +67,7 @@ class _FakeNode {
 String get _from => ETHPrivateKey.fromBytes(_privateKey).publicKey().toAddress().address;
 
 Future<TransferResult> _send(_FakeNode node, {String amount = '0.5'}) {
-  return EvmTransactionService(
-    call: node.call,
-  ).sendToken(chain: _chain, token: _usdc, privateKey: _privateKey, fromAddress: _from, to: _recipient, amount: amount);
+  return EvmTransactionService(call: node.call).sendToken(chain: _chain, token: _usdc, privateKey: _privateKey, fromAddress: _from, to: _recipient, amount: amount);
 }
 
 void main() {
@@ -100,19 +98,13 @@ void main() {
 
     test('代币余额不足即报错，不静默改小金额', () async {
       final node = _FakeNode(tokenBalance: '100000'); // 0.1 USDC
-      await expectLater(
-        _send(node),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('USDC 余额不足'))),
-      );
+      await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('USDC 余额不足'))));
       expect(node.paramsOf('eth_sendRawTransaction'), isNull, reason: '校验失败不该广播');
     });
 
     test('原生币不足以支付 gas 即报错', () async {
       final node = _FakeNode(nativeBalance: '0x1'); // 1 wei
-      await expectLater(
-        _send(node),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('不足以支付网络费'))),
-      );
+      await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('不足以支付网络费'))));
       expect(node.paramsOf('eth_sendRawTransaction'), isNull);
     });
 
@@ -147,14 +139,7 @@ void main() {
         decimals: 6,
       );
       await expectLater(
-        EvmTransactionService(call: node.call).sendToken(
-          chain: _chain,
-          token: spl,
-          privateKey: _privateKey,
-          fromAddress: _from,
-          to: _recipient,
-          amount: '0.5',
-        ),
+        EvmTransactionService(call: node.call).sendToken(chain: _chain, token: spl, privateKey: _privateKey, fromAddress: _from, to: _recipient, amount: '0.5'),
         throwsUnsupportedError,
       );
     });

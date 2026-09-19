@@ -83,11 +83,7 @@ class SolanaFeeEstimate {
   BigInt priceFor(FeeSpeed speed) => priceByPercentile[speed.rewardPercentile] ?? BigInt.zero;
 
   /// 某档的完整报价。
-  SolanaFeeQuote quoteFor(FeeSpeed speed) => SolanaFeeQuote(
-    speed: speed,
-    baseFee: baseFeeLamports,
-    priorityFee: priorityFeeLamports(priceFor(speed), computeUnitLimit),
-  );
+  SolanaFeeQuote quoteFor(FeeSpeed speed) => SolanaFeeQuote(speed: speed, baseFee: baseFeeLamports, priorityFee: priorityFeeLamports(priceFor(speed), computeUnitLimit));
 
   /// 三档报价，直接喂给 [NetworkFeeSelector]。
   Map<FeeSpeed, SolanaFeeQuote> get quotes => {for (final speed in FeeSpeed.values) speed: quoteFor(speed)};
@@ -137,8 +133,5 @@ BigInt priorityFeeLamports(BigInt microLamportsPerComputeUnit, int computeUnitLi
 Map<int, BigInt> pricePercentiles(List<int> samples, Iterable<int> percentiles) {
   if (samples.isEmpty) return const {};
   final sorted = [...samples]..sort();
-  return {
-    for (final percentile in percentiles)
-      percentile: BigInt.from(sorted[((sorted.length - 1) * percentile / 100).round().clamp(0, sorted.length - 1)]),
-  };
+  return {for (final percentile in percentiles) percentile: BigInt.from(sorted[((sorted.length - 1) * percentile / 100).round().clamp(0, sorted.length - 1)])};
 }

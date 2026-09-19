@@ -68,12 +68,7 @@ class _FakeTronService with TronServiceProvider {
       'wallet/broadcasthex' => _broadcast(body),
       'wallet/gettransactionbyid' => _receipt(),
       // —— 费用估算用到的三个接口 —— //
-      'wallet/getaccountresource' => {
-        'freeNetLimit': freeBandwidth,
-        'freeNetUsed': 0,
-        'NetLimit': stakedBandwidth,
-        'NetUsed': 0,
-      },
+      'wallet/getaccountresource' => {'freeNetLimit': freeBandwidth, 'freeNetUsed': 0, 'NetLimit': stakedBandwidth, 'NetUsed': 0},
       // 收款方是否已激活：非空且带 address 即视为已激活。
       'wallet/getaccount' => recipientActivated ? {'address': body['address']} : <String, dynamic>{},
       'wallet/getchainparameters' => {
@@ -147,22 +142,14 @@ class _FakeBalances implements ChainBalanceApi {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-TronTransactionService _service(_FakeTronService node) =>
-    TronTransactionService(provider: TronProvider(node), balances: _FakeBalances(node.balance));
+TronTransactionService _service(_FakeTronService node) => TronTransactionService(provider: TronProvider(node), balances: _FakeBalances(node.balance));
 
-Future<TransferResult> _send(_FakeTronService node, {String amount = '1.5', String? from}) => _service(node).sendNative(
-  chain: _chain,
-  privateKey: _privateKey,
-  fromAddress: from ?? _owner.toAddress(),
-  to: _recipient.toAddress(),
-  amount: amount,
-);
+Future<TransferResult> _send(_FakeTronService node, {String amount = '1.5', String? from}) =>
+    _service(node).sendNative(chain: _chain, privateKey: _privateKey, fromAddress: from ?? _owner.toAddress(), to: _recipient.toAddress(), amount: amount);
 
 void main() {
   group('TronTransactionService.estimateNativeFee', () {
-    Future<TronFeeEstimate> estimate(_FakeTronService node) =>
-        _service(node)
-            .estimateNativeFee(chain: _chain, from: _owner.toAddress(), to: _recipient.toAddress(), amount: '1.5');
+    Future<TronFeeEstimate> estimate(_FakeTronService node) => _service(node).estimateNativeFee(chain: _chain, from: _owner.toAddress(), to: _recipient.toAddress(), amount: '1.5');
 
     test('带宽充足且收款方已激活时免费', () async {
       final fee = await estimate(_FakeTronService(freeBandwidth: 600));
@@ -263,9 +250,7 @@ void main() {
     });
 
     test('节点返回主网创世身份时中止签名', () async {
-      final node = _FakeTronService(
-        genesisBlockId: '000000000000000000000000000000000000000000000000000000002b6653dc',
-      );
+      final node = _FakeTronService(genesisBlockId: '000000000000000000000000000000000000000000000000000000002b6653dc');
       await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('节点不在'))));
       expect(node.broadcastPayload, isNull);
     });
@@ -292,10 +277,7 @@ void main() {
     test('广播失败时上抛节点给的原因', () async {
       final node = _FakeTronService(broadcastOk: false);
 
-      await expectLater(
-        _send(node),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('签名无效'))),
-      );
+      await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('签名无效'))));
     });
 
     // 余额刚好等于金额时，带宽够就该放行、带宽不够就该拦下——这正是「余额校验
@@ -308,10 +290,7 @@ void main() {
 
     test('余额刚好等于金额：带宽不足则报错并提示含网络费', () async {
       final node = _FakeTronService(balance: '1500000', freeBandwidth: 0);
-      await expectLater(
-        _send(node, amount: '1.5'),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('含网络费用'))),
-      );
+      await expectLater(_send(node, amount: '1.5'), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('含网络费用'))));
       expect(node.calls, isNot(contains('wallet/broadcasthex')));
     });
 
@@ -353,8 +332,7 @@ void main() {
       final node = _FakeTronService(balance: '10000000', freeBandwidth: 0);
       // 费用不写死：带宽随金额的 varint 长度浮动（10 TRX 比 1 TRX 多一个字节），
       // 写死数字会让这条测试在换金额时莫名其妙地红。按同一入参现算才站得住。
-      final fee = await _service(node)
-          .estimateNativeFee(chain: _chain, from: _owner.toAddress(), to: _recipient.toAddress(), amount: '10');
+      final fee = await _service(node).estimateNativeFee(chain: _chain, from: _owner.toAddress(), to: _recipient.toAddress(), amount: '10');
       expect(fee.feeSun, greaterThan(BigInt.zero));
 
       final result = await sendMax(node);
@@ -384,10 +362,7 @@ void main() {
     test('MAX：扣完不为正时报错', () async {
       // 余额 0.2 TRX，带宽费就要 0.267 TRX。
       final node = _FakeTronService(balance: '200000', freeBandwidth: 0);
-      await expectLater(
-        sendMax(node),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('不足以支付网络费用'))),
-      );
+      await expectLater(sendMax(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('不足以支付网络费用'))));
       expect(node.broadcastPayload, isNull);
     });
 

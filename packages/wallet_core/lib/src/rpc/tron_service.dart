@@ -33,11 +33,7 @@ class TronHttpService with TronServiceProvider {
     // 2xx 之外交给 SDK 统一构造错误响应：它会剥离 HTML 错误页、解析 JSON 错误体，
     // 最终由 TronProvider 抛成带状态码的 RPCError，比在这里自己拼文案准确。
     if (statusCode < 200 || statusCode >= 300) {
-      return ServiceProviderUtils.findError(
-        object: body,
-        statusCode: statusCode,
-        allowStatusCode: params.errorStatusCodes,
-      );
+      return ServiceProviderUtils.findError(object: body, statusCode: statusCode, allowStatusCode: params.errorStatusCodes);
     }
     // 原样把 body 字符串交回去，由 params.responseEncoding 决定怎么解码——
     // 在这里提前 jsonDecode 会跟 SDK 的编码约定打架。
@@ -50,9 +46,7 @@ class TronHttpService with TronServiceProvider {
   /// connect 卡住或服务端接了不回都会无限挂起。
   Future<({int statusCode, String body})> _send(Uri uri, TronRequestDetails params, Duration deadline) async {
     try {
-      final request = params.requestMethod.isGet
-          ? await sharedHttpClient.getUrl(uri).timeout(deadline)
-          : await sharedHttpClient.postUrl(uri).timeout(deadline);
+      final request = params.requestMethod.isGet ? await sharedHttpClient.getUrl(uri).timeout(deadline) : await sharedHttpClient.postUrl(uri).timeout(deadline);
 
       params.headers.forEach(request.headers.set);
 

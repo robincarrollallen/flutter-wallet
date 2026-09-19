@@ -1,4 +1,5 @@
 import 'package:wallet_core/chains.dart';
+
 import '../../model/models.dart';
 import '../tron_transaction_service.dart';
 import 'chain_transfer_service.dart';
@@ -53,14 +54,7 @@ class TronTransferService implements ChainTransferService {
       }
 
       /// 如果代币实例不为空，则发送代币
-      return await _transactions.sendToken(
-        chain: request.chain,
-        token: token,
-        privateKey: privateKey,
-        fromAddress: request.from,
-        to: request.to,
-        amount: request.amount,
-      );
+      return await _transactions.sendToken(chain: request.chain, token: token, privateKey: privateKey, fromAddress: request.from, to: request.to, amount: request.amount);
     } finally {
       wipeKey(privateKey); // 清零私钥明文
     }

@@ -117,9 +117,6 @@ class WalletCommitService {
   /// 只清「带提交意图标记」的那些，且要求钱包列表本身可信——详见
   /// [SecureWalletStorage.purgeOrphanSecrets]。
   Future<int> purgeOrphanSecrets() {
-    return _secureStorage.purgeOrphanSecrets(
-      knownWalletIds: _registry.knownWalletIds,
-      registryTrusted: _registry.walletListTrusted,
-    );
+    return _secureStorage.purgeOrphanSecrets(knownWalletIds: _registry.knownWalletIds, registryTrusted: _registry.walletListTrusted);
   }
 }

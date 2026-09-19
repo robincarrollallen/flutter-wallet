@@ -65,11 +65,7 @@ class TokenCatalog {
   /// - 只保留 [chains] 里有的链；未知 `chainId` 直接丢弃。
   /// - 同键时 [custom] 覆盖 [remote]，且留在 remote 原来的位置。
   /// - 自定义独有的代币追加到该链代币列表末尾。
-  factory TokenCatalog.merge({
-    required List<Chain> chains,
-    required List<Token> remote,
-    List<Token> custom = const [],
-  }) {
+  factory TokenCatalog.merge({required List<Chain> chains, required List<Token> remote, List<Token> custom = const []}) {
     final chainIds = {for (final c in chains) c.id};
     final byChain = <String, Map<String, Token>>{for (final c in chains) c.id: <String, Token>{}};
 
@@ -83,10 +79,7 @@ class TokenCatalog {
     putAll(remote);
     putAll(custom);
 
-    return TokenCatalog(
-      chains: chains,
-      tokensByChain: {for (final c in chains) c.id: byChain[c.id]!.values.toList(growable: false)},
-    );
+    return TokenCatalog(chains: chains, tokensByChain: {for (final c in chains) c.id: byChain[c.id]!.values.toList(growable: false)});
   }
 
   /// 扁平列表去重用：`chainId` + 规范化 identifier。

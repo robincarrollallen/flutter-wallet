@@ -49,10 +49,7 @@ void main() {
   group('MnemonicService.derivePrivateKey 导出私钥', () {
     test('同一助记词按链导出稳定', () {
       final chain = SupportedChains.solanaDevnet;
-      expect(
-        MnemonicService.derivePrivateKey(validMnemonic, chain),
-        MnemonicService.derivePrivateKey(validMnemonic, chain),
-      );
+      expect(MnemonicService.derivePrivateKey(validMnemonic, chain), MnemonicService.derivePrivateKey(validMnemonic, chain));
     });
 
     test('EVM 各链导出同一把 0x hex 私钥', () {

@@ -74,22 +74,11 @@ class SolanaTransactionService {
   ///
   /// 这个入口自己取 blockhash，供确认页的估费 provider 直接调用；[sendNative] 不走这里，
   /// 它自己取一次再传给 [_estimateWith]，好让估费与签名共用同一个 blockhash。
-  Future<SolanaFeeEstimate> estimateNativeFee({
-    required Chain chain,
-    required String from,
-    required String to,
-    required String amount,
-  }) async {
+  Future<SolanaFeeEstimate> estimateNativeFee({required Chain chain, required String from, required String to, required String amount}) async {
     final provider = _providerFor(chain);
     final blockhash = await provider.request(const SolanaRequestGetLatestBlockhash());
 
-    return _estimateWith(
-      provider: provider,
-      owner: SolAddress(from.trim()),
-      recipient: SolAddress(to.trim()),
-      lamports: parseUnits(amount, chain.decimals),
-      blockhash: blockhash.blockhash,
-    );
+    return _estimateWith(provider: provider, owner: SolAddress(from.trim()), recipient: SolAddress(to.trim()), lamports: parseUnits(amount, chain.decimals), blockhash: blockhash.blockhash);
   }
 
   /// 估费本体：问链上要签名费与近期优先费行情，同时取回租金豁免线与收款方余额。
@@ -100,13 +89,7 @@ class SolanaTransactionService {
   /// **只问一次 `getFeeForMessage`，不是每档问一次**：拿优先单价为 0 的消息问出签名费，
   /// 三档的优先费再按 `单价 × 计算单元上限` 本地算。这个公式与链上收费口径一致，
   /// 算出来是精确值，没必要为三档各发一轮请求。
-  Future<SolanaFeeEstimate> _estimateWith({
-    required SolanaProvider provider,
-    required SolAddress owner,
-    required SolAddress recipient,
-    required BigInt lamports,
-    required SolAddress blockhash,
-  }) async {
+  Future<SolanaFeeEstimate> _estimateWith({required SolanaProvider provider, required SolAddress owner, required SolAddress recipient, required BigInt lamports, required SolAddress blockhash}) async {
     final message = _buildTransaction(
       owner: owner,
       recipient: recipient,
@@ -131,10 +114,7 @@ class SolanaTransactionService {
       // 真遇上就按每签名费的标称值兜底，不让估费失败连累到发送。
       baseFeeLamports: fee ?? _lamportsPerSignature,
       computeUnitLimit: _computeUnitLimit,
-      priceByPercentile: pricePercentiles(
-        recentFees.map((sample) => sample.prioritizationFee).toList(),
-        FeeSpeed.values.map((speed) => speed.rewardPercentile),
-      ),
+      priceByPercentile: pricePercentiles(recentFees.map((sample) => sample.prioritizationFee).toList(), FeeSpeed.values.map((speed) => speed.rewardPercentile)),
       rentExemptMinimum: rentExemptMinimum,
       recipientBalance: recipientBalance,
     );
@@ -183,21 +163,12 @@ class SolanaTransactionService {
     final recipient = SolAddress(to.trim());
 
     // 3. 创世哈希（钉死集群）与 blockhash 并发。敌对节点若整台换成主网，创世哈希会对不上。
-    final (genesisHash, latest) = await (
-      provider.request(SolanaRequestGetGenesisHash()),
-      provider.request(const SolanaRequestGetLatestBlockhash()),
-    ).wait;
+    final (genesisHash, latest) = await (provider.request(SolanaRequestGetGenesisHash()), provider.request(const SolanaRequestGetLatestBlockhash())).wait;
     chain.ensureGenesisHash(genesisHash);
 
     //    发送方余额与估费并发发出——两者互不依赖，串行等于白等一轮。
     final (estimate, balance) = await (
-      _estimateWith(
-        provider: provider,
-        owner: owner,
-        recipient: recipient,
-        lamports: value,
-        blockhash: latest.blockhash,
-      ),
+      _estimateWith(provider: provider, owner: owner, recipient: recipient, lamports: value, blockhash: latest.blockhash),
       provider.request(SolanaRequestGetBalance(account: owner)),
     ).wait;
 
@@ -233,22 +204,13 @@ class SolanaTransactionService {
     //
     // blockhash 复用第 3 步取的那个，**不要**在这里再取一次：那是一轮白费的往返，
     // 而且会让 lastValidBlockHeight 与估费时的不一致。
-    final transaction = _buildTransaction(
-      owner: owner,
-      recipient: recipient,
-      lamports: value,
-      blockhash: latest.blockhash,
-      computeUnitPrice: estimate.priceFor(speed),
-    );
+    final transaction = _buildTransaction(owner: owner, recipient: recipient, lamports: value, blockhash: latest.blockhash, computeUnitPrice: estimate.priceFor(speed));
     transaction.sign([signer]);
 
     final signature = await provider.request(
       SolanaRequestSendTransaction(
         // 编码两头必须一致：交易按 base64 序列化，就要告诉节点按 base64 解。
-        encodedTransaction: transaction.serializeString(
-          encoding: TransactionSerializeEncoding.base64,
-          verifySignatures: true,
-        ),
+        encodedTransaction: transaction.serializeString(encoding: TransactionSerializeEncoding.base64, verifySignatures: true),
         encoding: SolanaRequestEncoding.base64,
         // 预检按 confirmed 即可：要求 finalized 会让刚上链的余额变化迟迟不可见，
         // 明明够付的交易反而被预检打回。
@@ -272,13 +234,7 @@ class SolanaTransactionService {
   /// 在别的链上不存在的失败模式，都要在广播前拦下来，否则用户只会看到节点的英文报错：
   /// - 向新地址转一笔太小的钱 → 收款账户创建不出来，交易失败；
   /// - 把自己的余额转到只剩一点点（不是转空）→ 自己的账户反而会被回收。
-  void _verifyRentExempt({
-    required Chain chain,
-    required SolanaFeeEstimate estimate,
-    required BigInt value,
-    required BigInt balance,
-    required BigInt fee,
-  }) {
+  void _verifyRentExempt({required Chain chain, required SolanaFeeEstimate estimate, required BigInt value, required BigInt balance, required BigInt fee}) {
     final shortfall = estimate.shortfallFor(value);
     if (shortfall > BigInt.zero) {
       final minimum = estimate.rentExemptMinimum - estimate.recipientBalance;
@@ -306,23 +262,13 @@ class SolanaTransactionService {
   /// 三条指令的顺序无所谓，但**两条 ComputeBudget 指令都得在**，且要和估费时一致：
   /// 少了 SetComputeUnitLimit，优先费会按默认 200000 CU 计；少了 SetComputeUnitPrice，
   /// 这笔交易就是不付优先费的，拥堵时挤不进区块。
-  SolanaTransaction _buildTransaction({
-    required SolAddress owner,
-    required SolAddress recipient,
-    required BigInt lamports,
-    required SolAddress blockhash,
-    required BigInt computeUnitPrice,
-  }) {
+  SolanaTransaction _buildTransaction({required SolAddress owner, required SolAddress recipient, required BigInt lamports, required SolAddress blockhash, required BigInt computeUnitPrice}) {
     return SolanaTransaction(
       payerKey: owner,
       recentBlockhash: blockhash,
       instructions: [
-        ComputeBudgetProgram.setComputeUnitLimit(
-          layout: const ComputeBudgetSetComputeUnitLimitLayout(units: _computeUnitLimit),
-        ),
-        ComputeBudgetProgram.setComputeUnitPrice(
-          layout: ComputeBudgetSetComputeUnitPriceLayout(microLamports: computeUnitPrice),
-        ),
+        ComputeBudgetProgram.setComputeUnitLimit(layout: const ComputeBudgetSetComputeUnitLimitLayout(units: _computeUnitLimit)),
+        ComputeBudgetProgram.setComputeUnitPrice(layout: ComputeBudgetSetComputeUnitPriceLayout(microLamports: computeUnitPrice)),
         SystemProgram.transfer(
           layout: SystemTransferLayout(lamports: lamports),
           from: owner,
@@ -342,29 +288,19 @@ class SolanaTransactionService {
   /// 发送方那次用 `getAccountInfo` 而不是 `getTokenAccountBalance`：账户不存在时后者是
   /// RPC 报错，要靠 catch 才能和网络故障区分开——而账户数据里本来就带着余额，
   /// 一次 `getAccountInfo` 就同时回答了「在不在」和「有多少」，还少一次往返。
-  Future<_TokenAccounts> _resolveTokenAccounts({
-    required SolanaProvider provider,
-    required Token token,
-    required SolAddress owner,
-    required SolAddress recipient,
-  }) async {
+  Future<_TokenAccounts> _resolveTokenAccounts({required SolanaProvider provider, required Token token, required SolAddress owner, required SolAddress recipient}) async {
     final mint = SolAddress(token.identifier.trim());
     final source = _associatedTokenAccountOf(mint: mint, owner: owner);
     final destination = _associatedTokenAccountOf(mint: mint, owner: recipient);
 
-    final (sourceInfo, destinationInfo) = await (
-      provider.request(SolanaRequestGetAccountInfo(account: source)),
-      provider.request(SolanaRequestGetAccountInfo(account: destination)),
-    ).wait;
+    final (sourceInfo, destinationInfo) = await (provider.request(SolanaRequestGetAccountInfo(account: source)), provider.request(SolanaRequestGetAccountInfo(account: destination))).wait;
 
     return (
       mint: mint,
       source: source,
       destination: destination,
       sourceExists: sourceInfo != null,
-      sourceBalance: sourceInfo == null
-          ? BigInt.zero
-          : SolanaTokenAccount.fromBuffer(data: sourceInfo.toBytesData(), address: source).amount,
+      sourceBalance: sourceInfo == null ? BigInt.zero : SolanaTokenAccount.fromBuffer(data: sourceInfo.toBytesData(), address: source).amount,
       createsDestination: destinationInfo == null,
     );
   }
@@ -385,31 +321,14 @@ class SolanaTransactionService {
   /// 估算一笔 SPL 代币转账的三档费用，并带回「要不要为收款方建 ATA」及那笔租金。
   ///
   /// 与 [estimateNativeFee] 同构：自取 blockhash，供确认页的估费 provider 直接调用。
-  Future<SolanaFeeEstimate> estimateTokenFee({
-    required Chain chain,
-    required Token token,
-    required String from,
-    required String to,
-    required String amount,
-  }) async {
+  Future<SolanaFeeEstimate> estimateTokenFee({required Chain chain, required Token token, required String from, required String to, required String amount}) async {
     final provider = _providerFor(chain);
     final owner = SolAddress(from.trim());
     final recipient = SolAddress(to.trim());
 
-    final (blockhash, accounts) = await (
-      provider.request(const SolanaRequestGetLatestBlockhash()),
-      _resolveTokenAccounts(provider: provider, token: token, owner: owner, recipient: recipient),
-    ).wait;
+    final (blockhash, accounts) = await (provider.request(const SolanaRequestGetLatestBlockhash()), _resolveTokenAccounts(provider: provider, token: token, owner: owner, recipient: recipient)).wait;
 
-    return _estimateTokenWith(
-      provider: provider,
-      token: token,
-      accounts: accounts,
-      owner: owner,
-      recipient: recipient,
-      value: parseUnits(amount, token.decimals),
-      blockhash: blockhash.blockhash,
-    );
+    return _estimateTokenWith(provider: provider, token: token, accounts: accounts, owner: owner, recipient: recipient, value: parseUnits(amount, token.decimals), blockhash: blockhash.blockhash);
   }
 
   /// 代币估费本体。[accounts] 由调用方给，[sendToken] 才能与自己的校验共用同一次查询。
@@ -442,25 +361,18 @@ class SolanaTransactionService {
 
     // 不建 ATA 时租金恒为 0，就不必为它发一轮请求——但仍要摆成一个 Future，
     // 好和另外两个一起进 `.wait`（记录字面量不支持 if 元素）。
-    final ataRentRequest = accounts.createsDestination
-        ? provider.request(SolanaRequestGetMinimumBalanceForRentExemption(size: _tokenAccountDataSize))
-        : Future.value(BigInt.zero);
+    final ataRentRequest = accounts.createsDestination ? provider.request(SolanaRequestGetMinimumBalanceForRentExemption(size: _tokenAccountDataSize)) : Future.value(BigInt.zero);
 
     final (fee, recentFees, ataRent) = await (
       provider.request(SolanaRequestGetFeeForMessage(encodedMessage: message)),
-      provider.request(
-        SolanaRequestGetRecentPrioritizationFees(addresses: [owner, accounts.source, accounts.destination]),
-      ),
+      provider.request(SolanaRequestGetRecentPrioritizationFees(addresses: [owner, accounts.source, accounts.destination])),
       ataRentRequest,
     ).wait;
 
     return SolanaFeeEstimate(
       baseFeeLamports: fee ?? _lamportsPerSignature,
       computeUnitLimit: computeUnitLimit,
-      priceByPercentile: pricePercentiles(
-        recentFees.map((sample) => sample.prioritizationFee).toList(),
-        FeeSpeed.values.map((speed) => speed.rewardPercentile),
-      ),
+      priceByPercentile: pricePercentiles(recentFees.map((sample) => sample.prioritizationFee).toList(), FeeSpeed.values.map((speed) => speed.rewardPercentile)),
       // 收款方 SOL 账户的租金账与代币转账无关（转的是代币，对方 SOL 余额不变），
       // 传 0 让 shortfallFor / createsRecipient 天然失效——约定见 SolanaFeeEstimate 类注释。
       rentExemptMinimum: BigInt.zero,
@@ -524,15 +436,7 @@ class SolanaTransactionService {
       );
     }
 
-    final estimate = await _estimateTokenWith(
-      provider: provider,
-      token: token,
-      accounts: accounts,
-      owner: owner,
-      recipient: recipient,
-      value: value,
-      blockhash: latest.blockhash,
-    );
+    final estimate = await _estimateTokenWith(provider: provider, token: token, accounts: accounts, owner: owner, recipient: recipient, value: value, blockhash: latest.blockhash);
 
     // 5. SOL 余额校验：网络费与 ATA 租金都从 SOL 里出，与代币余额是两本账，必须单独校验。
     //    比的是「费用 + 租金」的合计——只比费用，会在要建 ATA 时把需求少算几百倍。
@@ -543,9 +447,7 @@ class SolanaTransactionService {
     //    不是这笔代币转账造成的，拦在这里只会让人摸不着头脑。
     final cost = estimate.lamportsCostFor(speed);
     if (cost > solBalance) {
-      final rentNote = estimate.createsTokenAccount
-          ? '（含为收款方创建代币账户的租金 ${formatUnits(estimate.ataRentLamports, chain.decimals)}）'
-          : '';
+      final rentNote = estimate.createsTokenAccount ? '（含为收款方创建代币账户的租金 ${formatUnits(estimate.ataRentLamports, chain.decimals)}）' : '';
       throw Exception(
         '${chain.symbol} 不足以支付网络费：需约 ${formatUnits(cost, chain.decimals)} ${chain.symbol}$rentNote，'
         '可用 ${formatUnits(solBalance, chain.decimals)}',
@@ -568,10 +470,7 @@ class SolanaTransactionService {
 
     final signature = await provider.request(
       SolanaRequestSendTransaction(
-        encodedTransaction: transaction.serializeString(
-          encoding: TransactionSerializeEncoding.base64,
-          verifySignatures: true,
-        ),
+        encodedTransaction: transaction.serializeString(encoding: TransactionSerializeEncoding.base64, verifySignatures: true),
         encoding: SolanaRequestEncoding.base64,
         commitment: Commitment.confirmed,
       ),
@@ -604,22 +503,12 @@ class SolanaTransactionService {
       payerKey: owner,
       recentBlockhash: blockhash,
       instructions: [
-        ComputeBudgetProgram.setComputeUnitLimit(
-          layout: ComputeBudgetSetComputeUnitLimitLayout(units: computeUnitLimit),
-        ),
-        ComputeBudgetProgram.setComputeUnitPrice(
-          layout: ComputeBudgetSetComputeUnitPriceLayout(microLamports: computeUnitPrice),
-        ),
+        ComputeBudgetProgram.setComputeUnitLimit(layout: ComputeBudgetSetComputeUnitLimitLayout(units: computeUnitLimit)),
+        ComputeBudgetProgram.setComputeUnitPrice(layout: ComputeBudgetSetComputeUnitPriceLayout(microLamports: computeUnitPrice)),
         // Idempotent 变体：估费与广播之间若有人抢先把这个 ATA 建好了（收款方自己收了
         // 另一笔、或用户连点两次），普通的 create 会因「账户已存在」让整笔交易失败，
         // 而 idempotent 版本此时直接跳过。多付的代价只有那点 CU。
-        if (accounts.createsDestination)
-          AssociatedTokenAccountProgram.associatedTokenAccountIdempotent(
-            payer: owner,
-            associatedToken: accounts.destination,
-            owner: recipient,
-            mint: accounts.mint,
-          ),
+        if (accounts.createsDestination) AssociatedTokenAccountProgram.associatedTokenAccountIdempotent(payer: owner, associatedToken: accounts.destination, owner: recipient, mint: accounts.mint),
         // transferChecked 而非 transfer：它把 decimals 一并写进指令，由链上比对 mint 的
         // 真实精度。万一代币目录里的 decimals 与链上不符，这笔交易会**失败**，
         // 而不是照着错的精度把金额转错几个数量级——那是不可逆的。

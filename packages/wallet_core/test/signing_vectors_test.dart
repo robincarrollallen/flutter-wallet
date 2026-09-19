@@ -21,9 +21,7 @@ void main() {
     // 出处：EIP-155 规范原文的示例交易（https://eips.ethereum.org/EIPS/eip-155，
     // 2026-09-16 核对）。规范给出了私钥、全部交易字段与最终的签名值，
     // 是整个以太坊生态被复核次数最多的一条向量。
-    final privateKey = BytesUtils.fromHexString(
-      '4646464646464646464646464646464646464646464646464646464646464646',
-    );
+    final privateKey = BytesUtils.fromHexString('4646464646464646464646464646464646464646464646464646464646464646');
     const expectedSignedRawTx =
         '0xf86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a764000080'
         '25a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aec'
@@ -90,10 +88,7 @@ void main() {
       // keccak256("transfer(address,uint256)") 的前 4 字节 = a9059cbb。
       // 代币转账里 value 字段恒为 0，金额只存在于 calldata——这段编码错了，
       // 用户会看到"转账成功"而资产纹丝不动，或者转出一个数量级之差的金额。
-      final calldata = encodeTransfer(
-        to: '0x3535353535353535353535353535353535353535',
-        amount: BigInt.from(1000000),
-      );
+      final calldata = encodeTransfer(to: '0x3535353535353535353535353535353535353535', amount: BigInt.from(1000000));
 
       expect(
         calldata,
@@ -124,22 +119,19 @@ void main() {
       payerKey: owner,
       recentBlockhash: blockhash,
       instructions: [
-        ComputeBudgetProgram.setComputeUnitLimit(
-          layout: const ComputeBudgetSetComputeUnitLimitLayout(units: computeUnitLimit),
+        ComputeBudgetProgram.setComputeUnitLimit(layout: const ComputeBudgetSetComputeUnitLimitLayout(units: computeUnitLimit)),
+        ComputeBudgetProgram.setComputeUnitPrice(layout: ComputeBudgetSetComputeUnitPriceLayout(microLamports: computeUnitPrice)),
+        SystemProgram.transfer(
+          layout: SystemTransferLayout(lamports: BigInt.from(1000000)),
+          from: owner,
+          to: recipient,
         ),
-        ComputeBudgetProgram.setComputeUnitPrice(
-          layout: ComputeBudgetSetComputeUnitPriceLayout(microLamports: computeUnitPrice),
-        ),
-        SystemProgram.transfer(layout: SystemTransferLayout(lamports: BigInt.from(1000000)), from: owner, to: recipient),
       ],
     );
 
     test('公钥派生与 web3.js 一致', () {
       expect(SolanaPrivateKey.fromSeed(seed).publicKey().toAddress().address, '9C6hybhQ6Aycep9jaUnP6uL9ZYvDjUp1aSkFWPUFJtpj');
-      expect(
-        SolanaPrivateKey.fromSeed(recipientSeed).publicKey().toAddress().address,
-        'Dav6Vxmr7BEgvQW4osrzWutwgPEqQ4Ji3zWxKp6nX9AD',
-      );
+      expect(SolanaPrivateKey.fromSeed(recipientSeed).publicKey().toAddress().address, 'Dav6Vxmr7BEgvQW4osrzWutwgPEqQ4Ji3zWxKp6nX9AD');
     });
 
     test('message 的账户集合与指令语义与 web3.js 等价', () {
@@ -170,8 +162,7 @@ void main() {
 
       // 转账金额编在 SystemProgram 指令的 data 里（小端 u64，1000000 = 0x0f4240）。
       final transferIx = transaction.message.compiledInstructions.firstWhere(
-        (CompiledInstruction i) =>
-            transaction.message.accountKeys[i.programIdIndex].address == SystemProgramConst.programId.address,
+        (CompiledInstruction i) => transaction.message.accountKeys[i.programIdIndex].address == SystemProgramConst.programId.address,
       );
       expect(BytesUtils.toHexString(transferIx.data), '0200000040420f0000000000');
     });
@@ -182,19 +173,13 @@ void main() {
       // 验签是另一条代码路径，签错消息、用错私钥、种子与密钥对混用
       // （fromSeed vs fromBytes 是这里踩过的坑）都会被它抓住。
       final signer = SolanaPrivateKey.fromSeed(seed);
-      final transaction = buildFixedTransaction(
-        signer.publicKey().toAddress(),
-        SolanaPrivateKey.fromSeed(recipientSeed).publicKey().toAddress(),
-      );
+      final transaction = buildFixedTransaction(signer.publicKey().toAddress(), SolanaPrivateKey.fromSeed(recipientSeed).publicKey().toAddress());
 
       transaction.sign([signer]);
       final signature = transaction.signatures.first;
 
       expect(signature, hasLength(64));
-      expect(
-        signer.publicKey().verify(message: transaction.serializeMessage(), signature: signature),
-        isTrue,
-      );
+      expect(signer.publicKey().verify(message: transaction.serializeMessage(), signature: signature), isTrue);
     });
 
     test('ATA 派生与 spl-token 一致', () {

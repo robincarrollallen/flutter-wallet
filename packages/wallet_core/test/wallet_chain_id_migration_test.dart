@@ -5,8 +5,7 @@ import 'package:wallet_core/wallet_core.dart';
 /// 地址按 chainId 存盘，而 `addressFor` 只按 [Chain.id] 查、加载时不会重新派生。
 /// 所以换测试网时若只改 id 不迁移老数据，用户钱包里该链的地址会**直接消失**——
 /// 首页和发送列表都不再显示，且没有任何报错。这组用例就是钉住这件事。
-Wallet _fromStored(Map<String, String> addresses) =>
-    Wallet.fromJson({'id': 'w1', 'name': '测试钱包', 'source': 'mnemonic', 'addresses': addresses});
+Wallet _fromStored(Map<String, String> addresses) => Wallet.fromJson({'id': 'w1', 'name': '测试钱包', 'source': 'mnemonic', 'addresses': addresses});
 
 const _tronAddress = 'TYAYRLQjBst1fPc6nziUVCebt5vwXUeLqK';
 

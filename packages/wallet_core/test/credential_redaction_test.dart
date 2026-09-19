@@ -37,11 +37,7 @@ void main() {
 
   test('HttpStatusException 的文本里不含 key', () {
     // 这条才是真正要守的东西：脱敏函数写对了，但异常忘了调用它，一样会泄漏。
-    final exception = HttpStatusException(
-      429,
-      Uri.parse('https://api.etherscan.io/v2/api?apikey=SECRET123'),
-      'rate limited',
-    );
+    final exception = HttpStatusException(429, Uri.parse('https://api.etherscan.io/v2/api?apikey=SECRET123'), 'rate limited');
 
     expect(exception.toString(), isNot(contains('SECRET123')));
     expect(exception.toString(), contains('429'));

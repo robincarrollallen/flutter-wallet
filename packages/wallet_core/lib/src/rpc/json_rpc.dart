@@ -43,8 +43,7 @@ Future<List<Object?>> jsonRpcBatch(String url, List<JsonRpcRequest> calls) async
   final ids = [for (var i = 0; i < calls.length; i++) ++_nextJsonRpcRequestId];
   final label = 'batch(${calls.map((c) => c.method).toSet().join(',')})'; // 错误文案里指明批次内容
   final decoded = await _post(url, [
-    for (var i = 0; i < calls.length; i++)
-      {'jsonrpc': '2.0', 'id': ids[i], 'method': calls[i].method, 'params': calls[i].params},
+    for (var i = 0; i < calls.length; i++) {'jsonrpc': '2.0', 'id': ids[i], 'method': calls[i].method, 'params': calls[i].params},
   ], label);
 
   if (decoded is! List) {
@@ -63,19 +62,11 @@ Future<List<Object?>> jsonRpcBatch(String url, List<JsonRpcRequest> calls) async
     byId['${item['id']}'] = item;
   }
 
-  return [
-    for (var i = 0; i < calls.length; i++)
-      _unwrapBatchItem(byId['${ids[i]}'], endpoint: endpoint, method: calls[i].method, requestId: ids[i]),
-  ];
+  return [for (var i = 0; i < calls.length; i++) _unwrapBatchItem(byId['${ids[i]}'], endpoint: endpoint, method: calls[i].method, requestId: ids[i])];
 }
 
 /// 取出单条批量响应的 result；缺条目或带 error 一律抛出。
-Object? _unwrapBatchItem(
-  Map<String, dynamic>? item, {
-  required String endpoint,
-  required String method,
-  required int requestId,
-}) {
+Object? _unwrapBatchItem(Map<String, dynamic>? item, {required String endpoint, required String method, required int requestId}) {
   if (item == null) {
     throw Exception('RPC batch missing response [$method] $endpoint: id=$requestId');
   }

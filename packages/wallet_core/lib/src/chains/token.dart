@@ -4,16 +4,7 @@ export '../model/enums/token_standard.dart';
 
 /// 某条链上的单个代币。身份键是 (chainId, identifier)，由 TokenCatalog 合并去重。
 class Token {
-  const Token({
-    required this.chainId,
-    required this.symbol,
-    required this.name,
-    required this.standard,
-    required this.identifier,
-    required this.coinGeckoId,
-    required this.decimals,
-    this.logoUrl,
-  });
+  const Token({required this.chainId, required this.symbol, required this.name, required this.standard, required this.identifier, required this.coinGeckoId, required this.decimals, this.logoUrl});
 
   final String chainId; // 所属链的 [Chain.id]，目录合并与按链查询都靠它。
   final String symbol; // 代币简称(列表、余额、转账页面展示短名称)

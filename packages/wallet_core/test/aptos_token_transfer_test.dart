@@ -16,9 +16,7 @@ import 'package:wallet_core/wallet_core.dart';
 /// 已经不存在的代币，而断言照样全绿。
 void main() {
   final chain = SupportedChains.byId('aptos-testnet');
-  final token = BundledTokenCatalog.all.firstWhere(
-    (candidate) => candidate.chainId == chain.id && candidate.standard == TokenStandard.aptosCoin,
-  );
+  final token = BundledTokenCatalog.all.firstWhere((candidate) => candidate.chainId == chain.id && candidate.standard == TokenStandard.aptosCoin);
 
   final privateKey = List<int>.filled(32, 7);
   final signer = AptosED25519PrivateKey.fromBytes(privateKey);
@@ -34,11 +32,7 @@ void main() {
   final twentyUsdc = BigInt.from(20000000);
   final oneApt = BigInt.from(100000000);
 
-  AptosTransactionService serviceWith(
-    _FakeAptosService node, {
-    BigInt? nativeBalance,
-    BigInt? tokenBalance,
-  }) => AptosTransactionService(
+  AptosTransactionService serviceWith(_FakeAptosService node, {BigInt? nativeBalance, BigInt? tokenBalance}) => AptosTransactionService(
     provider: AptosProvider(node),
     balances: _FixedBalances(native: nativeBalance ?? oneApt, token: tokenBalance ?? twentyUsdc),
   );
@@ -46,14 +40,7 @@ void main() {
   group('sendToken', () {
     test('构造 primary_fungible_store::transfer 并提交', () async {
       final node = _FakeAptosService();
-      final result = await serviceWith(node).sendToken(
-        chain: chain,
-        token: token,
-        privateKey: privateKey,
-        fromAddress: sender.address,
-        to: recipient.address,
-        amount: '1.5',
-      );
+      final result = await serviceWith(node).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '1.5');
 
       expect(result.status, TransactionStatus.pending);
       expect(result.validUntilBlock, isNull);
@@ -83,26 +70,13 @@ void main() {
 
       // 签名必须真的验得过。
       final authenticator = sent.authenticator as AptosTransactionAuthenticatorEd25519;
-      expect(
-        authenticator.publicKey.verify(
-          message: sent.rawTransaction.signingSerialize(),
-          signature: authenticator.signature.signature,
-        ),
-        isTrue,
-      );
+      expect(authenticator.publicKey.verify(message: sent.rawTransaction.signingSerialize(), signature: authenticator.signature.signature), isTrue);
     });
 
     test('节点返回主网 chainId 时中止签名', () async {
       final node = _FakeAptosService(ledgerChainId: 1);
       await expectLater(
-        serviceWith(node).sendToken(
-          chain: chain,
-          token: token,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '1.5',
-        ),
+        serviceWith(node).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '1.5'),
         throwsA(predicate((error) => error.toString().contains('chainId=1'))),
       );
       expect(node.submittedTransaction, isNull);
@@ -110,14 +84,7 @@ void main() {
 
     test('金额按代币精度换算，不是链的精度', () async {
       final node = _FakeAptosService();
-      final result = await serviceWith(node).sendToken(
-        chain: chain,
-        token: token,
-        privateKey: privateKey,
-        fromAddress: sender.address,
-        to: recipient.address,
-        amount: '1',
-      );
+      final result = await serviceWith(node).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '1');
 
       expect(token.decimals, 6, reason: '本例依赖 USDC 是 6 位');
       expect(chain.decimals, 8, reason: '而 APT 是 8 位——拿错一个差 100 倍');
@@ -129,14 +96,7 @@ void main() {
     test('代币余额不足时报错，且不提交', () async {
       final node = _FakeAptosService();
       await expectLater(
-        serviceWith(node, tokenBalance: BigInt.from(500000)).sendToken(
-          chain: chain,
-          token: token,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '1',
-        ),
+        serviceWith(node, tokenBalance: BigInt.from(500000)).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '1'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('${token.symbol} 余额不足'))),
       );
       expect(node.calls, isNot(contains('/transactions')));
@@ -146,17 +106,8 @@ void main() {
       final node = _FakeAptosService();
       await expectLater(
         // 代币够，APT 不够——这是与代币余额分开的第二本账。
-        serviceWith(node, nativeBalance: normalFee - BigInt.one).sendToken(
-          chain: chain,
-          token: token,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '1',
-        ),
-        throwsA(
-          isA<Exception>().having((e) => e.toString(), 'message', contains('${chain.symbol} 不足以支付网络费')),
-        ),
+        serviceWith(node, nativeBalance: normalFee - BigInt.one).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '1'),
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('${chain.symbol} 不足以支付网络费'))),
       );
       expect(node.calls, isNot(contains('/transactions')));
     });
@@ -173,14 +124,7 @@ void main() {
         decimals: token.decimals,
       );
       await expectLater(
-        serviceWith(node).sendToken(
-          chain: chain,
-          token: foreign,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '1',
-        ),
+        serviceWith(node).sendToken(chain: chain, token: foreign, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '1'),
         throwsA(isA<UnsupportedError>()),
       );
       expect(node.calls, isEmpty, reason: '标准校验在一切之前，连链上数据都不该取');
@@ -201,17 +145,8 @@ void main() {
         decimals: 6,
       );
       await expectLater(
-        serviceWith(node).sendToken(
-          chain: chain,
-          token: coin,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '1',
-        ),
-        throwsA(
-          isA<UnsupportedError>().having((e) => e.message, 'message', contains('Fungible Asset')),
-        ),
+        serviceWith(node).sendToken(chain: chain, token: coin, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '1'),
+        throwsA(isA<UnsupportedError>().having((e) => e.message, 'message', contains('Fungible Asset'))),
       );
       expect(node.calls, isEmpty);
     });
@@ -219,14 +154,7 @@ void main() {
     test('签名地址与钱包地址不一致时拒发', () async {
       final node = _FakeAptosService();
       await expectLater(
-        serviceWith(node).sendToken(
-          chain: chain,
-          token: token,
-          privateKey: privateKey,
-          fromAddress: recipient.address,
-          to: recipient.address,
-          amount: '1',
-        ),
+        serviceWith(node).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: recipient.address, to: recipient.address, amount: '1'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('签名地址与钱包地址不一致'))),
       );
       expect(node.calls, isNot(contains('/transactions')));
@@ -235,14 +163,7 @@ void main() {
     test('金额为 0 时拒发', () async {
       final node = _FakeAptosService();
       await expectLater(
-        serviceWith(node).sendToken(
-          chain: chain,
-          token: token,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '0',
-        ),
+        serviceWith(node).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '0'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('必须大于 0'))),
       );
       expect(node.calls, isEmpty);
@@ -254,14 +175,7 @@ void main() {
       // 暴露出来的正是这条路径——模拟失败、原样把 vm_status 抛给用户。
       final node = _FakeAptosService(simulationSucceeds: false);
       await expectLater(
-        serviceWith(node).sendToken(
-          chain: chain,
-          token: token,
-          privateKey: privateKey,
-          fromAddress: sender.address,
-          to: recipient.address,
-          amount: '1',
-        ),
+        serviceWith(node).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '1'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('INSUFFICIENT_BALANCE'))),
       );
       expect(node.calls, isNot(contains('/transactions')));
@@ -269,15 +183,7 @@ void main() {
 
     test('模拟用探测金额而不是用户填的金额', () async {
       final node = _FakeAptosService();
-      await serviceWith(node).sendToken(
-        chain: chain,
-        token: token,
-        privateKey: privateKey,
-        fromAddress: sender.address,
-        to: recipient.address,
-        amount: '1.5',
-        speed: FeeSpeed.fast,
-      );
+      await serviceWith(node).sendToken(chain: chain, token: token, privateKey: privateKey, fromAddress: sender.address, to: recipient.address, amount: '1.5', speed: FeeSpeed.fast);
 
       expect(node.calls.where((path) => path == '/transactions/simulate').length, 1);
       final simulated = AptosSignedTransaction.deserialize(node.simulatedTransaction!);
@@ -291,12 +197,7 @@ void main() {
   group('estimateTokenFee', () {
     test('用静态上限，不走模拟', () async {
       final node = _FakeAptosService();
-      final estimate = await serviceWith(node).estimateTokenFee(
-        chain: chain,
-        token: token,
-        from: sender.address,
-        to: recipient.address,
-      );
+      final estimate = await serviceWith(node).estimateTokenFee(chain: chain, token: token, from: sender.address, to: recipient.address);
 
       // 模拟会校验公钥（对不上回 INVALID_AUTH_KEY），走它就等于要解锁私钥。
       expect(node.calls, isNot(contains('/transactions/simulate')));
@@ -310,12 +211,7 @@ void main() {
 
     test('三档单价仍取自节点', () async {
       final node = _FakeAptosService();
-      final estimate = await serviceWith(node).estimateTokenFee(
-        chain: chain,
-        token: token,
-        from: sender.address,
-        to: recipient.address,
-      );
+      final estimate = await serviceWith(node).estimateTokenFee(chain: chain, token: token, from: sender.address, to: recipient.address);
       expect(estimate.priceFor(FeeSpeed.slow), BigInt.from(90));
       expect(estimate.priceFor(FeeSpeed.normal), BigInt.from(regularGasPrice));
       expect(estimate.priceFor(FeeSpeed.fast), BigInt.from(150));
@@ -332,10 +228,7 @@ void main() {
         coinGeckoId: token.coinGeckoId,
         decimals: 6,
       );
-      await expectLater(
-        serviceWith(node).estimateTokenFee(chain: chain, token: coin, from: sender.address, to: recipient.address),
-        throwsA(isA<UnsupportedError>()),
-      );
+      await expectLater(serviceWith(node).estimateTokenFee(chain: chain, token: coin, from: sender.address, to: recipient.address), throwsA(isA<UnsupportedError>()));
     });
   });
 }
@@ -347,11 +240,9 @@ AptosTransactionEntryFunction _entryFunctionOf(AptosSignedTransaction transactio
 
 /// entry function 的实参在 BCS 里是一串裸字节，反序列化回来是
 /// [AptosTransactionArgumentBytes]，所以要按参数位置自己解读。
-List<int> _argumentBytes(AptosSignedTransaction transaction, int index) =>
-    _entryFunctionOf(transaction).args[index].value as List<int>;
+List<int> _argumentBytes(AptosSignedTransaction transaction, int index) => _entryFunctionOf(transaction).args[index].value as List<int>;
 
-AptosAddress _addressArgument(AptosSignedTransaction transaction, int index) =>
-    AptosAddress.fromBytes(_argumentBytes(transaction, index));
+AptosAddress _addressArgument(AptosSignedTransaction transaction, int index) => AptosAddress.fromBytes(_argumentBytes(transaction, index));
 
 /// u64 小端。
 BigInt _amountArgument(AptosSignedTransaction transaction, int index) {
@@ -408,13 +299,7 @@ class _FakeAptosService with AptosServiceProvider {
       return _ok(jsonEncode(_pendingTransaction('0x${AptosSignedTransaction.deserialize(body).txHash()}')));
     }
     if (path == '/estimate_gas_price') {
-      return _ok(
-        jsonEncode({
-          'deprioritized_gas_estimate': 90,
-          'gas_estimate': 100,
-          'prioritized_gas_estimate': 150,
-        }),
-      );
+      return _ok(jsonEncode({'deprioritized_gas_estimate': 90, 'gas_estimate': 100, 'prioritized_gas_estimate': 150}));
     }
     if (path == '/') return _ok(jsonEncode(_ledgerInfo));
     if (path.startsWith('/accounts/')) {

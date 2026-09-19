@@ -44,8 +44,7 @@ class AddressValidation {
   /// tb1q…（SegWit v0 / P2WPKH）、tb1p…（Taproot v1 / P2TR）、以及 legacy（m/n/2 开头）。
   static bool _isValidBitcoinTestnet(String addr) {
     if (addr.toLowerCase().startsWith('tb1')) {
-      return _decodes(() => P2WPKHAddrDecoder().decodeAddr(addr, hrp: 'tb')) ||
-          _decodes(() => P2TRAddrDecoder().decodeAddr(addr, hrp: 'tb'));
+      return _decodes(() => P2WPKHAddrDecoder().decodeAddr(addr, hrp: 'tb')) || _decodes(() => P2TRAddrDecoder().decodeAddr(addr, hrp: 'tb'));
     }
     return RegExp(r'^[mn2][1-9A-HJ-NP-Za-km-z]{25,39}$').hasMatch(addr);
   }

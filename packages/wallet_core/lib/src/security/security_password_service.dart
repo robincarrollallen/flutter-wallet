@@ -43,8 +43,7 @@ class SecurityPasswordService {
   }
 
   /// 设置 / 重置安全码。
-  Future<void> setPassword(String password) async =>
-      _storage.write(await _encode(password, QuickCrypto.generateRandom(_saltLength)));
+  Future<void> setPassword(String password) async => _storage.write(await _encode(password, QuickCrypto.generateRandom(_saltLength)));
 
   /// 校验安全码是否正确。
   ///
@@ -91,16 +90,10 @@ class SecurityPasswordService {
   ///
   /// **只能经 [deriveSecurityPasswordHashInBackground] 调用。** 20 万轮跑满约 1 秒
   /// （见 [_iterations]），直接调就是在 UI 线程上冻结这么久，而且不会有任何报错提醒你。
-  static List<int> _derive(String password, List<int> salt, int iterations) => QuickCrypto.pbkdf2DeriveKey(
-    password: utf8.encode(password),
-    salt: salt,
-    iterations: iterations,
-    hash: () => SHA256(),
-    dklen: _keyLength,
-  );
+  static List<int> _derive(String password, List<int> salt, int iterations) =>
+      QuickCrypto.pbkdf2DeriveKey(password: utf8.encode(password), salt: salt, iterations: iterations, hash: () => SHA256(), dklen: _keyLength);
 }
 
 /// compute() 顶层入口：在后台 isolate 跑 PBKDF2（20 万轮，手机约 1 秒）。
 /// 入参为 (口令, salt, 迭代次数)——迭代次数随记录走，不读常量，理由见 [SecurityPasswordService._iterations]。
-List<int> deriveSecurityPasswordHashInBackground((String, List<int>, int) args) =>
-    SecurityPasswordService._derive(args.$1, args.$2, args.$3);
+List<int> deriveSecurityPasswordHashInBackground((String, List<int>, int) args) => SecurityPasswordService._derive(args.$1, args.$2, args.$3);

@@ -8,12 +8,7 @@ import 'fee_quote.dart';
 /// - **链上按上限预扣、按实际结算**。所以 [expectedFee] 按实际算、[maxFee] 按上限算，
 ///   两者不相等——这和 Solana「签名即确定、两者相等」正好相反。
 class AptosFeeQuote implements FeeQuote {
-  const AptosFeeQuote({
-    required this.speed,
-    required this.gasUnitPrice,
-    required this.gasUsed,
-    required this.maxGasAmount,
-  });
+  const AptosFeeQuote({required this.speed, required this.gasUnitPrice, required this.gasUsed, required this.maxGasAmount});
 
   final FeeSpeed speed;
 
@@ -45,13 +40,7 @@ class AptosFeeQuote implements FeeQuote {
 /// [FeeSpeed] 的三档。链空闲时三个值相同、三档显示同一个数，那是**事实**。
 class AptosFeeEstimate {
   /// 不是 const 构造：字段清一色 BigInt，`BigInt` 字面量不是编译期常量。
-  AptosFeeEstimate({
-    required this.deprioritizedGasUnitPrice,
-    required this.gasUnitPrice,
-    required this.prioritizedGasUnitPrice,
-    required this.gasUsed,
-    required this.maxGasAmount,
-  });
+  AptosFeeEstimate({required this.deprioritizedGasUnitPrice, required this.gasUnitPrice, required this.prioritizedGasUnitPrice, required this.gasUsed, required this.maxGasAmount});
 
   /// 「缓慢」档单价。节点可能不返回这一项，缺失时由构造方回落到 [gasUnitPrice]。
   final BigInt deprioritizedGasUnitPrice;
@@ -76,12 +65,7 @@ class AptosFeeEstimate {
   };
 
   /// 某档的完整报价。
-  AptosFeeQuote quoteFor(FeeSpeed speed) => AptosFeeQuote(
-    speed: speed,
-    gasUnitPrice: priceFor(speed),
-    gasUsed: gasUsed,
-    maxGasAmount: maxGasAmount,
-  );
+  AptosFeeQuote quoteFor(FeeSpeed speed) => AptosFeeQuote(speed: speed, gasUnitPrice: priceFor(speed), gasUsed: gasUsed, maxGasAmount: maxGasAmount);
 
   /// 三档报价，直接喂给 `NetworkFeeSelector`。
   Map<FeeSpeed, AptosFeeQuote> get quotes => {for (final speed in FeeSpeed.values) speed: quoteFor(speed)};

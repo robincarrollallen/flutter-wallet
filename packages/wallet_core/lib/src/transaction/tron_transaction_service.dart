@@ -13,8 +13,7 @@ class TronTransactionService {
   /// [provider] / [balances] 只为测试留的注入口，生产代码用默认值即可。
   // _injected 仍走初始化列表：它的参数名是 provider，与字段名对不上，
   // 写成 initializing formal 会把公开参数名改成 injected，属于 API 变更。
-  const TronTransactionService({TronProvider? provider, this._balances = const ChainBalanceApi()})
-    : _injected = provider;
+  const TronTransactionService({TronProvider? provider, this._balances = const ChainBalanceApi()}) : _injected = provider;
 
   final TronProvider? _injected;
 
@@ -42,22 +41,13 @@ class TronTransactionService {
   ///
   /// 三次查询：发送方可用带宽、收款方是否已激活、链上费率。字节数不问节点，
   /// 由 [TronFeeCalculator.bandwidthFor] 本地推算——省一次往返，且能离线单测。
-  Future<TronFeeEstimate> estimateNativeFee({
-    required Chain chain,
-    required String from,
-    required String to,
-    required String amount,
-  }) async {
+  Future<TronFeeEstimate> estimateNativeFee({required Chain chain, required String from, required String to, required String amount}) async {
     final provider = _providerFor(chain);
     final owner = TronAddress(from.trim());
     final recipient = TronAddress(to.trim());
     final amountSun = parseUnits(amount, chain.decimals);
 
-    final results = await Future.wait([
-      provider.request(TronRequestGetAccountResource(address: owner)),
-      _isActivated(provider, recipient),
-      provider.request(TronRequestGetChainParameters()),
-    ]);
+    final results = await Future.wait([provider.request(TronRequestGetAccountResource(address: owner)), _isActivated(provider, recipient), provider.request(TronRequestGetChainParameters())]);
 
     final resource = results[0] as AccountResourceModel;
     final activated = results[1] as bool;
@@ -79,13 +69,7 @@ class TronTransactionService {
   /// 能量必须问节点：合约执行用量取决于实现（收款方是否已有余额槽、是否手续费
   /// 代币等），没有 21000 那样的常量可猜。走 `triggerconstantcontract` 做一次
   /// **只读**模拟，不上链、不花能量。
-  Future<TronFeeEstimate> estimateTokenFee({
-    required Chain chain,
-    required Token token,
-    required String from,
-    required String to,
-    required String amount,
-  }) async {
+  Future<TronFeeEstimate> estimateTokenFee({required Chain chain, required Token token, required String from, required String to, required String amount}) async {
     final provider = _providerFor(chain);
     final owner = TronAddress(from.trim());
     final recipient = TronAddress(to.trim());
@@ -102,11 +86,7 @@ class TronTransactionService {
     final energyUsed = results[2] as int;
 
     return TronFeeCalculator.estimateToken(
-      bandwidthNeeded: TronFeeCalculator.bandwidthForToken(
-        owner: owner,
-        contract: TronAddress(token.identifier),
-        parameter: _transferParameter(recipient, value),
-      ),
+      bandwidthNeeded: TronFeeCalculator.bandwidthForToken(owner: owner, contract: TronAddress(token.identifier), parameter: _transferParameter(recipient, value)),
       freeBandwidth: _remaining(resource.freeNetLimit, resource.freeNetUsed),
       stakedBandwidth: _remaining(resource.netLimit, resource.netUsed),
       // 上浮留余量：合约实际执行时链上状态可能已变（收款方余额槽从无到有等），
@@ -123,20 +103,9 @@ class TronTransactionService {
   /// 只是回滚前那点消耗（实测约 2000，而真实转账要几万），拿它当估算会严重偏低。
   /// 节点在这种情况下 `result.result` 仍是 true，只在 message 里写 REVERT，
   /// 所以不能只看 result。
-  Future<int> _simulateTransfer(
-    TronProvider provider, {
-    required TronAddress owner,
-    required Token token,
-    required TronAddress to,
-    required BigInt amount,
-  }) async {
+  Future<int> _simulateTransfer(TronProvider provider, {required TronAddress owner, required Token token, required TronAddress to, required BigInt amount}) async {
     final result = await provider.request(
-      TronRequestTriggerConstantContract(
-        ownerAddress: owner,
-        contractAddress: TronAddress(token.identifier),
-        functionSelector: 'transfer(address,uint256)',
-        parameter: _transferParameter(to, amount),
-      ),
+      TronRequestTriggerConstantContract(ownerAddress: owner, contractAddress: TronAddress(token.identifier), functionSelector: 'transfer(address,uint256)', parameter: _transferParameter(to, amount)),
     );
 
     final message = result.result.message;
@@ -151,8 +120,7 @@ class TronTransactionService {
   }
 
   /// `transfer(address,uint256)` 的 ABI 参数（不含选择器）。
-  static String _transferParameter(TronAddress to, BigInt amount) =>
-      encodeTrc20TransferParameter(to21Bytes: to.toBytes(), amount: amount);
+  static String _transferParameter(TronAddress to, BigInt amount) => encodeTrc20TransferParameter(to21Bytes: to.toBytes(), amount: amount);
 
   /// 某档带宽的剩余量。已用超过额度时按 0 计，不返回负数。
   static BigInt _remaining(BigInt limit, BigInt used) {
@@ -230,9 +198,7 @@ class TronTransactionService {
     }
 
     // 4. 让节点构造交易（它负责填最新区块引用与过期时间）。
-    final unsigned = await provider.request(
-      TronRequestCreateTransaction(ownerAddress: owner, toAddress: recipient, amount: value),
-    );
+    final unsigned = await provider.request(TronRequestCreateTransaction(ownerAddress: owner, toAddress: recipient, amount: value));
 
     // 5. 签名前逐字段回解校验——这是本方法的安全支点，别删。
     _verifyMatches(unsigned, owner: owner, to: recipient, amount: value);
@@ -246,9 +212,7 @@ class TronTransactionService {
     // 「is signed by T... but it is not contained of permission」而拒收。
     final signature = signer.sign(unsigned.rawData.toBuffer());
     final signed = Transaction(rawData: unsigned.rawData, signature: [signature]);
-    final broadcast = await provider.request(
-      TronRequestBroadcastHex(transaction: BytesUtils.toHexString(signed.toBuffer())),
-    );
+    final broadcast = await provider.request(TronRequestBroadcastHex(transaction: BytesUtils.toHexString(signed.toBuffer())));
     if (!broadcast.result) {
       throw Exception('广播失败：${broadcast.message ?? broadcast.code ?? '节点未说明原因'}');
     }
@@ -270,14 +234,7 @@ class TronTransactionService {
   /// - 校验的是**代币余额**，而手续费（带宽 + 能量）付的是 TRX，是两本账，要分开验；
   /// - 交易由 `triggersmartcontract` 构造，必须带 `feeLimit`——它是「最多愿意为
   ///   能量烧多少 TRX」的上限，给小了链上会 OUT_OF_ENERGY：能量照扣、钱没转到。
-  Future<TransferResult> sendToken({
-    required Chain chain,
-    required Token token,
-    required List<int> privateKey,
-    required String fromAddress,
-    required String to,
-    required String amount,
-  }) async {
+  Future<TransferResult> sendToken({required Chain chain, required Token token, required List<int> privateKey, required String fromAddress, required String to, required String amount}) async {
     if (token.standard != TokenStandard.trc20) {
       throw UnsupportedError('${token.symbol} 不是 TRC-20 代币，无法在 ${chain.name} 上转账');
     }
@@ -332,20 +289,11 @@ class TronTransactionService {
     if (transaction == null || !unsigned.result.result) {
       throw Exception('构造 ${token.symbol} 转账交易失败：${unsigned.result.message ?? '节点未说明原因'}');
     }
-    _verifyTokenCall(
-      transaction.rawData,
-      owner: owner,
-      contract: contract,
-      to: recipient,
-      amount: value,
-      feeLimit: feeLimit,
-    );
+    _verifyTokenCall(transaction.rawData, owner: owner, contract: contract, to: recipient, amount: value, feeLimit: feeLimit);
 
     final signature = signer.sign(transaction.rawData.toBuffer());
     final signed = Transaction(rawData: transaction.rawData, signature: [signature]);
-    final broadcast = await provider.request(
-      TronRequestBroadcastHex(transaction: BytesUtils.toHexString(signed.toBuffer())),
-    );
+    final broadcast = await provider.request(TronRequestBroadcastHex(transaction: BytesUtils.toHexString(signed.toBuffer())));
     if (!broadcast.result) {
       throw Exception('广播失败：${broadcast.message ?? broadcast.code ?? '节点未说明原因'}');
     }
@@ -366,14 +314,7 @@ class TronTransactionService {
   /// 都藏在 ABI 编码的 data 里，不比对就等于让节点决定这笔代币转给谁。
   /// `callValue` / `callTokenValue` / `tokenId` 必须为零或空：这是纯 TRC-20 transfer，
   /// 节点塞进附带转账就会把 TRX 或 TRC-10 一并签进去。
-  void _verifyTokenCall(
-    TransactionRaw raw, {
-    required TronAddress owner,
-    required TronAddress contract,
-    required TronAddress to,
-    required BigInt amount,
-    required BigInt feeLimit,
-  }) {
+  void _verifyTokenCall(TransactionRaw raw, {required TronAddress owner, required TronAddress contract, required TronAddress to, required BigInt amount, required BigInt feeLimit}) {
     final contracts = raw.contract;
     if (contracts.length != 1) {
       throw Exception('节点返回的交易包含 ${contracts.length} 条合约，预期 1 条');
@@ -385,9 +326,7 @@ class TronTransactionService {
     if (call.ownerAddress != owner || call.contractAddress != contract) {
       throw Exception('节点返回的合约调用与本次转账不一致，已中止签名');
     }
-    if ((call.callValue ?? BigInt.zero) != BigInt.zero ||
-        (call.callTokenValue ?? BigInt.zero) != BigInt.zero ||
-        call.tokenId != null) {
+    if ((call.callValue ?? BigInt.zero) != BigInt.zero || (call.callTokenValue ?? BigInt.zero) != BigInt.zero || call.tokenId != null) {
       throw Exception('节点返回的合约调用附带了额外转账，已中止签名');
     }
     if (raw.feeLimit != null && raw.feeLimit! > feeLimit) {
@@ -424,12 +363,7 @@ class TronTransactionService {
   /// `wallet/createtransaction` 省掉了我们自己取区块头拼 protobuf 的麻烦，但代价是
   /// 待签字节由**节点**给出。少了这一步，一个被劫持或有 bug 的节点就能把收款方
   /// 或金额换掉，而我们照签不误——钱转给谁将由节点决定。所以：便利照用，信任不给。
-  void _verifyMatches(
-    Transaction unsigned, {
-    required TronAddress owner,
-    required TronAddress to,
-    required BigInt amount,
-  }) {
+  void _verifyMatches(Transaction unsigned, {required TronAddress owner, required TronAddress to, required BigInt amount}) {
     final contracts = unsigned.rawData.contract;
     if (contracts.length != 1) {
       throw Exception('节点返回的交易包含 ${contracts.length} 条合约，预期 1 条');
@@ -448,13 +382,7 @@ class TronTransactionService {
   /// 广播返回 result:true 只代表节点收下了，不代表已上链——与 EVM 那边先拿到
   /// 交易哈希再查 receipt 是同一回事。刚广播时查不到交易（返回 null）属正常。
   /// 默认超时只够发一轮，即「查一次当前状态」；传长超时才会变成真正的轮询。
-  Future<TransactionStatus> waitForReceipt(
-    Chain chain,
-    String transactionId, {
-    TronProvider? provider,
-    Duration timeout = _receiptTimeout,
-    Duration interval = _receiptPollInterval,
-  }) async {
+  Future<TransactionStatus> waitForReceipt(Chain chain, String transactionId, {TronProvider? provider, Duration timeout = _receiptTimeout, Duration interval = _receiptPollInterval}) async {
     final rpc = provider ?? _providerFor(chain);
     final deadline = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(deadline)) {
@@ -472,9 +400,7 @@ class TronTransactionService {
   /// `ret` 缺席时 `isSuccess` 恒为 true，一笔被回滚的交易会被报成「已确认」。
   /// 这里以 `contractRet` 为准，两个字段任一表示失败就算失败。
   static TransactionStatus _statusOf(TronGetTransactionByIdResponse receipt) {
-    final failed = receipt.ret.any(
-      (r) => r.ret == TronResultCode.failed || (r.contractRet != null && r.contractRet != TronContractResult.success),
-    );
+    final failed = receipt.ret.any((r) => r.ret == TronResultCode.failed || (r.contractRet != null && r.contractRet != TronContractResult.success));
     return failed ? TransactionStatus.failed : TransactionStatus.confirmed;
   }
 }

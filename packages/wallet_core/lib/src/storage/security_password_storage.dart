@@ -14,12 +14,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class SecurityPasswordStorage {
   /// 不传 `aOptions` 的理由同 [SecureWalletStorage]：默认值即强加密，
   /// 而 `encryptedSharedPreferences` 已被上游弃用且会被忽略。
-  SecurityPasswordStorage([FlutterSecureStorage? storage])
-    : _storage =
-          storage ??
-          const FlutterSecureStorage(
-            iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
-          );
+  SecurityPasswordStorage([FlutterSecureStorage? storage]) : _storage = storage ?? const FlutterSecureStorage(iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device));
 
   final FlutterSecureStorage _storage;
 
@@ -31,4 +26,3 @@ class SecurityPasswordStorage {
   /// 写入记录。内容格式由 [SecurityPasswordService] 决定。
   Future<void> write(String record) => _storage.write(key: _key, value: record);
 }
-

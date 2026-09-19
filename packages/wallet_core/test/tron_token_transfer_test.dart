@@ -16,15 +16,7 @@ final _recipient = TronPrivateKey('${'1' * 63}2').publicKey().toAddress();
 final _attacker = TronPrivateKey('${'2' * 63}3').publicKey().toAddress();
 final _contract = TronPrivateKey('${'3' * 63}4').publicKey().toAddress();
 
-final _usdt = Token(
-  chainId: _chain.id,
-  symbol: 'USDT',
-  name: 'Tether USD',
-  standard: TokenStandard.trc20,
-  identifier: _contract.toAddress(),
-  coinGeckoId: 'tether',
-  decimals: 6,
-);
+final _usdt = Token(chainId: _chain.id, symbol: 'USDT', name: 'Tether USD', standard: TokenStandard.trc20, identifier: _contract.toAddress(), coinGeckoId: 'tether', decimals: 6);
 
 /// 假 Tron 节点，覆盖 TRC-20 转账用到的接口。
 class _FakeNode with TronServiceProvider {
@@ -64,14 +56,7 @@ class _FakeNode with TronServiceProvider {
     final body = jsonDecode(params.bodyString!) as Map<String, dynamic>;
 
     final response = switch (params.path) {
-      'wallet/getaccountresource' => {
-        'freeNetLimit': 600,
-        'freeNetUsed': 0,
-        'NetLimit': 0,
-        'NetUsed': 0,
-        'EnergyLimit': energyAvailable,
-        'EnergyUsed': 0,
-      },
+      'wallet/getaccountresource' => {'freeNetLimit': 600, 'freeNetUsed': 0, 'NetLimit': 0, 'NetUsed': 0, 'EnergyLimit': energyAvailable, 'EnergyUsed': 0},
       'wallet/getchainparameters' => {
         'chainParameter': [
           {'key': 'getTransactionFee', 'value': 1000},
@@ -169,29 +154,15 @@ class _FakeBalances implements ChainBalanceApi {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-TronTransactionService _service(_FakeNode node, {_FakeBalances balances = const _FakeBalances()}) =>
-    TronTransactionService(provider: TronProvider(node), balances: balances);
+TronTransactionService _service(_FakeNode node, {_FakeBalances balances = const _FakeBalances()}) => TronTransactionService(provider: TronProvider(node), balances: balances);
 
 Future<TransferResult> _send(_FakeNode node, {String amount = '5', _FakeBalances balances = const _FakeBalances()}) =>
-    _service(node, balances: balances).sendToken(
-      chain: _chain,
-      token: _usdt,
-      privateKey: _privateKey,
-      fromAddress: _owner.toAddress(),
-      to: _recipient.toAddress(),
-      amount: amount,
-    );
+    _service(node, balances: balances).sendToken(chain: _chain, token: _usdt, privateKey: _privateKey, fromAddress: _owner.toAddress(), to: _recipient.toAddress(), amount: amount);
 
 void main() {
   group('estimateTokenFee', () {
     Future<void> expectFee(_FakeNode node, BigInt expected) async {
-      final fee = await _service(node).estimateTokenFee(
-        chain: _chain,
-        token: _usdt,
-        from: _owner.toAddress(),
-        to: _recipient.toAddress(),
-        amount: '5',
-      );
+      final fee = await _service(node).estimateTokenFee(chain: _chain, token: _usdt, from: _owner.toAddress(), to: _recipient.toAddress(), amount: '5');
       expect(fee.energyFeeSun, expected);
     }
 
@@ -207,13 +178,7 @@ void main() {
     // 回滚的模拟只花了 1984 能量，照单全收会把费用说成真实值的 1/15。
     test('模拟回滚时报错，而不是拿回滚前的能量当估算', () async {
       await expectLater(
-        _service(_FakeNode(revert: true)).estimateTokenFee(
-          chain: _chain,
-          token: _usdt,
-          from: _owner.toAddress(),
-          to: _recipient.toAddress(),
-          amount: '5',
-        ),
+        _service(_FakeNode(revert: true)).estimateTokenFee(chain: _chain, token: _usdt, from: _owner.toAddress(), to: _recipient.toAddress(), amount: '5'),
         throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('模拟失败'))),
       );
     });
@@ -227,10 +192,7 @@ void main() {
       final signed = Transaction.deserialize(BytesUtils.fromHexString(node.broadcastPayload!));
       final call = signed.rawData.contract.single.parameter.value as TriggerSmartContract;
       // USDT 是 6 位精度：5 USDT = 5_000_000。
-      expect(
-        BytesUtils.toHexString(call.data!).endsWith(BigInt.from(5000000).toRadixString(16).padLeft(64, '0')),
-        isTrue,
-      );
+      expect(BytesUtils.toHexString(call.data!).endsWith(BigInt.from(5000000).toRadixString(16).padLeft(64, '0')), isTrue);
       expect(call.contractAddress, _contract);
       expect(result.sentAmount, '5');
       // 广播链路不等上链：状态一律先记 pending，由页面轮询回填。
@@ -264,9 +226,7 @@ void main() {
     });
 
     test('节点返回主网创世身份时中止签名', () async {
-      final node = _FakeNode(
-        genesisBlockId: '000000000000000000000000000000000000000000000000000000002b6653dc',
-      );
+      final node = _FakeNode(genesisBlockId: '000000000000000000000000000000000000000000000000000000002b6653dc');
       await expectLater(_send(node), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('节点不在'))));
       expect(node.broadcastPayload, isNull);
     });
@@ -287,32 +247,14 @@ void main() {
     // 手续费付的是 TRX，与代币余额是两本账：代币够、TRX 不够也得拦下。
     test('TRX 不足以付网络费时报错', () async {
       final node = _FakeNode(energyUsed: 30000);
-      await expectLater(
-        _send(node, balances: const _FakeBalances(trxBalance: '1000')),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('不足以支付网络费'))),
-      );
+      await expectLater(_send(node, balances: const _FakeBalances(trxBalance: '1000')), throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('不足以支付网络费'))));
       expect(node.broadcastPayload, isNull);
     });
 
     test('非 TRC-20 代币直接拒绝', () async {
-      final erc20 = Token(
-        chainId: _chain.id,
-        symbol: 'FAKE',
-        name: 'Fake',
-        standard: TokenStandard.erc20,
-        identifier: _contract.toAddress(),
-        coinGeckoId: 'fake',
-        decimals: 6,
-      );
+      final erc20 = Token(chainId: _chain.id, symbol: 'FAKE', name: 'Fake', standard: TokenStandard.erc20, identifier: _contract.toAddress(), coinGeckoId: 'fake', decimals: 6);
       await expectLater(
-        _service(_FakeNode()).sendToken(
-          chain: _chain,
-          token: erc20,
-          privateKey: _privateKey,
-          fromAddress: _owner.toAddress(),
-          to: _recipient.toAddress(),
-          amount: '1',
-        ),
+        _service(_FakeNode()).sendToken(chain: _chain, token: erc20, privateKey: _privateKey, fromAddress: _owner.toAddress(), to: _recipient.toAddress(), amount: '1'),
         throwsUnsupportedError,
       );
     });

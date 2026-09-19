@@ -12,8 +12,7 @@ class AptosTransactionService {
   /// [provider] / [balances] 都只为测试留的注入口，生产代码用默认值即可。
   /// 命名参数直接写成私有字段的 initializing formal：调用处仍是 `balances:`
   /// （Dart 会去掉下划线取公开名），少一行转发。
-  const AptosTransactionService({AptosProvider? provider, this._balances = const ChainBalanceApi()})
-    : _injected = provider;
+  const AptosTransactionService({AptosProvider? provider, this._balances = const ChainBalanceApi()}) : _injected = provider;
 
   final AptosProvider? _injected;
   final ChainBalanceApi _balances;
@@ -79,10 +78,7 @@ class AptosTransactionService {
     final sender = _parseAddress(from, '发送方');
     final recipient = _parseAddress(to, '收款方');
 
-    final (context, recipientExists) = await (
-      _loadContext(provider, sender, chain),
-      _accountExists(provider, recipient),
-    ).wait;
+    final (context, recipientExists) = await (_loadContext(provider, sender, chain), _accountExists(provider, recipient)).wait;
 
     final cap = _gasCapFor(recipientExists: recipientExists);
     return AptosFeeEstimate(
@@ -107,8 +103,7 @@ class AptosTransactionService {
   ///
   /// 两个档的差别只在收款方账户存不存在：不存在时 `aptos_account::transfer` 会
   /// 顺带建号，那一步的 gas 比纯转账高一个数量级。
-  static BigInt _gasCapFor({required bool recipientExists}) =>
-      recipientExists ? _transferGasCap : _accountCreationGasCap;
+  static BigInt _gasCapFor({required bool recipientExists}) => recipientExists ? _transferGasCap : _accountCreationGasCap;
 
   /// 收款方已存在时的 gas 上限。**testnet 实测 62**（2026-09 两笔真实转账），取 300。
   ///
@@ -130,12 +125,7 @@ class AptosTransactionService {
   /// 建存储」。原生那边靠 [_accountExists] 分得出两档，代币这边分不出——FA 的开销
   /// 差异取决于收款方有没有**这一种资产**的主存储，而余额端点对「没有存储」返回的是
   /// 0 而不是 404（实测），从外面看不出区别。所以一律按「要建存储」估，宁可偏保守。
-  Future<AptosFeeEstimate> estimateTokenFee({
-    required Chain chain,
-    required Token token,
-    required String from,
-    required String to,
-  }) async {
+  Future<AptosFeeEstimate> estimateTokenFee({required Chain chain, required Token token, required String from, required String to}) async {
     _verifyTokenSupported(token, chain);
     final provider = _providerFor(chain);
     final context = await _loadContext(provider, _parseAddress(from, '发送方'), chain);
@@ -208,10 +198,7 @@ class AptosTransactionService {
     final recipient = _parseAddress(to, '收款方');
 
     // 3. 序列号、链 id、三档 gas 单价、发送方余额——四项互不依赖，并发取。
-    final (context, balance) = await (
-      _loadContext(provider, sender, chain),
-      _balances.fetchNativeBalance(chain, sender.address),
-    ).wait;
+    final (context, balance) = await (_loadContext(provider, sender, chain), _balances.fetchNativeBalance(chain, sender.address)).wait;
 
     // 4. 模拟执行，定出这笔交易的 gas 用量与上限。
     //    用本档单价模拟，模拟时的预扣校验才与真正提交时是同一个口径。
@@ -252,18 +239,10 @@ class AptosTransactionService {
     // 节点只提供序列号、gas 行情、模拟结果与 **chainId**。前三项改不了收款方和金额，
     // 但 chainId 会写进待签交易：必须与注册表钉死的测试网值比对，否则敌对节点
     // 可以把主网 chainId=1 塞进来，让测试网 UI 签出主网有效交易。
-    final transaction = _buildTransaction(
-      context: context,
-      payload: _nativeTransferPayload(recipient, value),
-      gasUnitPrice: gasUnitPrice,
-      maxGasAmount: maxGasAmount,
-    );
+    final transaction = _buildTransaction(context: context, payload: _nativeTransferPayload(recipient, value), gasUnitPrice: gasUnitPrice, maxGasAmount: maxGasAmount);
     final signed = AptosSignedTransaction(
       rawTransaction: transaction,
-      authenticator: AptosTransactionAuthenticatorEd25519(
-        publicKey: signer.publicKey,
-        signature: AptosEd25519Signature(signer.sign(transaction.signingSerialize()).signature),
-      ),
+      authenticator: AptosTransactionAuthenticatorEd25519(publicKey: signer.publicKey, signature: AptosEd25519Signature(signer.sign(transaction.signingSerialize()).signature)),
     );
 
     final pending = await provider.request(AptosRequestSubmitTransaction(signedTransactionData: signed.toBcs()));
@@ -358,18 +337,10 @@ class AptosTransactionService {
     }
 
     // 8. 本地构造 + 签名 + 提交，与 sendNative 同一套。
-    final transaction = _buildTransaction(
-      context: context,
-      payload: _fungibleAssetTransferPayload(metadata, recipient, value),
-      gasUnitPrice: gasUnitPrice,
-      maxGasAmount: maxGasAmount,
-    );
+    final transaction = _buildTransaction(context: context, payload: _fungibleAssetTransferPayload(metadata, recipient, value), gasUnitPrice: gasUnitPrice, maxGasAmount: maxGasAmount);
     final signed = AptosSignedTransaction(
       rawTransaction: transaction,
-      authenticator: AptosTransactionAuthenticatorEd25519(
-        publicKey: signer.publicKey,
-        signature: AptosEd25519Signature(signer.sign(transaction.signingSerialize()).signature),
-      ),
+      authenticator: AptosTransactionAuthenticatorEd25519(publicKey: signer.publicKey, signature: AptosEd25519Signature(signer.sign(transaction.signingSerialize()).signature)),
     );
 
     final pending = await provider.request(AptosRequestSubmitTransaction(signedTransactionData: signed.toBcs()));
@@ -450,18 +421,10 @@ class AptosTransactionService {
     required BigInt gasUnitPrice,
     required AptosED25519PublicKey publicKey,
   }) async {
-    final probe = _buildTransaction(
-      context: context,
-      payload: probePayload,
-      gasUnitPrice: gasUnitPrice,
-      maxGasAmount: _provisionalMaxGasAmount,
-    );
+    final probe = _buildTransaction(context: context, payload: probePayload, gasUnitPrice: gasUnitPrice, maxGasAmount: _provisionalMaxGasAmount);
     final unsigned = AptosSignedTransaction(
       rawTransaction: probe,
-      authenticator: AptosTransactionAuthenticatorEd25519(
-        publicKey: publicKey,
-        signature: AptosEd25519Signature(List<int>.filled(_ed25519SignatureLength, 0)),
-      ),
+      authenticator: AptosTransactionAuthenticatorEd25519(publicKey: publicKey, signature: AptosEd25519Signature(List<int>.filled(_ed25519SignatureLength, 0))),
     );
 
     final results = await provider.request(AptosRequestSimulateTransaction(signedTransactionData: unsigned.toBcs()));
@@ -482,12 +445,7 @@ class AptosTransactionService {
   /// 收 payload 而不是「收款方 + 金额」：原生与代币的入口函数不同（见
   /// [_nativeTransferPayload] / [_fungibleAssetTransferPayload]），但外面这层
   /// 序列号、gas、过期时刻、链 id 是一模一样的。
-  AptosRawTransaction _buildTransaction({
-    required _SenderContext context,
-    required AptosTransactionPayload payload,
-    required BigInt gasUnitPrice,
-    required BigInt maxGasAmount,
-  }) {
+  AptosRawTransaction _buildTransaction({required _SenderContext context, required AptosTransactionPayload payload, required BigInt gasUnitPrice, required BigInt maxGasAmount}) {
     return AptosRawTransaction(
       sender: context.sender,
       sequenceNumber: context.sequenceNumber,
@@ -555,13 +513,7 @@ class AptosTransactionService {
   /// `expiration_timestamp_secs` 和链上账本时间比，而交易一旦过期就会被彻底丢弃、
   /// 按哈希查不到任何东西——此时「过期了」和「还没传播开」在这个接口上长得一模一样。
   /// 与其猜，不如一律按 pending 处理，让结果页继续轮询。
-  Future<TransactionStatus> waitForReceipt(
-    Chain chain,
-    String transactionHash, {
-    AptosProvider? provider,
-    Duration timeout = _receiptTimeout,
-    Duration interval = _receiptPollInterval,
-  }) async {
+  Future<TransactionStatus> waitForReceipt(Chain chain, String transactionHash, {AptosProvider? provider, Duration timeout = _receiptTimeout, Duration interval = _receiptPollInterval}) async {
     final rpc = provider ?? _providerFor(chain);
     final deadline = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(deadline)) {
@@ -582,8 +534,7 @@ class AptosTransactionService {
       return switch (transaction) {
         // 执行完了才有成败可言：success 为 false 的是上链后被 Move 层拒绝，
         // gas 照扣，属于确定的失败。
-        AptosApiUserTransaction(success: final success) =>
-          success ? TransactionStatus.confirmed : TransactionStatus.failed,
+        AptosApiUserTransaction(success: final success) => success ? TransactionStatus.confirmed : TransactionStatus.failed,
         // 还在内存池里排队。
         _ => TransactionStatus.pending,
       };

@@ -2,6 +2,7 @@ import 'package:on_chain/ethereum/ethereum.dart';
 
 import 'package:wallet_core/chains.dart';
 import 'package:wallet_core/rpc.dart';
+
 import '../model/models.dart';
 import 'transfer/transfer_result.dart';
 import '../internal/erc20_abi.dart';
@@ -94,15 +95,13 @@ class EvmTransactionService {
     var value = parseUnits(amount, chain.decimals); // 将转出金额转换为wei
 
     // 交易序号：与 nonce 同口径，pending「含未上链的发出交易」避免未确认转出仍被算作可用余额
-    final nonceHex =
-        await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending']) as String;
+    final nonceHex = await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending']) as String;
     final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed); // 获取并计算手续费「实例」(按档位)
     var gasLimit = await _resolveGasLimit(chain.endpoint, from.address, to, value, chain.symbol); // 估算 gas 用量
     var feeCap = fee.capGasPrice * gasLimit; // 计算手续费上限[wei]
 
     // 余额校验：检查账户余额是否足够支付本次交易费用(金额 + 手续费上限)[wei]
-    final balanceHex =
-        await _call(chain.endpoint, EvmRpcMethod.getBalance.wireName, [from.address, 'pending']) as String;
+    final balanceHex = await _call(chain.endpoint, EvmRpcMethod.getBalance.wireName, [from.address, 'pending']) as String;
     final balance = parseEvmHexQuantity(balanceHex); // 获取账户余额[wei]
 
     // 如果本次交易费用(金额 + 手续费上限)大于账户余额(后续判断是否需要从余额中扣除手续费或重新估算gas用量)
@@ -192,16 +191,13 @@ class EvmTransactionService {
     }
 
     // 交易序号：与 nonce 同口径，pending「含未上链的发出交易」避免未确认转出仍被算作可用余额
-    final nonceHex =
-        await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending']) as String;
+    final nonceHex = await _call(chain.endpoint, EvmRpcMethod.getTransactionCount.wireName, [from.address, 'pending']) as String;
     final fee = (await fetchGasBasis(chain.endpoint)).rateFor(speed); // 获取并计算手续费「实例」(按档位)
     final gasLimit = await resolveTokenGasLimit(chain, from: from.address, contract: contract, to: to, amount: value); // 估算 gas 用量
     final feeCap = fee.capGasPrice * gasLimit; // 计算手续费上限[wei]
 
     // 获取原生币余额(手续费走原生币，与代币余额是两本账，必须单独校验)
-    final nativeBalance = parseEvmHexQuantity(
-      await _call(chain.endpoint, EvmRpcMethod.getBalance.wireName, [from.address, 'pending']) as String,
-    );
+    final nativeBalance = parseEvmHexQuantity(await _call(chain.endpoint, EvmRpcMethod.getBalance.wireName, [from.address, 'pending']) as String);
     // 如果手续费上限大于原生币余额，则抛出异常
     if (feeCap > nativeBalance) {
       throw Exception(
@@ -240,21 +236,10 @@ class EvmTransactionService {
     required BigInt gasLimit, // gas 用量[wei]
     required EvmFeeRate fee, // 手续费「实例」
   }) async {
-    final raw = buildAndSignEvmTransaction(
-      evmChainId: evmChainId,
-      signer: signer,
-      from: from,
-      to: to,
-      value: value,
-      data: data,
-      nonce: nonce,
-      gasLimit: gasLimit,
-      fee: fee,
-    );
+    final raw = buildAndSignEvmTransaction(evmChainId: evmChainId, signer: signer, from: from, to: to, value: value, data: data, nonce: nonce, gasLimit: gasLimit, fee: fee);
 
     // 发送签名后的交易
-    final hash =
-        await _call(chain.endpoint, EvmRpcMethod.sendRawTransaction.wireName, ['0x${evmBytesToHex(raw)}']) as String;
+    final hash = await _call(chain.endpoint, EvmRpcMethod.sendRawTransaction.wireName, ['0x${evmBytesToHex(raw)}']) as String;
     return (hash: hash, status: TransactionStatus.pending);
   }
 
@@ -307,13 +292,7 @@ class EvmTransactionService {
   /// 对外公开。收进来之后，`erc20_abi` 可以退回包内实现，边界少一个缺口。
   ///
   /// 估算失败即报错，不猜一个默认值——猜低了交易 out of gas，gas 照扣，钱没转到。
-  Future<BigInt> resolveTokenGasLimit(
-    Chain chain, {
-    required String from,
-    required String contract,
-    required String to,
-    required BigInt amount,
-  }) async {
+  Future<BigInt> resolveTokenGasLimit(Chain chain, {required String from, required String contract, required String to, required BigInt amount}) async {
     final data = encodeTransfer(to: to, amount: amount);
     try {
       return await _estimateGas(chain.endpoint, from: from, to: contract, value: BigInt.zero, data: data);
@@ -323,13 +302,7 @@ class EvmTransactionService {
   }
 
   /// 调 eth_estimateGas 并上浮 [_gasBufferNum]/[_gasBufferDen]，下限 21000。
-  Future<BigInt> _estimateGas(
-    String endpoint, {
-    required String from,
-    required String to,
-    required BigInt value,
-    String? data,
-  }) async {
+  Future<BigInt> _estimateGas(String endpoint, {required String from, required String to, required BigInt value, String? data}) async {
     final params = <String, Object?>{'from': from, 'to': to, 'value': '0x${value.toRadixString(16)}', 'data': ?data};
     final gasHex = await _call(endpoint, EvmRpcMethod.estimateGas.wireName, [params]) as String;
     final buffered = (parseEvmHexQuantity(gasHex) * BigInt.from(_gasBufferNum)) ~/ BigInt.from(_gasBufferDen);
@@ -345,11 +318,7 @@ class EvmTransactionService {
       final priceHex = await _call(endpoint, EvmRpcMethod.gasPrice.wireName, []) as String;
       return EvmGasBasis.legacy(parseEvmHexQuantity(priceHex), fetchedAt: DateTime.now());
     }
-    return EvmGasBasis.eip1559(
-      baseFee: parseEvmHexQuantity(baseFeeHex),
-      tipByPercentile: await _fetchTips(endpoint),
-      fetchedAt: DateTime.now(),
-    );
+    return EvmGasBasis.eip1559(baseFee: parseEvmHexQuantity(baseFeeHex), tipByPercentile: await _fetchTips(endpoint), fetchedAt: DateTime.now());
   }
 
   /// 一笔原生转账的 gasLimit：提供 [from]/[to] 时按收款方估，否则按 EOA 21000。
@@ -364,19 +333,13 @@ class EvmTransactionService {
   Future<Map<int, BigInt>> _fetchTips(String endpoint) async {
     final percentiles = FeeSpeed.values.map((speed) => speed.rewardPercentile).toList();
     try {
-      final history = await _call(endpoint, EvmRpcMethod.feeHistory.wireName, [
-        '0x${_feeHistoryBlocks.toRadixString(16)}',
-        'latest',
-        percentiles,
-      ]) as Map;
+      final history = await _call(endpoint, EvmRpcMethod.feeHistory.wireName, ['0x${_feeHistoryBlocks.toRadixString(16)}', 'latest', percentiles]) as Map;
       // reward: 每个区块一行，行内按 percentiles 顺序给出对应分位的小费。
       final rewards = (history['reward'] as List).cast<List<Object?>>();
       if (rewards.isEmpty) throw const FormatException('reward 为空');
       return {
         for (var column = 0; column < percentiles.length; column++)
-          percentiles[column]:
-              rewards.map((row) => parseEvmHexQuantity(row[column] as String)).reduce((sum, tip) => sum + tip) ~/
-              BigInt.from(rewards.length),
+          percentiles[column]: rewards.map((row) => parseEvmHexQuantity(row[column] as String)).reduce((sum, tip) => sum + tip) ~/ BigInt.from(rewards.length),
       };
     } catch (_) {
       final tipHex = await _call(endpoint, EvmRpcMethod.maxPriorityFeePerGas.wireName, []) as String;

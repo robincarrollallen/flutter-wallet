@@ -80,12 +80,7 @@ class TronFeeEstimate {
 /// **不写死常量**：这三个值都是链参数，可由委员会提案改动。默认值只在节点没返回
 /// 对应字段时兜底，用的是 Tron 主网当前值。
 class TronFeeRates {
-  const TronFeeRates({
-    this.sunPerBandwidthByte = 1000,
-    this.createAccountFeeSun = 100000,
-    this.createNewAccountFeeSun = 1000000,
-    this.sunPerEnergy = 210,
-  });
+  const TronFeeRates({this.sunPerBandwidthByte = 1000, this.createAccountFeeSun = 100000, this.createNewAccountFeeSun = 1000000, this.sunPerEnergy = 210});
 
   /// `getTransactionFee`：带宽不足时每字节烧多少 sun（主网 1000 = 0.001 TRX/字节）。
   final int sunPerBandwidthByte;
@@ -104,8 +99,7 @@ class TronFeeRates {
   factory TronFeeRates.fromChainParameters(TronChainParameters params) => TronFeeRates(
     sunPerBandwidthByte: params.getTransactionFee ?? const TronFeeRates().sunPerBandwidthByte,
     createAccountFeeSun: params.getCreateAccountFee ?? const TronFeeRates().createAccountFeeSun,
-    createNewAccountFeeSun:
-        params.getCreateNewAccountFeeInSystemContract ?? const TronFeeRates().createNewAccountFeeSun,
+    createNewAccountFeeSun: params.getCreateNewAccountFeeInSystemContract ?? const TronFeeRates().createNewAccountFeeSun,
     sunPerEnergy: params.getEnergyFee ?? const TronFeeRates().sunPerEnergy,
   );
 }

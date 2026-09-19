@@ -12,29 +12,23 @@ void main() {
   setUp(() {
     clipboard = null;
     calls = [];
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        calls.add(call.method);
-        switch (call.method) {
-          case 'Clipboard.setData':
-            clipboard = (call.arguments as Map)['text'] as String?;
-            return null;
-          case 'Clipboard.getData':
-            return clipboard == null ? null : <String, dynamic>{'text': clipboard};
-          default:
-            return null;
-        }
-      },
-    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      calls.add(call.method);
+      switch (call.method) {
+        case 'Clipboard.setData':
+          clipboard = (call.arguments as Map)['text'] as String?;
+          return null;
+        case 'Clipboard.getData':
+          return clipboard == null ? null : <String, dynamic>{'text': clipboard};
+        default:
+          return null;
+      }
+    });
   });
 
   tearDown(() {
     cancelPendingSensitiveClipboardClear();
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      null,
-    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null);
   });
 
   group('copySensitiveToClipboard', () {

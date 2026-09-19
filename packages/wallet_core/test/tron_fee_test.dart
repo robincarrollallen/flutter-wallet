@@ -10,19 +10,8 @@ const _rates = TronFeeRates();
 
 /// [available] 默认落在**免费**额度上——普通账户没质押过，这才是常态。
 /// 要测激活场景必须用 [staked]，因为免费额度不能用于创建账户。
-TronFeeEstimate _estimate({
-  int needed = 268,
-  int available = 600,
-  int staked = 0,
-  bool activated = true,
-  TronFeeRates rates = _rates,
-}) => TronFeeCalculator.estimate(
-  bandwidthNeeded: needed,
-  freeBandwidth: BigInt.from(available),
-  stakedBandwidth: BigInt.from(staked),
-  recipientActivated: activated,
-  rates: rates,
-);
+TronFeeEstimate _estimate({int needed = 268, int available = 600, int staked = 0, bool activated = true, TronFeeRates rates = _rates}) =>
+    TronFeeCalculator.estimate(bandwidthNeeded: needed, freeBandwidth: BigInt.from(available), stakedBandwidth: BigInt.from(staked), recipientActivated: activated, rates: rates);
 
 void main() {
   group('TronFeeCalculator.bandwidthFor', () {
@@ -142,15 +131,14 @@ void main() {
   });
 
   group('TronFeeCalculator.estimateToken', () {
-    TronFeeEstimate token({int energyNeeded = 30000, int energyAvailable = 0, int free = 600}) =>
-        TronFeeCalculator.estimateToken(
-          bandwidthNeeded: 345,
-          freeBandwidth: BigInt.from(free),
-          stakedBandwidth: BigInt.zero,
-          energyNeeded: energyNeeded,
-          energyAvailable: BigInt.from(energyAvailable),
-          rates: _rates,
-        );
+    TronFeeEstimate token({int energyNeeded = 30000, int energyAvailable = 0, int free = 600}) => TronFeeCalculator.estimateToken(
+      bandwidthNeeded: 345,
+      freeBandwidth: BigInt.from(free),
+      stakedBandwidth: BigInt.zero,
+      energyNeeded: energyNeeded,
+      energyAvailable: BigInt.from(energyAvailable),
+      rates: _rates,
+    );
 
     // 能量与带宽的计费方式相反，这是最容易搞混的一处：能量**只烧差额**。
     test('能量部分够时只烧差额', () {
@@ -219,13 +207,7 @@ void main() {
     });
 
     test('节点给了值就用节点的', () {
-      final rates = TronFeeRates.fromChainParameters(
-        TronChainParameters.fromJson(const {
-          'getTransactionFee': 2000,
-          'getCreateAccountFee': 200000,
-          'getCreateNewAccountFeeInSystemContract': 3000000,
-        }),
-      );
+      final rates = TronFeeRates.fromChainParameters(TronChainParameters.fromJson(const {'getTransactionFee': 2000, 'getCreateAccountFee': 200000, 'getCreateNewAccountFeeInSystemContract': 3000000}));
       expect(rates.sunPerBandwidthByte, 2000);
       expect(rates.createAccountFeeSun, 200000);
       expect(rates.createNewAccountFeeSun, 3000000);

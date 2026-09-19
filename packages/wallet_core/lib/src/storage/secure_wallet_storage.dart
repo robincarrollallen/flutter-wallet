@@ -13,12 +13,7 @@ class SecureWalletStorage {
   /// 曾经显式传的 `encryptedSharedPreferences: true` 已被上游弃用——
   /// Google 弃掉了 Jetpack Security，该参数如今会被忽略、v11 将移除，
   /// 已存的数据会在首次访问时自动迁移到新的加密方式。
-  SecureWalletStorage([FlutterSecureStorage? storage])
-    : _storage =
-          storage ??
-          const FlutterSecureStorage(
-            iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
-          );
+  SecureWalletStorage([FlutterSecureStorage? storage]) : _storage = storage ?? const FlutterSecureStorage(iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device));
 
   final FlutterSecureStorage _storage;
 
@@ -70,8 +65,7 @@ class SecureWalletStorage {
   /// 会留下一个时间窗，窗内产生的残留永远无法被识别、也就永远清不掉。
   ///
   /// 值存写入时刻，当前逻辑不读它，留给日后排查「这个标记为什么还在」。
-  Future<void> markPendingCommit(String walletId) =>
-      _storage.write(key: _pendingKey(walletId), value: DateTime.now().toUtc().toIso8601String());
+  Future<void> markPendingCommit(String walletId) => _storage.write(key: _pendingKey(walletId), value: DateTime.now().toUtc().toIso8601String());
 
   /// 撤下提交意图标记。**必须在钱包元数据全部生效之后调用**——标记一撤，这份敏感数据
   /// 就永久失去被对账删除的资格，早撤一步就等于重新打开了误删的口子。
@@ -131,4 +125,3 @@ class SecureWalletStorage {
     await _storage.delete(key: _pendingKey(walletId));
   }
 }
-

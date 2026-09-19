@@ -17,9 +17,7 @@ import 'http_config.dart';
 /// 一条挂死的链会拖住整个 Future.wait，所以这里必须硬性封顶。
 Future<({int statusCode, String body})> _send(Uri uri, {Map<String, Object?>? jsonBody}) async {
   try {
-    final request = jsonBody == null
-        ? await sharedHttpClient.getUrl(uri).timeout(kRemoteTimeout)
-        : await sharedHttpClient.postUrl(uri).timeout(kRemoteTimeout);
+    final request = jsonBody == null ? await sharedHttpClient.getUrl(uri).timeout(kRemoteTimeout) : await sharedHttpClient.postUrl(uri).timeout(kRemoteTimeout);
     if (jsonBody != null) {
       request.headers.contentType = ContentType.json;
       request.add(utf8.encode(jsonEncode(jsonBody)));

@@ -40,8 +40,7 @@ class _RecordingTransfer implements ChainTransferService {
 
 const _wallet = Wallet(id: 'w1', name: '测试钱包');
 
-WalletService _service(_RecordingTransfer transfer) =>
-    WalletService(transferServices: {transfer.kind: transfer}, catalog: _catalog);
+WalletService _service(_RecordingTransfer transfer) => WalletService(transferServices: {transfer.kind: transfer}, catalog: _catalog);
 
 SendTransactionRequest _request({String? tokenIdentifier, String? chainId, String? to}) => SendTransactionRequest(
   from: '0x0000000000000000000000000000000000000001',
@@ -83,10 +82,7 @@ void main() {
     for (final c in cases) {
       test('${c.chain.name}：非法地址在服务层被拒，不进签名流程', () async {
         final transfer = _RecordingTransfer(c.chain.kind);
-        await expectLater(
-          _service(transfer).sendTransaction(_request(chainId: c.chain.id, to: c.invalid), _wallet),
-          throwsA(isA<ArgumentError>()),
-        );
+        await expectLater(_service(transfer).sendTransaction(_request(chainId: c.chain.id, to: c.invalid), _wallet), throwsA(isA<ArgumentError>()));
         // 最关键的一条断言：请求根本没到达 transfer service。
         expect(transfer.received, isNull, reason: '非法地址不该被交给任何链实现');
       });
@@ -133,10 +129,7 @@ void main() {
     // 降级成「转原生币」会把一笔 USDC 转账悄悄变成一笔 ETH 转账。
     test('目录里查不到代币即报错，不降级为原生币', () async {
       final evm = _RecordingTransfer(ChainKind.evm);
-      await expectLater(
-        _service(evm).sendTransaction(_request(tokenIdentifier: '0x000000000000000000000000000000000000dead'), _wallet),
-        throwsStateError,
-      );
+      await expectLater(_service(evm).sendTransaction(_request(tokenIdentifier: '0x000000000000000000000000000000000000dead'), _wallet), throwsStateError);
       expect(evm.received, isNull);
     });
 
@@ -144,10 +137,7 @@ void main() {
       final tron = _RecordingTransfer(ChainKind.tron);
       // 收款地址必须是真的 Tron 地址：服务层现在按链校验格式，
       // 默认那个 0x 开头的 EVM 地址在这里会被直接拒掉。
-      await _service(tron).sendTransaction(
-        _request(chainId: SupportedChains.tronNile.id, to: 'TJRabPrwbZy45sbavfcjinPJC18kjpRTv8'),
-        _wallet,
-      );
+      await _service(tron).sendTransaction(_request(chainId: SupportedChains.tronNile.id, to: 'TJRabPrwbZy45sbavfcjinPJC18kjpRTv8'), _wallet);
 
       expect(tron.received!.isNative, isTrue);
       expect(tron.received!.chain.id, SupportedChains.tronNile.id);
@@ -157,18 +147,12 @@ void main() {
 
     test('未注册实现的链类型报「暂未支持」', () async {
       final evm = _RecordingTransfer(ChainKind.evm);
-      await expectLater(
-        _service(evm).sendTransaction(_request(chainId: SupportedChains.solanaDevnet.id), _wallet),
-        throwsUnsupportedError,
-      );
+      await expectLater(_service(evm).sendTransaction(_request(chainId: SupportedChains.solanaDevnet.id), _wallet), throwsUnsupportedError);
     });
 
     test('缺少 chainId 即报错', () async {
       final evm = _RecordingTransfer(ChainKind.evm);
-      await expectLater(
-        _service(evm).sendTransaction(const SendTransactionRequest(from: '0x1', to: '0x2', amount: '1'), _wallet),
-        throwsArgumentError,
-      );
+      await expectLater(_service(evm).sendTransaction(const SendTransactionRequest(from: '0x1', to: '0x2', amount: '1'), _wallet), throwsArgumentError);
     });
   });
 }
