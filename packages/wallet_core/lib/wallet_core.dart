@@ -39,6 +39,7 @@ export 'src/model/fee/fee_quote.dart';
 export 'src/model/fee/aptos_fee.dart';
 export 'src/model/fee/evm_fee.dart';
 export 'src/model/fee/solana_fee.dart';
+export 'src/model/fee/sui_fee.dart';
 export 'src/model/fee/tron_fee.dart';
 
 /// 转账请求。UI 唯一能向签名层递交的入参形态——收敛成一个类型，
@@ -76,6 +77,7 @@ export 'src/security/secret_reveal.dart';
 export 'src/transaction/aptos_transaction_service.dart';
 export 'src/transaction/evm_transaction_service.dart';
 export 'src/transaction/solana_transaction_service.dart';
+export 'src/transaction/sui_transaction_service.dart';
 export 'src/transaction/tron_transaction_service.dart';
 
 /// 转账编排：取私钥 → 签名 → finally 里清零。
@@ -85,6 +87,7 @@ export 'src/transaction/transfer/transfer_result.dart';
 export 'src/transaction/transfer/aptos_transfer_service.dart';
 export 'src/transaction/transfer/evm_transfer_service.dart';
 export 'src/transaction/transfer/solana_transfer_service.dart';
+export 'src/transaction/transfer/sui_transfer_service.dart';
 export 'src/transaction/transfer/tron_transfer_service.dart';
 
 /// 钱包的增删改与按链分发。

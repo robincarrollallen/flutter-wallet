@@ -20,5 +20,6 @@ export 'fee/fee_quote.dart';
 export 'fee/aptos_fee.dart';
 export 'fee/evm_fee.dart';
 export 'fee/solana_fee.dart';
+export 'fee/sui_fee.dart';
 export 'fee/tron_fee.dart';
 export 'dto/send_transaction_request.dart';

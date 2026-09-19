@@ -27,11 +27,7 @@ class Chain {
     this.coinGeckoPlatformId,
     this.explorerTxUrlTemplate,
     this.supportsRpcBatch = true,
-  }) : assert(
-         (kind == ChainKind.evm || kind == ChainKind.solana || kind == ChainKind.sui) ==
-             (nativeBalanceRpcMethod != null),
-         'JSON-RPC 链（evm/solana/sui）必须配置 nativeBalanceRpcMethod，REST 链必须留空',
-       );
+  }) : assert((kind == ChainKind.evm || kind == ChainKind.solana || kind == ChainKind.sui) == (nativeBalanceRpcMethod != null), 'JSON-RPC 链（evm/solana/sui）必须配置 nativeBalanceRpcMethod，REST 链必须留空');
 
   /// 链的唯一标识符(用于查找链配置、保存用户选择、做数据关联, byId 就靠它)
   final String id;
@@ -66,8 +62,14 @@ class Chain {
   /// Aptos 签名域。测试网为 2，主网为 1。节点 ledger.chainId 必须等于此值才签名。
   final int? aptosChainId;
 
-  /// 网络身份钉。Solana 是创世哈希；Tron 是创世块 ID 的末 4 字节（不含 `0x`）。
+  /// 网络身份钉。Solana 是创世哈希；Tron 是创世块 ID 的末 4 字节（不含 `0x`）；
+  /// Sui 是 `sui_getChainIdentifier`，即创世检查点摘要的**前** 4 字节 hex。
   /// 签名前与节点声明比对，防止测试网 UI 签出主网交易。
+  ///
+  /// 三条链存的东西形态不同（base58 哈希 / 两段不同位置的 hex），但角色是同一个：
+  /// 「从创世推出来、节点能自证、且各网络互不相同的一个串」。所以共用这一个字段
+  /// 与 [ensureGenesisHash]，而不是按链各开一个——多开的字段只会让第四条链
+  /// 继续往下加，而校验逻辑逐字相同。
   final String? genesisHash;
 
   /// 原生币余额 RPC 方法（非 JSON-RPC 链为空）
@@ -111,8 +113,7 @@ class Chain {
   }
 
   /// 该链的派生方案：地址派生只认它，链的其余配置（endpoint / 价格 id 等）都与派生无关。
-  DerivationScheme get derivation =>
-      DerivationScheme(coin: coin, btcScriptType: kind == ChainKind.bitcoin ? btcScriptType : null);
+  DerivationScheme get derivation => DerivationScheme(coin: coin, btcScriptType: kind == ChainKind.bitcoin ? btcScriptType : null);
 }
 
 /// 一组「能唯一决定一个地址」的派生参数。多条链共用同一方案时只需派生一次（EVM 多链即如此）。
@@ -127,8 +128,7 @@ class DerivationScheme {
 
   /// 重写 == 判断方法, 把「两个实例」改成「两个字段相同就算同一个方案」
   @override
-  bool operator ==(Object other) =>
-      other is DerivationScheme && other.coin == coin && other.btcScriptType == btcScriptType;
+  bool operator ==(Object other) => other is DerivationScheme && other.coin == coin && other.btcScriptType == btcScriptType;
 
   /// 重写 hashCode 方法, 让这个相等性能在 Map / Set / contains 里正确工作
   @override
@@ -292,6 +292,8 @@ class SupportedChains {
     decimals: 9,
     nativeBalanceRpcMethod: RpcMethod.suiGetBalance,
     coinGeckoPlatformId: 'sui',
+    // sui_getChainIdentifier 的返回值（创世检查点摘要前 4 字节）。主网是 35834a8a。
+    genesisHash: '4c78adac',
     // 这个公共节点明确拒绝批量请求（-32005 Batched requests are not supported by this server），
     // 而 Sui 官方 fullnode 的 JSON-RPC 已整体弃用（-32601，要求迁移到 gRPC/GraphQL），
     // 换端点解决不了。多代币查询走并发单条。
@@ -314,19 +316,7 @@ class SupportedChains {
   );
 
   /// 首页展示顺序。
-  static const List<Chain> all = [
-    ethereumSepolia,
-    polygonAmoy,
-    bscTestnet,
-    baseSepolia,
-    arbitrumSepolia,
-    plasmaTestnet,
-    bitcoinTestnet,
-    solanaDevnet,
-    tronNile,
-    suiTestnet,
-    aptosTestnet,
-  ];
+  static const List<Chain> all = [ethereumSepolia, polygonAmoy, bscTestnet, baseSepolia, arbitrumSepolia, plasmaTestnet, bitcoinTestnet, solanaDevnet, tronNile, suiTestnet, aptosTestnet];
 
   /// 派生地址列表时去重后的方案[(coin: Bip44Coins, btcScriptType: BtcScriptType)](EVM 多链共用同一方案 -> 同一地址, 只派生一次)
   static List<DerivationScheme> get distinctDerivations {

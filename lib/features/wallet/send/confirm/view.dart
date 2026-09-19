@@ -17,6 +17,7 @@ import '../../../../providers/modules/asset/balance_provider.dart';
 import '../../../../providers/modules/transaction/aptos_fee_provider.dart';
 import '../../../../providers/modules/transaction/evm_fee_provider.dart';
 import '../../../../providers/modules/transaction/solana_fee_provider.dart';
+import '../../../../providers/modules/transaction/sui_fee_provider.dart';
 import '../../../../providers/modules/transaction/tron_fee_provider.dart';
 import '../../../../providers/core/service_provider.dart';
 import '../../../../providers/modules/market/currency_provider.dart';
@@ -221,6 +222,12 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
       // 用实际消耗去算 MAX 会让全额转出付不起预扣，交易连内存池都进不去。
       return ref.watch(aptosFeeProvider(_aptosFeeKey(asset, from))).value?.quoteFor(_feeSpeed).maxFee;
     }
+    if (asset.chain.kind == ChainKind.sui) {
+      // 同上：suiFeeProvider 不轮询也不落盘，拿到即新鲜。
+      // 同样取 maxFee（= gasBudget）而非 expectedFee：Sui 按预算**整额冻结**，
+      // 拿 dry run 的净费用去算 MAX 会让全额转出冻不住预算而被链上拒收。
+      return ref.watch(suiFeeProvider(_suiFeeKey(asset, from))).value?.quoteFor(_feeSpeed).maxFee;
+    }
     final view = ref.watch(evmFeeProvider(_feeKey(asset, from)));
     return view.stale ? null : view.quotes?[_feeSpeed]?.maxFee;
   }
@@ -241,8 +248,14 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
   /// **Aptos 的三档同样是链上真给的**：`/estimate_gas_price` 直接返回
   /// de-prioritized / regular / prioritized 三个 gas 单价（AIP-34），不是本地按倍数
   /// 编出来的。所以它也走 [_feeSelector]。链空闲时三档同价、显示同一个数，那是事实。
+  ///
+  /// **Sui 是这里唯一一条三档不全来自链上的链**，看这个选择器时要知道它的成色：
+  /// Sui 的 reference gas price 一个 epoch（约一天）内恒定，且是链上接受的**下限**，
+  /// 所以「缓慢」无处可慢——它与「普通」同价，两档显示同一个数是事实，不是没取到。
+  /// 「快速」的加价倍数则是**本地定的**（见 `SuiFeeEstimate`），链上没给这个数；
+  /// 加价本身有效（验证者按 gas price 排序），但别把它当成和 Aptos 那样的链上报价。
   Widget _feeRow(ListedAsset asset, String from) => switch (asset.chain.kind) {
-    ChainKind.evm || ChainKind.solana || ChainKind.aptos => _feeSelector(asset, from),
+    ChainKind.evm || ChainKind.solana || ChainKind.aptos || ChainKind.sui => _feeSelector(asset, from),
     ChainKind.tron => _tronFeeRow(asset, from),
     _ => const _DetailRow(label: '网络费', value: '由网络决定'),
   };
@@ -256,12 +269,19 @@ class _SendConfirmPageState extends ConsumerState<SendConfirmPage> {
     if (asset.chain.kind == ChainKind.aptos) {
       return ref.watch(aptosFeeProvider(_aptosFeeKey(asset, from))).value?.quotes;
     }
+    if (asset.chain.kind == ChainKind.sui) {
+      return ref.watch(suiFeeProvider(_suiFeeKey(asset, from))).value?.quotes;
+    }
     return ref.watch(evmFeeProvider(_feeKey(asset, from))).quotes;
   }
 
   /// 键里不带金额：Aptos 的 gas 与转多少无关（见 `AptosTransactionService`）。
   /// 代币要带上——代币与原生的 gas 上限差两个数量级，共用一份报价会差得离谱。
   AptosFeeKey _aptosFeeKey(ListedAsset asset, String from) => (chainId: asset.chain.id, from: from, to: widget.toAddress, tokenIdentifier: asset.token?.identifier);
+
+  /// 键里不带金额，同 [_aptosFeeKey]：Sui 的 gas 与转多少无关（testnet 实测，
+  /// 见 `SuiTransactionService.estimateNativeFee`）。带上只会让每敲一个数字就多发一轮 dry run。
+  SuiFeeKey _suiFeeKey(ListedAsset asset, String from) => (chainId: asset.chain.id, from: from, to: widget.toAddress, tokenIdentifier: asset.token?.identifier);
 
   SolanaFeeKey _solanaFeeKey(ListedAsset asset, String from) => (chainId: asset.chain.id, from: from, to: widget.toAddress, amount: widget.amount, tokenIdentifier: asset.token?.identifier);
 

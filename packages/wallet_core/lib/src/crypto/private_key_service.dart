@@ -67,8 +67,12 @@ class PrivateKeyService {
         final bytes = Base58Decoder.decode(s);
         return bytes.length == 64 ? bytes.sublist(0, 32) : bytes;
       }(),
-      // 目前没有 Sui 签名路径。secp256k1（flag 0x01）的字节若在这里丢掉方案标志，
-      // 将来默认按 ed25519 签就会对一个用户并不拥有的地址生效。未支持的曲线先拒绝。
+      // Sui 的签名路径只认 ed25519（`SuiTransactionService` 用的是 SuiEd25519Account）。
+      // secp256k1（flag 0x01）的字节若在这里丢掉方案标志，就会被默认按 ed25519 签，
+      // 而那签出来的是另一个地址——用户并不拥有它。所以未支持的曲线一律拒绝。
+      //
+      // 这类私钥仍然**导入得进来**（上面的 derive 认得 flag 0x01，能算出正确地址、
+      // 查得到余额），只是签不了名。查得到、发不出，好过把钱签到错的地址上。
       PrivateKeyKind.suiBech32 => _decodeSuiSigningBytes(s),
       PrivateKeyKind.unknown => throw ArgumentError('无法识别的私钥格式，无法用于签名'),
     };
@@ -174,5 +178,4 @@ class PrivateKeyService {
 
 /// compute() 顶层入口：在后台 isolate 由私钥派生（避免阻塞 UI）。
 /// 入参为 (类型, 原始私钥串)。
-DerivedWallet deriveFromPrivateKeyInBackground((PrivateKeyKind, String) args) =>
-    PrivateKeyService.derive(args.$1, args.$2);
+DerivedWallet deriveFromPrivateKeyInBackground((PrivateKeyKind, String) args) => PrivateKeyService.derive(args.$1, args.$2);

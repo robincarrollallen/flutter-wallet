@@ -39,6 +39,7 @@ final walletServiceProvider = Provider<WalletService>((ref) {
       ChainKind.tron: TronTransferService(keyResolver),
       ChainKind.solana: SolanaTransferService(keyResolver),
       ChainKind.aptos: AptosTransferService(keyResolver),
+      ChainKind.sui: SuiTransferService(keyResolver),
     },
     catalog: ref.watch(tokenCatalogProvider),
   );
@@ -77,3 +78,6 @@ final solanaTransactionServiceProvider = Provider<SolanaTransactionService>((ref
 
 /// Aptos 链上读写（gas 行情与模拟执行、发交易）。
 final aptosTransactionServiceProvider = Provider<AptosTransactionService>((ref) => const AptosTransactionService());
+
+/// Sui 链上读写（coin 对象与 gas 行情、dry run 估费、发交易）。
+final suiTransactionServiceProvider = Provider<SuiTransactionService>((ref) => const SuiTransactionService());

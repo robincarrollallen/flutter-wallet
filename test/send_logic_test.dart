@@ -37,6 +37,7 @@ final _transfers = <ChainKind, ChainTransferService>{
   ChainKind.tron: _Cap(ChainKind.tron),
   ChainKind.solana: _Cap(ChainKind.solana),
   ChainKind.aptos: _Cap(ChainKind.aptos),
+  ChainKind.sui: _Cap(ChainKind.sui),
 };
 
 List<ListedAsset> _assetsOf(Chain? chain) => SendLogic.assetsOf(chain, _catalog, _transfers);
@@ -51,7 +52,7 @@ void main() {
     test('全部链原生币 + 已接入代币转账的链的代币', () {
       final all = _assetsOf(null);
       expect(all.length, SupportedChains.all.length + _sendableTokenCount);
-      // 尚未接入代币转账的链（Sui），其代币不该出现在可发送列表里——
+      // 未接入代币转账的链，其代币不该出现在可发送列表里——
       // 让用户点进去才被拦下，比看不到更糟。
       expect(all.where((a) => a.token != null).every((a) => _supportsToken(a.chain.kind)), isTrue);
     });
@@ -63,9 +64,11 @@ void main() {
       expect(assets.last.symbol, 'USDC');
     });
 
-    test('尚未接入代币转账的链只返回原生币', () {
+    test('Sui 返回原生币 + Coin<T> 代币', () {
       final assets = _assetsOf(SupportedChains.suiTestnet);
-      expect(assets.single.symbol, 'SUI');
+      expect(assets.map((a) => a.symbol), ['SUI', 'USDC']);
+      // 目录里那枚 USDC 是 Coin<T>，正是 SuiTransferService 声明支持的标准。
+      expect(assets.last.token?.standard, TokenStandard.suiCoin);
     });
 
     test('supportsToken 为 false 时该链代币不进列表', () {
@@ -82,10 +85,12 @@ void main() {
     });
 
     test('未注册的链拦截', () {
-      // 用 Sui：它在 walletServiceProvider 的分派表里还没有实现，
+      // 用 Bitcoin：它在 walletServiceProvider 的分派表里没有实现，
       // 所以连原生币都发不出去。换成已接入的链会让这条断言失去意义。
-      const sui = ListedAsset(chain: SupportedChains.suiTestnet);
-      expect(SendLogic.canTransfer(sui, _transfers), isFalse);
+      // （这里原先用的是 Sui，而 Sui 早已接入——固件漏了它，断言因此一直在
+      //  按一个不存在的世界空转。换成 Bitcoin 才是真的在守东西。）
+      const bitcoin = ListedAsset(chain: SupportedChains.bitcoinTestnet);
+      expect(SendLogic.canTransfer(bitcoin, _transfers), isFalse);
     });
 
     test('原生币能转、代币不能时拦截代币', () {
